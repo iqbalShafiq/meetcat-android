@@ -68,8 +68,8 @@ private fun MainContent(
                 PlaceholderScreen("Search")
             }
 
-            BottomNavItem.Chat.route -> {
-                PlaceholderScreen("Chat")
+            BottomNavItem.NearMe.route -> {
+                PlaceholderScreen("Near Me")
             }
 
             BottomNavItem.Profile.route -> {

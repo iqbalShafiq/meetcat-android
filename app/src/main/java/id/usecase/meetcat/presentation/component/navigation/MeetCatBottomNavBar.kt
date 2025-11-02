@@ -7,8 +7,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Explore
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
@@ -31,7 +31,7 @@ enum class BottomNavItem(
 ) {
     Explore("Explore", Icons.Filled.Explore, "explore"),
     Search("Search", Icons.Filled.Search, "search"),
-    Chat("Chat", Icons.Filled.Email, "chat"),
+    NearMe("Near Me", Icons.Filled.LocationOn, "nearme"),
     Profile("Profile", Icons.Filled.Person, "profile")
 }
 
