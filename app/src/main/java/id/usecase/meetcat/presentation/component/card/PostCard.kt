@@ -11,6 +11,10 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -19,6 +23,7 @@ import id.usecase.meetcat.presentation.preview.PreviewData
 import id.usecase.meetcat.ui.theme.MeetCatTheme
 import id.usecase.meetcat.presentation.component.common.LocationChip
 import id.usecase.meetcat.presentation.component.common.PostActionBar
+import id.usecase.meetcat.presentation.component.media.ImageViewer
 import id.usecase.meetcat.presentation.component.media.MediaCarousel
 import id.usecase.meetcat.presentation.component.user.AvatarSize
 import id.usecase.meetcat.presentation.component.user.UserInfo
@@ -38,6 +43,9 @@ fun PostCard(
     modifier: Modifier = Modifier,
     userLocation: id.usecase.meetcat.domain.model.Location? = null
 ) {
+    var showImageViewer by remember { mutableStateOf(false) }
+    var selectedImageUrl by remember { mutableStateOf<String?>(null) }
+
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -80,7 +88,11 @@ fun PostCard(
                 MediaCarousel(
                     mediaItems = post.mediaItems,
                     location = post.location,
-                    distanceInMeters = distanceInMeters
+                    distanceInMeters = distanceInMeters,
+                    onImageClick = { imageUrl ->
+                        selectedImageUrl = imageUrl
+                        showImageViewer = true
+                    }
                 )
             }
 
@@ -98,6 +110,17 @@ fun PostCard(
                 modifier = Modifier.fillMaxWidth()
             )
         }
+    }
+
+    // Image Viewer Dialog
+    if (showImageViewer && selectedImageUrl != null) {
+        ImageViewer(
+            imageUrl = selectedImageUrl!!,
+            onDismiss = {
+                showImageViewer = false
+                selectedImageUrl = null
+            }
+        )
     }
 }
 

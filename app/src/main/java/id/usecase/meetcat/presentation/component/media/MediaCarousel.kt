@@ -2,6 +2,7 @@ package id.usecase.meetcat.presentation.component.media
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -35,7 +36,8 @@ fun MediaCarousel(
     mediaItems: List<MediaItem>,
     modifier: Modifier = Modifier,
     location: Location? = null,
-    distanceInMeters: Float? = null
+    distanceInMeters: Float? = null,
+    onImageClick: ((String) -> Unit)? = null
 ) {
     if (mediaItems.isEmpty()) return
 
@@ -59,7 +61,15 @@ fun MediaCarousel(
                             .crossfade(true)
                             .build(),
                         contentDescription = "Post image ${page + 1}",
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .then(
+                                if (onImageClick != null) {
+                                    Modifier.clickable { onImageClick(mediaItem.url) }
+                                } else {
+                                    Modifier
+                                }
+                            ),
                         contentScale = ContentScale.Crop
                     )
                 }
