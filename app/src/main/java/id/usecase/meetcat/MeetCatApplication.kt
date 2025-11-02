@@ -11,6 +11,7 @@ import coil3.request.crossfade
 import coil3.util.DebugLogger
 import id.usecase.meetcat.di.appModule
 import id.usecase.meetcat.di.dataModule
+import id.usecase.meetcat.di.domainModule
 import okio.FileSystem
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -25,6 +26,7 @@ class MeetCatApplication : Application(), SingletonImageLoader.Factory {
             androidContext(this@MeetCatApplication)
             modules(
                 appModule,
+                domainModule,
                 dataModule
             )
         }

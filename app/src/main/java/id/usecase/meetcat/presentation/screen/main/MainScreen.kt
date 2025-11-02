@@ -20,6 +20,8 @@ import id.usecase.meetcat.presentation.component.navigation.BottomNavItem
 import id.usecase.meetcat.presentation.component.navigation.MeetCatBottomNavBar
 import id.usecase.meetcat.presentation.screen.explore.ExploreScreen
 import id.usecase.meetcat.presentation.screen.explore.ExploreViewModel
+import id.usecase.meetcat.presentation.screen.search.SearchScreen
+import id.usecase.meetcat.presentation.screen.search.SearchViewModel
 import id.usecase.meetcat.ui.theme.MeetCatTheme
 import org.koin.androidx.compose.koinViewModel
 
@@ -27,6 +29,7 @@ import org.koin.androidx.compose.koinViewModel
 fun MainScreen(
     mainViewModel: MainViewModel = koinViewModel(),
     exploreViewModel: ExploreViewModel = koinViewModel(),
+    searchViewModel: SearchViewModel = koinViewModel(),
     modifier: Modifier = Modifier
 ) {
     val mainUiState by mainViewModel.uiState.collectAsStateWithLifecycle()
@@ -37,6 +40,7 @@ fun MainScreen(
         isBottomNavVisible = isBottomNavVisible,
         onEvent = mainViewModel::onEvent,
         exploreViewModel = exploreViewModel,
+        searchViewModel = searchViewModel,
         modifier = modifier
     )
 }
@@ -47,6 +51,7 @@ private fun MainContent(
     isBottomNavVisible: Boolean,
     onEvent: (MainUiEvent) -> Unit,
     exploreViewModel: ExploreViewModel,
+    searchViewModel: SearchViewModel,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -65,7 +70,18 @@ private fun MainContent(
             }
 
             BottomNavItem.Search.route -> {
-                PlaceholderScreen("Search")
+                SearchScreen(
+                    viewModel = searchViewModel,
+                    onNavigateToPost = { postId ->
+                        // TODO: Navigate to post detail
+                    },
+                    onNavigateToProfile = { userId ->
+                        // TODO: Navigate to profile
+                    },
+                    onNavigateBack = {
+                        onEvent(MainUiEvent.NavigateTo(BottomNavItem.Explore.route))
+                    }
+                )
             }
 
             BottomNavItem.NearMe.route -> {
@@ -134,7 +150,8 @@ private fun MainScreenPreview() {
             ),
             isBottomNavVisible = true,
             onEvent = {},
-            exploreViewModel = koinViewModel()
+            exploreViewModel = koinViewModel(),
+            searchViewModel = koinViewModel()
         )
     }
 }

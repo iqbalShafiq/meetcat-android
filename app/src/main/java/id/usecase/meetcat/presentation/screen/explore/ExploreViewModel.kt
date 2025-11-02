@@ -3,7 +3,11 @@ package id.usecase.meetcat.presentation.screen.explore
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import id.usecase.meetcat.domain.model.FeedItem
-import id.usecase.meetcat.domain.repository.PostRepository
+import id.usecase.meetcat.domain.usecase.post.GetExploreFeedUseCase
+import id.usecase.meetcat.domain.usecase.post.LovePostUseCase
+import id.usecase.meetcat.domain.usecase.post.LoveReplyUseCase
+import id.usecase.meetcat.domain.usecase.post.UnlovePostUseCase
+import id.usecase.meetcat.domain.usecase.post.UnloveReplyUseCase
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -15,7 +19,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class ExploreViewModel(
-    private val postRepository: PostRepository
+    private val getExploreFeedUseCase: GetExploreFeedUseCase,
+    private val lovePostUseCase: LovePostUseCase,
+    private val unlovePostUseCase: UnlovePostUseCase,
+    private val loveReplyUseCase: LoveReplyUseCase,
+    private val unloveReplyUseCase: UnloveReplyUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ExploreUiState())
@@ -63,7 +71,7 @@ class ExploreViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
 
-            val result = postRepository.getExploreFeed(page = 0, pageSize = PAGE_SIZE)
+            val result = getExploreFeedUseCase(page = 0)
 
             result.fold(
                 onSuccess = { items ->
@@ -93,7 +101,7 @@ class ExploreViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isRefreshing = true) }
 
-            val result = postRepository.getExploreFeed(page = 0, pageSize = PAGE_SIZE)
+            val result = getExploreFeedUseCase(page = 0)
 
             result.fold(
                 onSuccess = { items ->
@@ -122,7 +130,7 @@ class ExploreViewModel(
 
         viewModelScope.launch {
             val nextPage = currentPage + 1
-            val result = postRepository.getExploreFeed(page = nextPage, pageSize = PAGE_SIZE)
+            val result = getExploreFeedUseCase(page = nextPage)
 
             result.fold(
                 onSuccess = { items ->
@@ -173,9 +181,9 @@ class ExploreViewModel(
                 .find { it.post.id == postId }?.post
 
             val result = if (currentPost?.isLoved == true) {
-                postRepository.unlovePost(postId)
+                unlovePostUseCase(postId)
             } else {
-                postRepository.lovePost(postId)
+                lovePostUseCase(postId)
             }
 
             result.onFailure {
@@ -236,9 +244,9 @@ class ExploreViewModel(
                 .find { it.reply.id == replyId }?.reply
 
             val result = if (currentReply?.isLoved == true) {
-                postRepository.unloveReply(replyId)
+                unloveReplyUseCase(replyId)
             } else {
-                postRepository.loveReply(replyId)
+                loveReplyUseCase(replyId)
             }
 
             result.onFailure {

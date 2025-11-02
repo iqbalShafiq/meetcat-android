@@ -205,4 +205,34 @@ class FakePostRepository : PostRepository {
         delay(300)
         return Result.success(Unit)
     }
+
+    override suspend fun getRandomPosts(count: Int): Result<List<Post>> {
+        delay(1000)
+        // Return shuffled posts, potentially duplicated to reach count
+        val shuffledPosts = mockPosts.shuffled()
+        val result = mutableListOf<Post>()
+
+        while (result.size < count) {
+            result.addAll(shuffledPosts)
+        }
+
+        return Result.success(result.take(count))
+    }
+
+    override suspend fun searchPosts(
+        query: String,
+        page: Int,
+        pageSize: Int
+    ): Result<List<Post>> {
+        delay(500)
+
+        // Simple search by caption
+        val results = mockPosts.filter { post ->
+            post.caption.contains(query, ignoreCase = true) ||
+            post.user.username.contains(query, ignoreCase = true) ||
+            post.user.displayName.contains(query, ignoreCase = true)
+        }
+
+        return Result.success(results)
+    }
 }
