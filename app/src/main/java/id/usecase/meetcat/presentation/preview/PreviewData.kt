@@ -95,6 +95,7 @@ object PreviewData {
         user = mockUser2,
         text = "This is so cute! I also saw a cat like this yesterday 😍",
         mediaItems = listOf(mockMediaImage),
+        location = mockLocation,
         lovesCount = 45,
         commentsCount = 12,
         isLoved = false,
@@ -104,6 +105,7 @@ object PreviewData {
     val mockReplyTextOnly = mockReply.copy(
         id = "reply2",
         text = "Wow! That's incredible! How did you train your cat to do that?",
-        mediaItems = null
+        mediaItems = null,
+        location = null
     )
 }

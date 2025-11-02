@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.Repeat
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -28,6 +29,7 @@ fun PostActionBar(
     onLoveClick: () -> Unit,
     onCommentClick: () -> Unit,
     onReplyClick: () -> Unit,
+    onShareClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -86,6 +88,16 @@ fun PostActionBar(
                 )
             }
         }
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        IconButton(onClick = onShareClick) {
+            Icon(
+                imageVector = Icons.Outlined.Share,
+                contentDescription = "Share",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
 
@@ -100,7 +112,8 @@ private fun PostActionBarPreview() {
             isLoved = false,
             onLoveClick = {},
             onCommentClick = {},
-            onReplyClick = {}
+            onReplyClick = {},
+            onShareClick = {}
         )
     }
 }
@@ -116,7 +129,8 @@ private fun PostActionBarLovedPreview() {
             isLoved = true,
             onLoveClick = {},
             onCommentClick = {},
-            onReplyClick = {}
+            onReplyClick = {},
+            onShareClick = {}
         )
     }
 }

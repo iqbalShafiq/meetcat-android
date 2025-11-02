@@ -34,7 +34,9 @@ fun PostCard(
     onLoveClick: () -> Unit,
     onCommentClick: () -> Unit,
     onReplyClick: () -> Unit,
-    modifier: Modifier = Modifier
+    onShareClick: () -> Unit = {},
+    modifier: Modifier = Modifier,
+    userLocation: id.usecase.meetcat.domain.model.Location? = null
 ) {
     Card(
         modifier = modifier
@@ -53,6 +55,7 @@ fun PostCard(
             UserInfo(
                 user = post.user,
                 avatarSize = AvatarSize.Medium,
+                timestamp = formatTimestamp(post.createdAt),
                 onUserClick = onProfileClick
             )
 
@@ -66,23 +69,22 @@ fun PostCard(
 
             if (post.mediaItems.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(12.dp))
-                MediaCarousel(mediaItems = post.mediaItems)
+
+                val distanceInMeters = if (post.location != null && userLocation != null) {
+                    id.usecase.meetcat.presentation.util.calculateDistance(
+                        userLocation,
+                        post.location
+                    )
+                } else null
+
+                MediaCarousel(
+                    mediaItems = post.mediaItems,
+                    location = post.location,
+                    distanceInMeters = distanceInMeters
+                )
             }
 
-            if (post.location != null) {
-                Spacer(modifier = Modifier.height(8.dp))
-                LocationChip(location = post.location)
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = formatTimestamp(post.createdAt),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             PostActionBar(
                 lovesCount = post.lovesCount,
@@ -92,6 +94,7 @@ fun PostCard(
                 onLoveClick = onLoveClick,
                 onCommentClick = onCommentClick,
                 onReplyClick = onReplyClick,
+                onShareClick = onShareClick,
                 modifier = Modifier.fillMaxWidth()
             )
         }

@@ -1,9 +1,11 @@
 package id.usecase.meetcat.presentation.component.user
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
@@ -24,44 +26,62 @@ fun UserInfo(
     modifier: Modifier = Modifier,
     avatarSize: AvatarSize = AvatarSize.Medium,
     showBio: Boolean = false,
+    timestamp: String? = null,
     onUserClick: (() -> Unit)? = null
 ) {
     Row(
-        modifier = modifier.then(
-            if (onUserClick != null) {
-                Modifier.clickable(onClick = onUserClick)
-            } else Modifier
-        ),
-        verticalAlignment = Alignment.CenterVertically
+        modifier = modifier
+            .fillMaxWidth()
+            .then(
+                if (onUserClick != null) {
+                    Modifier.clickable(onClick = onUserClick)
+                } else Modifier
+            ),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        UserAvatar(
-            imageUrl = user.profileImageUrl,
-            contentDescription = "Profile picture of ${user.displayName}",
-            size = avatarSize,
-            onClick = onUserClick
-        )
-
-        Spacer(modifier = Modifier.width(12.dp))
-
-        Column {
-            Text(
-                text = user.displayName,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
+        Row(
+            modifier = Modifier.weight(1f, fill = false),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            UserAvatar(
+                imageUrl = user.profileImageUrl,
+                contentDescription = "Profile picture of ${user.displayName}",
+                size = avatarSize,
+                onClick = onUserClick
             )
-            Text(
-                text = "@${user.username}",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            if (showBio && user.bio != null) {
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column {
                 Text(
-                    text = user.bio,
-                    style = MaterialTheme.typography.bodySmall,
+                    text = user.displayName,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "@${user.username}",
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                if (showBio && user.bio != null) {
+                    Text(
+                        text = user.bio,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
+        }
+
+        if (timestamp != null) {
+            Text(
+                text = timestamp,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 8.dp)
+            )
         }
     }
 }

@@ -146,6 +146,12 @@ class FakePostRepository : PostRepository {
                     height = 600
                 )
             ),
+            location = Location(
+                latitude = -6.2088,
+                longitude = 106.8456,
+                address = "Jakarta, Indonesia",
+                name = "Jakarta"
+            ),
             lovesCount = 45,
             commentsCount = 12,
             isLoved = false,
@@ -159,6 +165,7 @@ class FakePostRepository : PostRepository {
             user = mockUsers[2],
             text = "Wow! That's incredible! How did you train your cat to do that?",
             mediaItems = null,
+            location = null,
             lovesCount = 23,
             commentsCount = 5,
             isLoved = true,

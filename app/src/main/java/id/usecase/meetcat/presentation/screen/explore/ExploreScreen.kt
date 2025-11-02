@@ -181,6 +181,9 @@ private fun FeedList(
                         onReplyClick = {
                             onEvent(ExploreUiEvent.NavigateToReply(item.post.id))
                         },
+                        onShareClick = {
+                            // Share action
+                        },
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                     )
                 }
@@ -205,6 +208,9 @@ private fun FeedList(
                         },
                         onCommentClick = {
                             onEvent(ExploreUiEvent.NavigateToComments(item.reply.id))
+                        },
+                        onShareClick = {
+                            // Share action
                         },
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                     )

@@ -8,6 +8,7 @@ data class Reply(
     val user: User,
     val text: String,
     val mediaItems: List<MediaItem>?,
+    val location: Location?,
     val lovesCount: Int,
     val commentsCount: Int,
     val isLoved: Boolean,

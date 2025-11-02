@@ -36,7 +36,9 @@ fun ReplyCard(
     onOriginalProfileClick: () -> Unit,
     onLoveClick: () -> Unit,
     onCommentClick: () -> Unit,
-    modifier: Modifier = Modifier
+    onShareClick: () -> Unit = {},
+    modifier: Modifier = Modifier,
+    userLocation: id.usecase.meetcat.domain.model.Location? = null
 ) {
     Card(
         modifier = modifier
@@ -55,6 +57,7 @@ fun ReplyCard(
             UserInfo(
                 user = reply.user,
                 avatarSize = AvatarSize.Medium,
+                timestamp = formatTimestamp(reply.createdAt),
                 onUserClick = onProfileClick
             )
 
@@ -68,7 +71,19 @@ fun ReplyCard(
 
             if (reply.mediaItems?.isNotEmpty() == true) {
                 Spacer(modifier = Modifier.height(12.dp))
-                MediaCarousel(mediaItems = reply.mediaItems)
+
+                val distanceInMeters = if (reply.location != null && userLocation != null) {
+                    id.usecase.meetcat.presentation.util.calculateDistance(
+                        userLocation,
+                        reply.location
+                    )
+                } else null
+
+                MediaCarousel(
+                    mediaItems = reply.mediaItems,
+                    location = reply.location,
+                    distanceInMeters = distanceInMeters
+                )
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -104,25 +119,24 @@ fun ReplyCard(
 
                     if (reply.originalPost.mediaItems.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(8.dp))
-                        MediaCarousel(mediaItems = reply.originalPost.mediaItems.take(1))
-                    }
 
-                    if (reply.originalPost.location != null) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        LocationChip(location = reply.originalPost.location)
+                        val originalDistanceInMeters = if (reply.originalPost.location != null && userLocation != null) {
+                            id.usecase.meetcat.presentation.util.calculateDistance(
+                                userLocation,
+                                reply.originalPost.location
+                            )
+                        } else null
+
+                        MediaCarousel(
+                            mediaItems = reply.originalPost.mediaItems.take(1),
+                            location = reply.originalPost.location,
+                            distanceInMeters = originalDistanceInMeters
+                        )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = formatTimestamp(reply.createdAt),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             PostActionBar(
                 lovesCount = reply.lovesCount,
@@ -132,6 +146,7 @@ fun ReplyCard(
                 onLoveClick = onLoveClick,
                 onCommentClick = onCommentClick,
                 onReplyClick = {},
+                onShareClick = onShareClick,
                 modifier = Modifier.fillMaxWidth()
             )
         }
@@ -162,7 +177,8 @@ private fun ReplyCardPreview() {
             onOriginalPostClick = {},
             onOriginalProfileClick = {},
             onLoveClick = {},
-            onCommentClick = {}
+            onCommentClick = {},
+            onShareClick = {}
         )
     }
 }
@@ -178,7 +194,8 @@ private fun ReplyCardTextOnlyPreview() {
             onOriginalPostClick = {},
             onOriginalProfileClick = {},
             onLoveClick = {},
-            onCommentClick = {}
+            onCommentClick = {},
+            onShareClick = {}
         )
     }
 }
