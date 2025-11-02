@@ -208,15 +208,25 @@ class FakePostRepository : PostRepository {
 
     override suspend fun getRandomPosts(count: Int): Result<List<Post>> {
         delay(1000)
-        // Return shuffled posts, potentially duplicated to reach count
+        // Return shuffled posts, with unique IDs to avoid key duplication
         val shuffledPosts = mockPosts.shuffled()
         val result = mutableListOf<Post>()
 
+        var index = 0
         while (result.size < count) {
-            result.addAll(shuffledPosts)
+            for (post in shuffledPosts) {
+                if (result.size >= count) break
+
+                // Create a copy with unique ID to avoid LazyColumn key duplication
+                val uniquePost = post.copy(
+                    id = "${post.id}_${index}"
+                )
+                result.add(uniquePost)
+                index++
+            }
         }
 
-        return Result.success(result.take(count))
+        return Result.success(result)
     }
 
     override suspend fun searchPosts(
