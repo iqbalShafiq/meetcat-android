@@ -162,7 +162,10 @@ private fun SearchContent(
                         LazyColumn(
                             modifier = Modifier.weight(1f, fill = false)
                         ) {
-                            items(uiState.searchHistory) { query ->
+                            items(
+                                items = uiState.searchHistory,
+                                key = { it }
+                            ) { query ->
                                 SearchHistoryItem(
                                     query = query,
                                     onQueryClick = {
