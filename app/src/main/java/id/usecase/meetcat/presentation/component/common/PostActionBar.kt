@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ChatBubbleOutline
+import androidx.compose.material.icons.outlined.ModeComment
 import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.Icon
@@ -56,7 +56,7 @@ fun PostActionBar(
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onCommentClick) {
                 Icon(
-                    imageVector = Icons.Outlined.ChatBubbleOutline,
+                    imageVector = Icons.Outlined.ModeComment,
                     contentDescription = "Comments",
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )

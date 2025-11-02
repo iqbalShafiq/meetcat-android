@@ -5,7 +5,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import id.usecase.meetcat.presentation.component.util.rememberBottomNavBarScrollBehavior
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -37,7 +44,9 @@ import kotlinx.collections.immutable.toImmutableList
 @Composable
 fun ExploreScreen(
     viewModel: ExploreViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onShowBottomNav: () -> Unit = {},
+    onHideBottomNav: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -68,7 +77,9 @@ fun ExploreScreen(
         uiState = uiState,
         onEvent = viewModel::onEvent,
         snackbarHostState = snackbarHostState,
-        modifier = modifier
+        modifier = modifier,
+        onShowBottomNav = onShowBottomNav,
+        onHideBottomNav = onHideBottomNav
     )
 }
 
@@ -78,7 +89,9 @@ private fun ExploreContent(
     uiState: ExploreUiState,
     onEvent: (ExploreUiEvent) -> Unit,
     snackbarHostState: SnackbarHostState,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onShowBottomNav: () -> Unit = {},
+    onHideBottomNav: () -> Unit = {}
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -129,7 +142,9 @@ private fun ExploreContent(
                 ) {
                     FeedList(
                         feedItems = uiState.feedItems,
-                        onEvent = onEvent
+                        onEvent = onEvent,
+                        onShowBottomNav = onShowBottomNav,
+                        onHideBottomNav = onHideBottomNav
                     )
                 }
             }
@@ -141,11 +156,31 @@ private fun ExploreContent(
 private fun FeedList(
     feedItems: List<FeedItem>,
     onEvent: (ExploreUiEvent) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onShowBottomNav: () -> Unit = {},
+    onHideBottomNav: () -> Unit = {}
 ) {
+    val lazyListState = rememberLazyListState()
+
+    // Simple scroll detection: hide when scrolling down, show when at top
+    LaunchedEffect(lazyListState.isScrollInProgress) {
+        snapshotFlow { lazyListState.firstVisibleItemIndex }
+            .collect { index ->
+                if (index == 0) {
+                    onShowBottomNav()
+                } else {
+                    onHideBottomNav()
+                }
+            }
+    }
+
     LazyColumn(
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(vertical = 8.dp)
+        contentPadding = PaddingValues(
+            top = 8.dp,
+            bottom = 88.dp // 80dp navbar + 8dp spacing
+        ),
+        state = lazyListState
     ) {
         items(
             items = feedItems,
