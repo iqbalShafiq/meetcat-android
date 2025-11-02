@@ -44,7 +44,7 @@ fun PostCard(
     userLocation: id.usecase.meetcat.domain.model.Location? = null
 ) {
     var showImageViewer by remember { mutableStateOf(false) }
-    var selectedImageUrl by remember { mutableStateOf<String?>(null) }
+    var selectedImageIndex by remember { mutableStateOf(0) }
 
     Card(
         modifier = modifier
@@ -89,8 +89,13 @@ fun PostCard(
                     mediaItems = post.mediaItems,
                     location = post.location,
                     distanceInMeters = distanceInMeters,
-                    onImageClick = { imageUrl ->
-                        selectedImageUrl = imageUrl
+                    onImageClick = { clickedImageUrl ->
+                        // Find index of clicked image
+                        val index = post.mediaItems
+                            .filterIsInstance<id.usecase.meetcat.domain.model.MediaItem.Image>()
+                            .indexOfFirst { it.url == clickedImageUrl }
+
+                        selectedImageIndex = if (index >= 0) index else 0
                         showImageViewer = true
                     }
                 )
@@ -113,14 +118,21 @@ fun PostCard(
     }
 
     // Image Viewer Dialog
-    if (showImageViewer && selectedImageUrl != null) {
-        ImageViewer(
-            imageUrl = selectedImageUrl!!,
-            onDismiss = {
-                showImageViewer = false
-                selectedImageUrl = null
-            }
-        )
+    if (showImageViewer) {
+        // Extract only image URLs (exclude videos)
+        val imageUrls = post.mediaItems
+            .filterIsInstance<id.usecase.meetcat.domain.model.MediaItem.Image>()
+            .map { it.url }
+
+        if (imageUrls.isNotEmpty()) {
+            ImageViewer(
+                imageUrls = imageUrls,
+                initialPage = selectedImageIndex,
+                onDismiss = {
+                    showImageViewer = false
+                }
+            )
+        }
     }
 }
 
