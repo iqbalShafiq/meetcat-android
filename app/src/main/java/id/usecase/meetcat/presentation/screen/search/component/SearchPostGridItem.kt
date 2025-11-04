@@ -38,9 +38,16 @@ fun SearchPostGridItem(
     val firstMedia = post.mediaItems.firstOrNull()
     val isVideo = firstMedia is MediaItem.Video
 
+    // Calculate aspect ratio from media dimensions, default to 1:1 if not available
+    val aspectRatio = when (firstMedia) {
+        is MediaItem.Image -> firstMedia.width.toFloat() / firstMedia.height.toFloat()
+        is MediaItem.Video -> firstMedia.width.toFloat() / firstMedia.height.toFloat()
+        null -> 1f
+    }
+
     Box(
         modifier = modifier
-            .aspectRatio(1f)
+            .aspectRatio(aspectRatio)
             .clip(RoundedCornerShape(8.dp))
             .clickable(onClick = onClick)
     ) {

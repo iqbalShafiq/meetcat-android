@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.items
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
@@ -32,7 +33,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -56,7 +60,9 @@ fun SearchScreen(
     viewModel: SearchViewModel = koinViewModel(),
     onNavigateToPost: (String) -> Unit,
     onNavigateToProfile: (String) -> Unit,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onShowBottomNav: () -> Unit = {},
+    onHideBottomNav: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -77,7 +83,9 @@ fun SearchScreen(
         uiState = uiState,
         onEvent = viewModel::onEvent,
         onNavigateBack = onNavigateBack,
-        snackbarHostState = snackbarHostState
+        snackbarHostState = snackbarHostState,
+        onShowBottomNav = onShowBottomNav,
+        onHideBottomNav = onHideBottomNav
     )
 }
 
@@ -87,7 +95,9 @@ private fun SearchContent(
     uiState: SearchUiState,
     onEvent: (SearchUiEvent) -> Unit,
     onNavigateBack: () -> Unit,
-    snackbarHostState: SnackbarHostState
+    snackbarHostState: SnackbarHostState,
+    onShowBottomNav: () -> Unit = {},
+    onHideBottomNav: () -> Unit = {}
 ) {
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) }
@@ -222,13 +232,17 @@ private fun SearchContent(
                 uiState.searchResults.isNotEmpty() -> {
                     SearchResultsGrid(
                         posts = uiState.searchResults,
-                        onPostClick = { onEvent(SearchUiEvent.NavigateToPost(it)) }
+                        onPostClick = { onEvent(SearchUiEvent.NavigateToPost(it)) },
+                        onShowBottomNav = onShowBottomNav,
+                        onHideBottomNav = onHideBottomNav
                     )
                 }
                 else -> {
                     RandomPostsGrid(
                         posts = uiState.randomPosts,
-                        onPostClick = { onEvent(SearchUiEvent.NavigateToPost(it)) }
+                        onPostClick = { onEvent(SearchUiEvent.NavigateToPost(it)) },
+                        onShowBottomNav = onShowBottomNav,
+                        onHideBottomNav = onHideBottomNav
                     )
                 }
             }
@@ -240,14 +254,35 @@ private fun SearchContent(
 private fun RandomPostsGrid(
     posts: ImmutableList<Post>,
     onPostClick: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onShowBottomNav: () -> Unit = {},
+    onHideBottomNav: () -> Unit = {}
 ) {
+    val lazyGridState = rememberLazyStaggeredGridState()
+    var previousIndex by remember { mutableIntStateOf(0) }
+
+    // Scroll detection: show when scrolling up, hide when scrolling down
+    LaunchedEffect(Unit) {
+        snapshotFlow { lazyGridState.firstVisibleItemIndex }
+            .collect { currentIndex: Int ->
+                if (currentIndex < previousIndex) {
+                    // Scrolling up
+                    onShowBottomNav()
+                } else if (currentIndex > previousIndex) {
+                    // Scrolling down
+                    onHideBottomNav()
+                }
+                previousIndex = currentIndex
+            }
+    }
+
     LazyVerticalStaggeredGrid(
         columns = StaggeredGridCells.Fixed(3),
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(4.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
-        verticalItemSpacing = 4.dp
+        verticalItemSpacing = 4.dp,
+        state = lazyGridState
     ) {
         items(
             items = posts,
@@ -265,14 +300,35 @@ private fun RandomPostsGrid(
 private fun SearchResultsGrid(
     posts: ImmutableList<Post>,
     onPostClick: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onShowBottomNav: () -> Unit = {},
+    onHideBottomNav: () -> Unit = {}
 ) {
+    val lazyGridState = rememberLazyStaggeredGridState()
+    var previousIndex by remember { mutableIntStateOf(0) }
+
+    // Scroll detection: show when scrolling up, hide when scrolling down
+    LaunchedEffect(Unit) {
+        snapshotFlow { lazyGridState.firstVisibleItemIndex }
+            .collect { currentIndex: Int ->
+                if (currentIndex < previousIndex) {
+                    // Scrolling up
+                    onShowBottomNav()
+                } else if (currentIndex > previousIndex) {
+                    // Scrolling down
+                    onHideBottomNav()
+                }
+                previousIndex = currentIndex
+            }
+    }
+
     LazyVerticalStaggeredGrid(
         columns = StaggeredGridCells.Fixed(3),
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(4.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
-        verticalItemSpacing = 4.dp
+        verticalItemSpacing = 4.dp,
+        state = lazyGridState
     ) {
         items(
             items = posts,

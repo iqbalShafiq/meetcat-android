@@ -80,7 +80,9 @@ private fun MainContent(
                     },
                     onNavigateBack = {
                         onEvent(MainUiEvent.NavigateTo(BottomNavItem.Explore.route))
-                    }
+                    },
+                    onShowBottomNav = { onEvent(MainUiEvent.ShowBottomNav) },
+                    onHideBottomNav = { onEvent(MainUiEvent.HideBottomNav) }
                 )
             }
 
