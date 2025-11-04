@@ -1,8 +1,11 @@
 package id.usecase.meetcat.di
 
-import id.usecase.meetcat.data.repository.FakeLocationRepository
+import android.content.Context
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
 import id.usecase.meetcat.data.repository.FakePostRepository
 import id.usecase.meetcat.data.repository.FakeSearchHistoryRepository
+import id.usecase.meetcat.data.repository.LocationRepositoryImpl
 import id.usecase.meetcat.domain.repository.LocationRepository
 import id.usecase.meetcat.domain.repository.PostRepository
 import id.usecase.meetcat.domain.repository.SearchHistoryRepository
@@ -24,6 +27,7 @@ import id.usecase.meetcat.presentation.screen.explore.ExploreViewModel
 import id.usecase.meetcat.presentation.screen.main.MainViewModel
 import id.usecase.meetcat.presentation.screen.maps.MapsViewModel
 import id.usecase.meetcat.presentation.screen.search.SearchViewModel
+import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.core.module.dsl.singleOf
@@ -62,5 +66,15 @@ val domainModule = module {
 val dataModule = module {
     singleOf(::FakePostRepository) bind PostRepository::class
     singleOf(::FakeSearchHistoryRepository) bind SearchHistoryRepository::class
-    singleOf(::FakeLocationRepository) bind LocationRepository::class
+
+    // Location Services
+    single<FusedLocationProviderClient> {
+        LocationServices.getFusedLocationProviderClient(androidContext())
+    }
+    single<LocationRepository> {
+        LocationRepositoryImpl(
+            context = androidContext(),
+            fusedLocationClient = get()
+        )
+    }
 }
