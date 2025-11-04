@@ -105,7 +105,7 @@ private fun SearchContent(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .padding(bottom = paddingValues.calculateBottomPadding())
         ) {
             SearchBar(
                 inputField = {
