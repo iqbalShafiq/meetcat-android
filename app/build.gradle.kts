@@ -66,6 +66,11 @@ dependencies {
     // Kotlinx
     implementation(libs.kotlinx.collections.immutable)
 
+    // Google Maps
+    implementation(libs.maps.compose)
+    implementation(libs.play.services.maps)
+    implementation(libs.play.services.location)
+
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

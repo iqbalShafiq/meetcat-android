@@ -20,6 +20,8 @@ import id.usecase.meetcat.presentation.component.navigation.BottomNavItem
 import id.usecase.meetcat.presentation.component.navigation.MeetCatBottomNavBar
 import id.usecase.meetcat.presentation.screen.explore.ExploreScreen
 import id.usecase.meetcat.presentation.screen.explore.ExploreViewModel
+import id.usecase.meetcat.presentation.screen.maps.MapsScreen
+import id.usecase.meetcat.presentation.screen.maps.MapsViewModel
 import id.usecase.meetcat.presentation.screen.search.SearchScreen
 import id.usecase.meetcat.presentation.screen.search.SearchViewModel
 import id.usecase.meetcat.ui.theme.MeetCatTheme
@@ -30,6 +32,7 @@ fun MainScreen(
     mainViewModel: MainViewModel = koinViewModel(),
     exploreViewModel: ExploreViewModel = koinViewModel(),
     searchViewModel: SearchViewModel = koinViewModel(),
+    mapsViewModel: MapsViewModel = koinViewModel(),
     modifier: Modifier = Modifier
 ) {
     val mainUiState by mainViewModel.uiState.collectAsStateWithLifecycle()
@@ -41,6 +44,7 @@ fun MainScreen(
         onEvent = mainViewModel::onEvent,
         exploreViewModel = exploreViewModel,
         searchViewModel = searchViewModel,
+        mapsViewModel = mapsViewModel,
         modifier = modifier
     )
 }
@@ -52,6 +56,7 @@ private fun MainContent(
     onEvent: (MainUiEvent) -> Unit,
     exploreViewModel: ExploreViewModel,
     searchViewModel: SearchViewModel,
+    mapsViewModel: MapsViewModel,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -87,7 +92,10 @@ private fun MainContent(
             }
 
             BottomNavItem.NearMe.route -> {
-                PlaceholderScreen("Near Me")
+                MapsScreen(
+                    viewModel = mapsViewModel,
+                    modifier = Modifier.fillMaxSize()
+                )
             }
 
             BottomNavItem.Profile.route -> {
@@ -153,7 +161,8 @@ private fun MainScreenPreview() {
             isBottomNavVisible = true,
             onEvent = {},
             exploreViewModel = koinViewModel(),
-            searchViewModel = koinViewModel()
+            searchViewModel = koinViewModel(),
+            mapsViewModel = koinViewModel()
         )
     }
 }

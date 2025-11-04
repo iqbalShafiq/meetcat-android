@@ -245,4 +245,64 @@ class FakePostRepository : PostRepository {
 
         return Result.success(results)
     }
+
+    override suspend fun getNearbyPosts(
+        location: Location,
+        radiusKm: Double,
+        limit: Int
+    ): Result<List<Post>> {
+        delay(1000)
+
+        // Filter posts that have location and are within radius
+        val nearbyPosts = mockPosts.filter { post ->
+            post.location != null && isWithinRadius(
+                lat1 = location.latitude,
+                lon1 = location.longitude,
+                lat2 = post.location.latitude,
+                lon2 = post.location.longitude,
+                radiusKm = radiusKm
+            )
+        }.take(limit)
+
+        // Generate more posts with random locations near the current location for testing
+        val generatedPosts = List(10) { index ->
+            val basePost = mockPosts[index % mockPosts.size]
+            val randomLatOffset = (Math.random() - 0.5) * 0.1 // ±0.05 degrees (~5.5km)
+            val randomLonOffset = (Math.random() - 0.5) * 0.1
+
+            basePost.copy(
+                id = "nearby_${index}",
+                location = Location(
+                    latitude = location.latitude + randomLatOffset,
+                    longitude = location.longitude + randomLonOffset,
+                    address = "Nearby Location $index",
+                    name = "Cat Spot $index"
+                )
+            )
+        }
+
+        return Result.success(nearbyPosts + generatedPosts)
+    }
+
+    private fun isWithinRadius(
+        lat1: Double,
+        lon1: Double,
+        lat2: Double,
+        lon2: Double,
+        radiusKm: Double
+    ): Boolean {
+        val earthRadiusKm = 6371.0
+
+        val dLat = Math.toRadians(lat2 - lat1)
+        val dLon = Math.toRadians(lon2 - lon1)
+
+        val a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2)
+
+        val c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+        val distance = earthRadiusKm * c
+
+        return distance <= radiusKm
+    }
 }
