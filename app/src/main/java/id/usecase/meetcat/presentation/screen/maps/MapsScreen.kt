@@ -48,6 +48,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
@@ -126,6 +127,34 @@ private fun MapsContent(
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier
 ) {
+    val currentLocation = uiState.currentLocation
+
+    val cameraPositionState = rememberCameraPositionState {
+        if (currentLocation != null) {
+            position = CameraPosition.fromLatLngZoom(
+                LatLng(currentLocation.latitude, currentLocation.longitude),
+                14f
+            )
+        }
+    }
+
+    // Animate camera to selected marker location
+    LaunchedEffect(uiState.selectedPostId) {
+        uiState.selectedPostId?.let { selectedId ->
+            val selectedPost = uiState.nearbyPosts.find { it.id == selectedId }
+            selectedPost?.location?.let { location ->
+                cameraPositionState.move(
+                    CameraUpdateFactory.newCameraPosition(
+                        CameraPosition.fromLatLngZoom(
+                            LatLng(location.latitude, location.longitude),
+                            18f
+                        )
+                    )
+                )
+            }
+        }
+    }
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -162,7 +191,8 @@ private fun MapsContent(
                 uiState.currentLocation != null -> {
                     MapView(
                         uiState = uiState,
-                        onEvent = onEvent
+                        onEvent = onEvent,
+                        cameraPositionState = cameraPositionState
                     )
                 }
 
@@ -197,17 +227,9 @@ private fun MapsContent(
 private fun MapView(
     uiState: MapsUiState,
     onEvent: (MapsUiEvent) -> Unit,
+    cameraPositionState: com.google.maps.android.compose.CameraPositionState,
     modifier: Modifier = Modifier
 ) {
-    val currentLocation = uiState.currentLocation ?: return
-
-    val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(
-            LatLng(currentLocation.latitude, currentLocation.longitude),
-            14f
-        )
-    }
-
     GoogleMap(
         modifier = modifier.fillMaxSize(),
         cameraPositionState = cameraPositionState,
