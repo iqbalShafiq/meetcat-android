@@ -5,11 +5,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -38,8 +35,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -50,8 +45,8 @@ import id.usecase.meetcat.presentation.component.card.PostCard
 import id.usecase.meetcat.presentation.component.card.ReplyCard
 import id.usecase.meetcat.presentation.component.state.EmptyView
 import id.usecase.meetcat.presentation.component.state.LoadingView
-import id.usecase.meetcat.presentation.component.user.UserAvatar
-import id.usecase.meetcat.presentation.component.user.UserAvatarSize
+import id.usecase.meetcat.presentation.component.user.ProfileStat
+import id.usecase.meetcat.presentation.component.user.UserProfileHeader
 import id.usecase.meetcat.presentation.screen.search.component.SearchPostGridItem
 import id.usecase.meetcat.ui.theme.MeetCatTheme
 import kotlinx.collections.immutable.ImmutableList
@@ -129,8 +124,22 @@ private fun ProfileContent(
                         modifier = Modifier.fillMaxSize()
                     ) {
                         // Profile Header
-                        ProfileHeader(
+                        UserProfileHeader(
                             user = uiState.user,
+                            stats = listOf(
+                                ProfileStat(
+                                    count = uiState.user.postsCount,
+                                    label = "Posts"
+                                ),
+                                ProfileStat(
+                                    count = uiState.user.followingCount,
+                                    label = "Following Cats"
+                                ),
+                                ProfileStat(
+                                    count = calculateTotalLoves(uiState.user),
+                                    label = "Loves"
+                                )
+                            ),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .background(MaterialTheme.colorScheme.surface)
@@ -177,95 +186,6 @@ private fun ProfileContent(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun ProfileHeader(
-    user: User,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        // Profile Photo
-        UserAvatar(
-            imageUrl = user.profileImageUrl,
-            size = UserAvatarSize.Large,
-            modifier = Modifier.padding(bottom = 12.dp)
-        )
-
-        // Name
-        Text(
-            text = user.displayName,
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center
-        )
-
-        // Username
-        Text(
-            text = "@${user.username}",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
-
-        // Bio
-        if (!user.bio.isNullOrEmpty()) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = user.bio,
-                style = MaterialTheme.typography.bodyMedium,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-        }
-
-        // Stats
-        Spacer(modifier = Modifier.height(16.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            StatItem(
-                count = user.postsCount,
-                label = "Posts"
-            )
-            StatItem(
-                count = user.followingCount,
-                label = "Following Cats"
-            )
-            StatItem(
-                count = calculateTotalLoves(user),
-                label = "Loves"
-            )
-        }
-    }
-}
-
-@Composable
-private fun StatItem(
-    count: Int,
-    label: String,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = formatCount(count),
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
     }
 }
 
@@ -507,14 +427,6 @@ private fun LovedList(
 }
 
 // Helper functions
-private fun formatCount(count: Int): String {
-    return when {
-        count >= 1000000 -> String.format("%.1fM", count / 1000000.0)
-        count >= 1000 -> String.format("%.1fK", count / 1000.0)
-        else -> count.toString()
-    }
-}
-
 private fun calculateTotalLoves(user: User): Int {
     // This would ideally come from the backend
     // For now, we'll use a simple calculation based on posts count
