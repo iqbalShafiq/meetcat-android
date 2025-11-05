@@ -22,6 +22,8 @@ import id.usecase.meetcat.presentation.screen.explore.ExploreScreen
 import id.usecase.meetcat.presentation.screen.explore.ExploreViewModel
 import id.usecase.meetcat.presentation.screen.maps.MapsScreen
 import id.usecase.meetcat.presentation.screen.maps.MapsViewModel
+import id.usecase.meetcat.presentation.screen.profile.ProfileScreen
+import id.usecase.meetcat.presentation.screen.profile.ProfileViewModel
 import id.usecase.meetcat.presentation.screen.search.SearchScreen
 import id.usecase.meetcat.presentation.screen.search.SearchViewModel
 import id.usecase.meetcat.ui.theme.MeetCatTheme
@@ -33,6 +35,7 @@ fun MainScreen(
     exploreViewModel: ExploreViewModel = koinViewModel(),
     searchViewModel: SearchViewModel = koinViewModel(),
     mapsViewModel: MapsViewModel = koinViewModel(),
+    profileViewModel: ProfileViewModel = koinViewModel(),
     modifier: Modifier = Modifier
 ) {
     val mainUiState by mainViewModel.uiState.collectAsStateWithLifecycle()
@@ -45,6 +48,7 @@ fun MainScreen(
         exploreViewModel = exploreViewModel,
         searchViewModel = searchViewModel,
         mapsViewModel = mapsViewModel,
+        profileViewModel = profileViewModel,
         modifier = modifier
     )
 }
@@ -57,6 +61,7 @@ private fun MainContent(
     exploreViewModel: ExploreViewModel,
     searchViewModel: SearchViewModel,
     mapsViewModel: MapsViewModel,
+    profileViewModel: ProfileViewModel,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -99,7 +104,11 @@ private fun MainContent(
             }
 
             BottomNavItem.Profile.route -> {
-                PlaceholderScreen("Profile")
+                ProfileScreen(
+                    viewModel = profileViewModel,
+                    onShowBottomNav = { onEvent(MainUiEvent.ShowBottomNav) },
+                    onHideBottomNav = { onEvent(MainUiEvent.HideBottomNav) }
+                )
             }
 
             else -> {
@@ -162,7 +171,8 @@ private fun MainScreenPreview() {
             onEvent = {},
             exploreViewModel = koinViewModel(),
             searchViewModel = koinViewModel(),
-            mapsViewModel = koinViewModel()
+            mapsViewModel = koinViewModel(),
+            profileViewModel = koinViewModel()
         )
     }
 }
