@@ -43,7 +43,8 @@ fun ExploreScreen(
     onShowBottomNav: () -> Unit = {},
     onHideBottomNav: () -> Unit = {},
     onNavigateToPost: (String) -> Unit = {},
-    onNavigateToReply: (String) -> Unit = {}
+    onNavigateToReply: (String) -> Unit = {},
+    onNavigateToProfile: (String) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -56,7 +57,7 @@ fun ExploreScreen(
                 }
 
                 is ExploreUiEffect.NavigateToProfile -> {
-                    // TODO: Handle profile navigation
+                    onNavigateToProfile(effect.userId)
                 }
 
                 is ExploreUiEffect.NavigateToComments -> {

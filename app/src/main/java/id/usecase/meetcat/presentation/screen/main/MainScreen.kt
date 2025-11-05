@@ -84,6 +84,9 @@ private fun MainContent(
                     },
                     onNavigateToReply = { replyId ->
                         onEvent(MainUiEvent.NavigateTo("reply_detail/$replyId"))
+                    },
+                    onNavigateToProfile = { userId ->
+                        onEvent(MainUiEvent.NavigateTo("user_profile/$userId"))
                     }
                 )
             }
@@ -95,7 +98,7 @@ private fun MainContent(
                         onEvent(MainUiEvent.NavigateTo("post_detail/$postId"))
                     },
                     onNavigateToProfile = { userId ->
-                        // TODO: Navigate to profile
+                        onEvent(MainUiEvent.NavigateTo("user_profile/$userId"))
                     },
                     onNavigateBack = {
                         onEvent(MainUiEvent.NavigateTo(BottomNavItem.Explore.route))
@@ -189,6 +192,7 @@ private fun ExploreScreenWithScrollDetection(
     onHideBottomNav: () -> Unit,
     onNavigateToPost: (String) -> Unit,
     onNavigateToReply: (String) -> Unit,
+    onNavigateToProfile: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     ExploreScreen(
@@ -197,7 +201,8 @@ private fun ExploreScreenWithScrollDetection(
         onShowBottomNav = onShowBottomNav,
         onHideBottomNav = onHideBottomNav,
         onNavigateToPost = onNavigateToPost,
-        onNavigateToReply = onNavigateToReply
+        onNavigateToReply = onNavigateToReply,
+        onNavigateToProfile = onNavigateToProfile
     )
 }
 
