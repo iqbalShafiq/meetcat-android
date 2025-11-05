@@ -53,7 +53,8 @@ fun UserProfileHeader(
         // Profile Photo
         UserAvatar(
             imageUrl = user.profileImageUrl,
-            size = UserAvatarSize.Large,
+            size = AvatarSize.Large,
+            contentDescription = "Profile photo",
             onClick = onAvatarClick,
             modifier = Modifier.padding(bottom = 12.dp)
         )
