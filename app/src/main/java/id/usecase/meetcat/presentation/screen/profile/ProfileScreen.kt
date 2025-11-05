@@ -342,9 +342,9 @@ private fun PostsGrid(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(
             start = 4.dp,
-            end = 4.dp,
             top = 4.dp,
-            bottom = 88.dp
+            end = 4.dp,
+            bottom = 88.dp // 80dp navbar + 8dp spacing
         ),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalItemSpacing = 4.dp,
