@@ -41,7 +41,9 @@ fun ExploreScreen(
     viewModel: ExploreViewModel,
     modifier: Modifier = Modifier,
     onShowBottomNav: () -> Unit = {},
-    onHideBottomNav: () -> Unit = {}
+    onHideBottomNav: () -> Unit = {},
+    onNavigateToPost: (String) -> Unit = {},
+    onNavigateToReply: (String) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -50,15 +52,19 @@ fun ExploreScreen(
         viewModel.uiEffect.collect { effect ->
             when (effect) {
                 is ExploreUiEffect.NavigateToPost -> {
+                    onNavigateToPost(effect.postId)
                 }
 
                 is ExploreUiEffect.NavigateToProfile -> {
+                    // TODO: Handle profile navigation
                 }
 
                 is ExploreUiEffect.NavigateToComments -> {
+                    onNavigateToPost(effect.postId)
                 }
 
                 is ExploreUiEffect.NavigateToReply -> {
+                    onNavigateToPost(effect.postId)
                 }
 
                 is ExploreUiEffect.ShowError -> {
@@ -74,7 +80,8 @@ fun ExploreScreen(
         snackbarHostState = snackbarHostState,
         modifier = modifier,
         onShowBottomNav = onShowBottomNav,
-        onHideBottomNav = onHideBottomNav
+        onHideBottomNav = onHideBottomNav,
+        onNavigateToReply = onNavigateToReply
     )
 }
 
@@ -86,7 +93,8 @@ private fun ExploreContent(
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier,
     onShowBottomNav: () -> Unit = {},
-    onHideBottomNav: () -> Unit = {}
+    onHideBottomNav: () -> Unit = {},
+    onNavigateToReply: (String) -> Unit = {}
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -139,7 +147,8 @@ private fun ExploreContent(
                         feedItems = uiState.feedItems,
                         onEvent = onEvent,
                         onShowBottomNav = onShowBottomNav,
-                        onHideBottomNav = onHideBottomNav
+                        onHideBottomNav = onHideBottomNav,
+                        onNavigateToReply = onNavigateToReply
                     )
                 }
             }
@@ -153,7 +162,8 @@ private fun FeedList(
     onEvent: (ExploreUiEvent) -> Unit,
     modifier: Modifier = Modifier,
     onShowBottomNav: () -> Unit = {},
-    onHideBottomNav: () -> Unit = {}
+    onHideBottomNav: () -> Unit = {},
+    onNavigateToReply: (String) -> Unit = {}
 ) {
     val lazyListState = rememberLazyListState()
 
@@ -222,7 +232,7 @@ private fun FeedList(
                     ReplyCard(
                         reply = item.reply,
                         onReplyClick = {
-                            onEvent(ExploreUiEvent.NavigateToPost(item.reply.id))
+                            onNavigateToReply(item.reply.id)
                         },
                         onProfileClick = {
                             onEvent(ExploreUiEvent.NavigateToProfile(item.reply.userId))

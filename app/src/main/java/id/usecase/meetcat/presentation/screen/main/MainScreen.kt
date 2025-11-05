@@ -22,8 +22,10 @@ import id.usecase.meetcat.presentation.screen.explore.ExploreScreen
 import id.usecase.meetcat.presentation.screen.explore.ExploreViewModel
 import id.usecase.meetcat.presentation.screen.maps.MapsScreen
 import id.usecase.meetcat.presentation.screen.maps.MapsViewModel
+import id.usecase.meetcat.presentation.screen.postdetail.PostDetailScreen
 import id.usecase.meetcat.presentation.screen.profile.ProfileScreen
 import id.usecase.meetcat.presentation.screen.profile.ProfileViewModel
+import id.usecase.meetcat.presentation.screen.replydetail.ReplyDetailScreen
 import id.usecase.meetcat.presentation.screen.search.SearchScreen
 import id.usecase.meetcat.presentation.screen.search.SearchViewModel
 import id.usecase.meetcat.ui.theme.MeetCatTheme
@@ -70,20 +72,26 @@ private fun MainContent(
             .background(MaterialTheme.colorScheme.background)
     ) {
         // Main content - full screen, each screen handles its own bottom padding
-        when (mainUiState.currentRoute) {
-            BottomNavItem.Explore.route -> {
+        when {
+            mainUiState.currentRoute == BottomNavItem.Explore.route -> {
                 ExploreScreenWithScrollDetection(
                     viewModel = exploreViewModel,
                     onShowBottomNav = { onEvent(MainUiEvent.ShowBottomNav) },
-                    onHideBottomNav = { onEvent(MainUiEvent.HideBottomNav) }
+                    onHideBottomNav = { onEvent(MainUiEvent.HideBottomNav) },
+                    onNavigateToPost = { postId ->
+                        onEvent(MainUiEvent.NavigateTo("post_detail/$postId"))
+                    },
+                    onNavigateToReply = { replyId ->
+                        onEvent(MainUiEvent.NavigateTo("reply_detail/$replyId"))
+                    }
                 )
             }
 
-            BottomNavItem.Search.route -> {
+            mainUiState.currentRoute == BottomNavItem.Search.route -> {
                 SearchScreen(
                     viewModel = searchViewModel,
                     onNavigateToPost = { postId ->
-                        // TODO: Navigate to post detail
+                        onEvent(MainUiEvent.NavigateTo("post_detail/$postId"))
                     },
                     onNavigateToProfile = { userId ->
                         // TODO: Navigate to profile
@@ -96,18 +104,50 @@ private fun MainContent(
                 )
             }
 
-            BottomNavItem.NearMe.route -> {
+            mainUiState.currentRoute == BottomNavItem.NearMe.route -> {
                 MapsScreen(
                     viewModel = mapsViewModel,
                     modifier = Modifier.fillMaxSize()
                 )
             }
 
-            BottomNavItem.Profile.route -> {
+            mainUiState.currentRoute == BottomNavItem.Profile.route -> {
                 ProfileScreen(
                     viewModel = profileViewModel,
                     onShowBottomNav = { onEvent(MainUiEvent.ShowBottomNav) },
-                    onHideBottomNav = { onEvent(MainUiEvent.HideBottomNav) }
+                    onHideBottomNav = { onEvent(MainUiEvent.HideBottomNav) },
+                    onNavigateToPost = { postId ->
+                        onEvent(MainUiEvent.NavigateTo("post_detail/$postId"))
+                    }
+                )
+            }
+
+            mainUiState.currentRoute.startsWith("post_detail/") -> {
+                val postId = mainUiState.currentRoute.substringAfter("post_detail/")
+                PostDetailScreen(
+                    postId = postId,
+                    onNavigateBack = {
+                        onEvent(MainUiEvent.NavigateTo(BottomNavItem.Explore.route))
+                    },
+                    onNavigateToProfile = { userId ->
+                        // TODO: Navigate to profile
+                    }
+                )
+            }
+
+            mainUiState.currentRoute.startsWith("reply_detail/") -> {
+                val replyId = mainUiState.currentRoute.substringAfter("reply_detail/")
+                ReplyDetailScreen(
+                    replyId = replyId,
+                    onNavigateBack = {
+                        onEvent(MainUiEvent.NavigateTo(BottomNavItem.Explore.route))
+                    },
+                    onNavigateToProfile = { userId ->
+                        // TODO: Navigate to profile
+                    },
+                    onNavigateToPost = { postId ->
+                        onEvent(MainUiEvent.NavigateTo("post_detail/$postId"))
+                    }
                 )
             }
 
@@ -133,13 +173,17 @@ private fun ExploreScreenWithScrollDetection(
     viewModel: ExploreViewModel,
     onShowBottomNav: () -> Unit,
     onHideBottomNav: () -> Unit,
+    onNavigateToPost: (String) -> Unit,
+    onNavigateToReply: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     ExploreScreen(
         viewModel = viewModel,
         modifier = modifier,
         onShowBottomNav = onShowBottomNav,
-        onHideBottomNav = onHideBottomNav
+        onHideBottomNav = onHideBottomNav,
+        onNavigateToPost = onNavigateToPost,
+        onNavigateToReply = onNavigateToReply
     )
 }
 

@@ -55,6 +55,7 @@ fun ProfileScreen(
     viewModel: ProfileViewModel = koinViewModel(),
     onShowBottomNav: () -> Unit = {},
     onHideBottomNav: () -> Unit = {},
+    onNavigateToPost: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -64,7 +65,7 @@ fun ProfileScreen(
         viewModel.uiEffect.collect { effect ->
             when (effect) {
                 is ProfileUiEffect.NavigateToPost -> {
-                    // TODO: Navigate to post detail
+                    onNavigateToPost(effect.postId)
                 }
                 is ProfileUiEffect.ShowError -> {
                     snackbarHostState.showSnackbar(effect.message)

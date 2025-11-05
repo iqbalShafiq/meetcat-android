@@ -26,9 +26,12 @@ import id.usecase.meetcat.domain.usecase.search.SaveSearchQueryUseCase
 import id.usecase.meetcat.presentation.screen.explore.ExploreViewModel
 import id.usecase.meetcat.presentation.screen.main.MainViewModel
 import id.usecase.meetcat.presentation.screen.maps.MapsViewModel
+import id.usecase.meetcat.presentation.screen.postdetail.PostDetailViewModel
 import id.usecase.meetcat.presentation.screen.profile.ProfileViewModel
+import id.usecase.meetcat.presentation.screen.replydetail.ReplyDetailViewModel
 import id.usecase.meetcat.presentation.screen.search.SearchViewModel
 import org.koin.android.ext.koin.androidContext
+import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.core.module.dsl.singleOf
@@ -41,6 +44,20 @@ val appModule = module {
     viewModelOf(::SearchViewModel)
     viewModelOf(::MapsViewModel)
     viewModelOf(::ProfileViewModel)
+
+    // Detail screen ViewModels with parameters
+    viewModel { (postId: String) ->
+        PostDetailViewModel(
+            postRepository = get(),
+            postId = postId
+        )
+    }
+    viewModel { (replyId: String) ->
+        ReplyDetailViewModel(
+            postRepository = get(),
+            replyId = replyId
+        )
+    }
 }
 
 val domainModule = module {
