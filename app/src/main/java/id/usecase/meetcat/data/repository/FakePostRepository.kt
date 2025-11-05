@@ -208,18 +208,37 @@ class FakePostRepository : PostRepository {
 
     override suspend fun getRandomPosts(count: Int): Result<List<Post>> {
         delay(1000)
-        // Return shuffled posts, with unique IDs to avoid key duplication
+        // Return shuffled posts with varied aspect ratios, with unique IDs to avoid key duplication
         val shuffledPosts = mockPosts.shuffled()
         val result = mutableListOf<Post>()
+
+        // Varied heights for Instagram-like staggered grid effect
+        val heightVariations = listOf(600, 800, 1000, 1200, 650, 900, 750, 1100, 850)
 
         var index = 0
         while (result.size < count) {
             for (post in shuffledPosts) {
                 if (result.size >= count) break
 
-                // Create a copy with unique ID to avoid LazyColumn key duplication
+                // Get varied height for this post
+                val height = heightVariations[index % heightVariations.size]
+                val width = 800 // Keep width constant
+
+                // Create a copy with unique ID and varied aspect ratio
                 val uniquePost = post.copy(
-                    id = "${post.id}_${index}"
+                    id = "${post.id}_${index}",
+                    mediaItems = post.mediaItems.map { mediaItem ->
+                        when (mediaItem) {
+                            is MediaItem.Image -> mediaItem.copy(
+                                width = width,
+                                height = height
+                            )
+                            is MediaItem.Video -> mediaItem.copy(
+                                width = width,
+                                height = height
+                            )
+                        }
+                    }
                 )
                 result.add(uniquePost)
                 index++

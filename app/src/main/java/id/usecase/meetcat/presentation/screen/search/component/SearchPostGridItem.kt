@@ -48,7 +48,6 @@ fun SearchPostGridItem(
     Box(
         modifier = modifier
             .aspectRatio(aspectRatio)
-            .clip(RoundedCornerShape(8.dp))
             .clickable(onClick = onClick)
     ) {
         AsyncImage(
