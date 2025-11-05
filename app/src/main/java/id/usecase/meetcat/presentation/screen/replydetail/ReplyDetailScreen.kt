@@ -26,9 +26,12 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -36,9 +39,11 @@ import com.google.accompanist.swiperefresh.SwipeRefresh
 import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import id.usecase.meetcat.presentation.component.card.CommentCard
 import id.usecase.meetcat.presentation.component.card.ReplyCard
+import id.usecase.meetcat.presentation.component.dialog.CommentDialog
 import id.usecase.meetcat.presentation.component.state.ErrorView
 import id.usecase.meetcat.presentation.component.state.LoadingView
 import id.usecase.meetcat.presentation.preview.PreviewData
+import id.usecase.meetcat.presentation.util.shareReply
 import id.usecase.meetcat.ui.theme.MeetCatTheme
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -57,6 +62,9 @@ fun ReplyDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
+
+    var showCommentDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.uiEffect.collectLatest { effect ->
@@ -68,10 +76,10 @@ fun ReplyDetailScreen(
                     snackbarHostState.showSnackbar(effect.message)
                 }
                 is ReplyDetailUiEffect.ShowCommentDialog -> {
-                    // TODO: Show comment dialog
+                    showCommentDialog = true
                 }
                 is ReplyDetailUiEffect.ShowShareDialog -> {
-                    // TODO: Show share dialog
+                    uiState.reply?.let { shareReply(context, it) }
                 }
             }
         }
@@ -83,6 +91,20 @@ fun ReplyDetailScreen(
         onEvent = viewModel::onEvent,
         modifier = modifier
     )
+
+    // Comment Dialog
+    if (showCommentDialog && uiState.reply != null) {
+        CommentDialog(
+            post = null,
+            reply = uiState.reply,
+            onDismiss = { showCommentDialog = false },
+            onCommentSubmit = { commentText ->
+                // TODO: Submit comment to repository
+                snackbarHostState.currentSnackbarData?.dismiss()
+                showCommentDialog = false
+            }
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

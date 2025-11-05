@@ -30,6 +30,7 @@ import id.usecase.meetcat.presentation.screen.postdetail.PostDetailViewModel
 import id.usecase.meetcat.presentation.screen.profile.ProfileViewModel
 import id.usecase.meetcat.presentation.screen.replydetail.ReplyDetailViewModel
 import id.usecase.meetcat.presentation.screen.search.SearchViewModel
+import id.usecase.meetcat.presentation.screen.userprofile.UserProfileViewModel
 import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.core.module.dsl.factoryOf
@@ -56,6 +57,11 @@ val appModule = module {
         ReplyDetailViewModel(
             postRepository = get(),
             replyId = replyId
+        )
+    }
+    viewModel { (userId: String) ->
+        UserProfileViewModel(
+            userId = userId
         )
     }
 }

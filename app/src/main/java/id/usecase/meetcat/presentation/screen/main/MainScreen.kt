@@ -28,6 +28,7 @@ import id.usecase.meetcat.presentation.screen.profile.ProfileViewModel
 import id.usecase.meetcat.presentation.screen.replydetail.ReplyDetailScreen
 import id.usecase.meetcat.presentation.screen.search.SearchScreen
 import id.usecase.meetcat.presentation.screen.search.SearchViewModel
+import id.usecase.meetcat.presentation.screen.userprofile.UserProfileScreen
 import id.usecase.meetcat.ui.theme.MeetCatTheme
 import org.koin.androidx.compose.koinViewModel
 
@@ -130,7 +131,7 @@ private fun MainContent(
                         onEvent(MainUiEvent.NavigateTo(BottomNavItem.Explore.route))
                     },
                     onNavigateToProfile = { userId ->
-                        // TODO: Navigate to profile
+                        onEvent(MainUiEvent.NavigateTo("user_profile/$userId"))
                     }
                 )
             }
@@ -143,7 +144,20 @@ private fun MainContent(
                         onEvent(MainUiEvent.NavigateTo(BottomNavItem.Explore.route))
                     },
                     onNavigateToProfile = { userId ->
-                        // TODO: Navigate to profile
+                        onEvent(MainUiEvent.NavigateTo("user_profile/$userId"))
+                    },
+                    onNavigateToPost = { postId ->
+                        onEvent(MainUiEvent.NavigateTo("post_detail/$postId"))
+                    }
+                )
+            }
+
+            mainUiState.currentRoute.startsWith("user_profile/") -> {
+                val userId = mainUiState.currentRoute.substringAfter("user_profile/")
+                UserProfileScreen(
+                    userId = userId,
+                    onNavigateBack = {
+                        onEvent(MainUiEvent.NavigateTo(BottomNavItem.Explore.route))
                     },
                     onNavigateToPost = { postId ->
                         onEvent(MainUiEvent.NavigateTo("post_detail/$postId"))

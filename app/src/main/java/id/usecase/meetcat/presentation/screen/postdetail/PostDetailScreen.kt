@@ -26,9 +26,12 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -36,9 +39,12 @@ import com.google.accompanist.swiperefresh.SwipeRefresh
 import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import id.usecase.meetcat.presentation.component.card.CommentCard
 import id.usecase.meetcat.presentation.component.card.PostCard
+import id.usecase.meetcat.presentation.component.dialog.CommentDialog
+import id.usecase.meetcat.presentation.component.dialog.ReplyDialog
 import id.usecase.meetcat.presentation.component.state.ErrorView
 import id.usecase.meetcat.presentation.component.state.LoadingView
 import id.usecase.meetcat.presentation.preview.PreviewData
+import id.usecase.meetcat.presentation.util.sharePost
 import id.usecase.meetcat.ui.theme.MeetCatTheme
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -56,6 +62,10 @@ fun PostDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
+
+    var showCommentDialog by remember { mutableStateOf(false) }
+    var showReplyDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.uiEffect.collectLatest { effect ->
@@ -66,13 +76,13 @@ fun PostDetailScreen(
                     snackbarHostState.showSnackbar(effect.message)
                 }
                 is PostDetailUiEffect.ShowCommentDialog -> {
-                    // TODO: Show comment dialog
+                    showCommentDialog = true
                 }
                 is PostDetailUiEffect.ShowReplyDialog -> {
-                    // TODO: Show reply dialog
+                    showReplyDialog = true
                 }
                 is PostDetailUiEffect.ShowShareDialog -> {
-                    // TODO: Show share dialog
+                    uiState.post?.let { sharePost(context, it) }
                 }
             }
         }
@@ -84,6 +94,33 @@ fun PostDetailScreen(
         onEvent = viewModel::onEvent,
         modifier = modifier
     )
+
+    // Comment Dialog
+    if (showCommentDialog && uiState.post != null) {
+        CommentDialog(
+            post = uiState.post,
+            reply = null,
+            onDismiss = { showCommentDialog = false },
+            onCommentSubmit = { commentText ->
+                // TODO: Submit comment to repository
+                snackbarHostState.currentSnackbarData?.dismiss()
+                showCommentDialog = false
+            }
+        )
+    }
+
+    // Reply Dialog
+    if (showReplyDialog && uiState.post != null) {
+        ReplyDialog(
+            post = uiState.post,
+            onDismiss = { showReplyDialog = false },
+            onReplySubmit = { replyText ->
+                // TODO: Submit reply to repository
+                snackbarHostState.currentSnackbarData?.dismiss()
+                showReplyDialog = false
+            }
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
