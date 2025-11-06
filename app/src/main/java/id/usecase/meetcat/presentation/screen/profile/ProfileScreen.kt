@@ -39,6 +39,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
@@ -274,8 +275,13 @@ internal fun PostsGrid(
     onShowBottomNav: () -> Unit = {},
     onHideBottomNav: () -> Unit = {}
 ) {
-    val lazyGridState = rememberLazyStaggeredGridState()
-    var previousIndex by remember { mutableIntStateOf(0) }
+    // Use rememberSaveable to preserve scroll position across navigation
+    val lazyGridState = rememberSaveable(
+        saver = androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState.Saver
+    ) {
+        androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState()
+    }
+    var previousIndex by rememberSaveable { mutableIntStateOf(0) }
 
     // Scroll detection
     LaunchedEffect(Unit) {
@@ -365,7 +371,12 @@ internal fun RepliesList(
     onShowBottomNav: () -> Unit = {},
     onHideBottomNav: () -> Unit = {}
 ) {
-    val lazyListState = rememberLazyListState()
+    // Use rememberSaveable to preserve scroll position across navigation
+    val lazyListState = rememberSaveable(
+        saver = androidx.compose.foundation.lazy.LazyListState.Saver
+    ) {
+        androidx.compose.foundation.lazy.LazyListState()
+    }
 
     // Scroll detection
     LaunchedEffect(lazyListState.isScrollInProgress) {
@@ -460,7 +471,12 @@ internal fun LovedList(
     onShowBottomNav: () -> Unit = {},
     onHideBottomNav: () -> Unit = {}
 ) {
-    val lazyListState = rememberLazyListState()
+    // Use rememberSaveable to preserve scroll position across navigation
+    val lazyListState = rememberSaveable(
+        saver = androidx.compose.foundation.lazy.LazyListState.Saver
+    ) {
+        androidx.compose.foundation.lazy.LazyListState()
+    }
 
     // Scroll detection
     LaunchedEffect(lazyListState.isScrollInProgress) {

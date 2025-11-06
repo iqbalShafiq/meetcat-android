@@ -38,6 +38,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -270,8 +271,13 @@ private fun RandomPostsGrid(
     onShowBottomNav: () -> Unit = {},
     onHideBottomNav: () -> Unit = {}
 ) {
-    val lazyGridState = rememberLazyStaggeredGridState()
-    var previousIndex by remember { mutableIntStateOf(0) }
+    // Use rememberSaveable to preserve scroll position across navigation
+    val lazyGridState = rememberSaveable(
+        saver = androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState.Saver
+    ) {
+        androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState()
+    }
+    var previousIndex by rememberSaveable { mutableIntStateOf(0) }
 
     // Scroll detection: show when scrolling up, hide when scrolling down
     LaunchedEffect(Unit) {
@@ -316,8 +322,13 @@ private fun SearchResultsGrid(
     onShowBottomNav: () -> Unit = {},
     onHideBottomNav: () -> Unit = {}
 ) {
-    val lazyGridState = rememberLazyStaggeredGridState()
-    var previousIndex by remember { mutableIntStateOf(0) }
+    // Use rememberSaveable to preserve scroll position across navigation
+    val lazyGridState = rememberSaveable(
+        saver = androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState.Saver
+    ) {
+        androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState()
+    }
+    var previousIndex by rememberSaveable { mutableIntStateOf(0) }
 
     // Scroll detection: show when scrolling up, hide when scrolling down
     LaunchedEffect(Unit) {
