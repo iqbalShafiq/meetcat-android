@@ -3,17 +3,28 @@ package id.usecase.meetcat.presentation.screen.main
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -153,17 +164,37 @@ private fun MainContent(
                         onEvent(MainUiEvent.NavigateBack)
                     },
                     onNavigateToAccountSettings = {
-                        // TODO: Implement account settings screen
+                        onEvent(MainUiEvent.NavigateTo("account_settings"))
                     },
                     onNavigateToPrivacySettings = {
-                        // TODO: Implement privacy settings screen
+                        onEvent(MainUiEvent.NavigateTo("privacy_settings"))
                     },
                     onNavigateToAbout = {
-                        // TODO: Implement about screen
+                        onEvent(MainUiEvent.NavigateTo("about"))
                     },
                     onNavigateToLogin = {
                         // TODO: Handle logout and navigate to login
                     }
+                )
+            }
+
+            mainUiState.currentRoute == "account_settings" -> {
+                PlaceholderSettingsScreen(
+                    title = "Account Settings",
+                    onNavigateBack = { onEvent(MainUiEvent.NavigateBack) }
+                )
+            }
+
+            mainUiState.currentRoute == "privacy_settings" -> {
+                PlaceholderSettingsScreen(
+                    title = "Privacy Settings",
+                    onNavigateBack = { onEvent(MainUiEvent.NavigateBack) }
+                )
+            }
+
+            mainUiState.currentRoute == "about" -> {
+                AboutScreen(
+                    onNavigateBack = { onEvent(MainUiEvent.NavigateBack) }
                 )
             }
 
@@ -260,6 +291,122 @@ private fun PlaceholderScreen(
             text = "$screenName Screen\n(Coming soon)",
             style = MaterialTheme.typography.headlineSmall
         )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PlaceholderSettingsScreen(
+    title: String,
+    onNavigateBack: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back"
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
+                )
+            )
+        }
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "Coming soon",
+                style = MaterialTheme.typography.headlineSmall,
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AboutScreen(
+    onNavigateBack: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = "About MeetCat",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back"
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
+                )
+            )
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "MeetCat",
+                style = MaterialTheme.typography.displaySmall,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(top = 32.dp)
+            )
+            Text(
+                text = "Version 1.0.0",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+            Text(
+                text = "A social platform for cat lovers to share and discover amazing cat content.",
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 32.dp)
+            )
+            Text(
+                text = "© 2024 MeetCat. All rights reserved.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 48.dp)
+            )
+        }
     }
 }
 

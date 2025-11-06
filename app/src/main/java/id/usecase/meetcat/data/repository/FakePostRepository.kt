@@ -526,8 +526,41 @@ class FakePostRepository : PostRepository {
 
     override suspend fun getPostComments(postId: String): Result<List<Comment>> {
         delay(500)
-        val comments = mockComments.filter { it.postId == postId }
-        return Result.success(comments)
+
+        // First try to find in hardcoded mockComments
+        val existingComments = mockComments.filter { it.postId == postId }
+        if (existingComments.isNotEmpty()) {
+            return Result.success(existingComments)
+        }
+
+        // Generate mock comments for paginated posts
+        if (postId.startsWith("post_page_") || postId.startsWith("original_post_")) {
+            val numComments = (0..5).random() // Random 0-5 comments
+            val comments = (0 until numComments).map { i ->
+                val userIndex = i % mockUsers.size
+                Comment(
+                    id = "comment_${postId}_$i",
+                    postId = postId,
+                    userId = mockUsers[userIndex].id,
+                    user = mockUsers[userIndex],
+                    text = when (i % 6) {
+                        0 -> "This is such a great photo! 😍"
+                        1 -> "Absolutely adorable! 🐱💕"
+                        2 -> "Amazing content! Love it! ✨"
+                        3 -> "So cute! Where did you take this?"
+                        4 -> "Beautiful! Thanks for sharing! 📸"
+                        else -> "Great post! Keep it up! 👍"
+                    },
+                    lovesCount = (0..50).random(),
+                    isLoved = false,
+                    createdAt = System.currentTimeMillis() - (1800000L * (i + 1))
+                )
+            }
+            return Result.success(comments)
+        }
+
+        // No comments for this post
+        return Result.success(emptyList())
     }
 
     override suspend fun getReplyComments(replyId: String): Result<List<Comment>> {
