@@ -3,6 +3,7 @@ package id.usecase.meetcat.presentation.screen.editpost
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import id.usecase.meetcat.domain.model.MediaItem
 import id.usecase.meetcat.domain.model.Post
 import id.usecase.meetcat.domain.model.User
 import kotlinx.coroutines.channels.Channel
@@ -82,12 +83,13 @@ class EditPostViewModel(
                     id = "currentUser",
                     username = "myusername",
                     displayName = "My Name",
-                    profileImageUrl = null,
                     bio = null,
+                    profileImageUrl = null,
                     followersCount = 100,
                     followingCount = 50,
                     postsCount = 25,
-                    isFollowing = false
+                    isFollowing = false,
+                    createdAt = System.currentTimeMillis()
                 ),
                 caption = "My cat is so cute!",
                 mediaItems = listOf(
