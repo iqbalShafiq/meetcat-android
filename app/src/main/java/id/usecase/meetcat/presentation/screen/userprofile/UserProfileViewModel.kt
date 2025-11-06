@@ -2,24 +2,50 @@ package id.usecase.meetcat.presentation.screen.userprofile
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
+import androidx.paging.map
 import id.usecase.meetcat.domain.model.FeedItem
-import id.usecase.meetcat.domain.model.Location
-import id.usecase.meetcat.domain.model.MediaItem
 import id.usecase.meetcat.domain.model.Post
-import id.usecase.meetcat.domain.model.Reply
 import id.usecase.meetcat.domain.model.User
-import kotlinx.collections.immutable.toImmutableList
+import id.usecase.meetcat.domain.paging.UserLovedItemsPagingSource
+import id.usecase.meetcat.domain.paging.UserPostsPagingSource
+import id.usecase.meetcat.domain.paging.UserRepliesPagingSource
+import id.usecase.meetcat.domain.repository.PostRepository
+import id.usecase.meetcat.domain.repository.UserRepository
+import id.usecase.meetcat.domain.usecase.user.GetUserLovedItemsUseCase
+import id.usecase.meetcat.domain.usecase.user.GetUserPostsUseCase
+import id.usecase.meetcat.domain.usecase.user.GetUserRepliesUseCase
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+/**
+ * ViewModel for UserProfileScreen with Paging3 support for 3 tabs (Posts, Replies, Loved)
+ *
+ * Similar to ProfileViewModel but for viewing OTHER users' profiles (not current user)
+ *
+ * Clean & Testable:
+ * - Uses repository interfaces (no direct Android dependencies)
+ * - Separate concerns: User data loading vs Pagination
+ * - Optimistic UI updates with proper rollback on failure
+ * - Each tab has its own PagingData flow
+ */
 class UserProfileViewModel(
-    private val userId: String
+    private val userId: String,
+    private val getUserPostsUseCase: GetUserPostsUseCase,
+    private val getUserRepliesUseCase: GetUserRepliesUseCase,
+    private val getUserLovedItemsUseCase: GetUserLovedItemsUseCase,
+    private val postRepository: PostRepository,
+    private val userRepository: UserRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(UserProfileUiState())
@@ -28,14 +54,140 @@ class UserProfileViewModel(
     private val _uiEffect = Channel<UserProfileUiEffect>()
     val uiEffect: Flow<UserProfileUiEffect> = _uiEffect.receiveAsFlow()
 
+    // Track love/unlove toggles for optimistic UI updates across all tabs
+    private val _toggledLoves = MutableStateFlow<Map<String, Boolean>>(emptyMap())
+
+    // Track follow/unfollow for optimistic UI update
+    private val _isFollowingToggled = MutableStateFlow<Boolean?>(null)
+
+    // Paging3 flow for Posts tab
+    private val postsFlow: Flow<PagingData<Post>> by lazy {
+        Pager(
+            config = PagingConfig(
+                pageSize = PAGE_SIZE,
+                prefetchDistance = PREFETCH_DISTANCE,
+                enablePlaceholders = false
+            ),
+            pagingSourceFactory = {
+                UserPostsPagingSource(
+                    userId = userId,
+                    getUserPostsUseCase = getUserPostsUseCase
+                )
+            }
+        ).flow.cachedIn(viewModelScope)
+    }
+
+    // Paging3 flow for Replies tab
+    private val repliesFlow: Flow<PagingData<FeedItem.ReplyItem>> by lazy {
+        Pager(
+            config = PagingConfig(
+                pageSize = PAGE_SIZE,
+                prefetchDistance = PREFETCH_DISTANCE,
+                enablePlaceholders = false
+            ),
+            pagingSourceFactory = {
+                UserRepliesPagingSource(
+                    userId = userId,
+                    getUserRepliesUseCase = getUserRepliesUseCase
+                )
+            }
+        ).flow.cachedIn(viewModelScope)
+    }
+
+    // Paging3 flow for Loved tab
+    private val lovedItemsFlow: Flow<PagingData<FeedItem>> by lazy {
+        Pager(
+            config = PagingConfig(
+                pageSize = PAGE_SIZE,
+                prefetchDistance = PREFETCH_DISTANCE,
+                enablePlaceholders = false
+            ),
+            pagingSourceFactory = {
+                UserLovedItemsPagingSource(
+                    userId = userId,
+                    getUserLovedItemsUseCase = getUserLovedItemsUseCase
+                )
+            }
+        ).flow.cachedIn(viewModelScope)
+    }
+
+    // Posts with optimistic love toggles applied
+    val posts: Flow<PagingData<Post>> = combine(
+        postsFlow,
+        _toggledLoves
+    ) { pagingData, toggles ->
+        pagingData.map { post ->
+            toggles[post.id]?.let { isLoved ->
+                post.copy(
+                    isLoved = isLoved,
+                    lovesCount = if (isLoved) post.lovesCount + 1 else post.lovesCount - 1
+                )
+            } ?: post
+        }
+    }
+
+    // Replies with optimistic love toggles applied
+    val replies: Flow<PagingData<FeedItem.ReplyItem>> = combine(
+        repliesFlow,
+        _toggledLoves
+    ) { pagingData, toggles ->
+        pagingData.map { replyItem ->
+            toggles[replyItem.reply.id]?.let { isLoved ->
+                FeedItem.ReplyItem(
+                    reply = replyItem.reply.copy(
+                        isLoved = isLoved,
+                        lovesCount = if (isLoved) replyItem.reply.lovesCount + 1 else replyItem.reply.lovesCount - 1
+                    ),
+                    parentPost = replyItem.parentPost
+                )
+            } ?: replyItem
+        }
+    }
+
+    // Loved items with optimistic love toggles applied
+    val lovedItems: Flow<PagingData<FeedItem>> = combine(
+        lovedItemsFlow,
+        _toggledLoves
+    ) { pagingData, toggles ->
+        pagingData.map { item ->
+            when (item) {
+                is FeedItem.PostItem -> {
+                    toggles[item.post.id]?.let { isLoved ->
+                        FeedItem.PostItem(
+                            post = item.post.copy(
+                                isLoved = isLoved,
+                                lovesCount = if (isLoved) item.post.lovesCount + 1 else item.post.lovesCount - 1
+                            )
+                        )
+                    } ?: item
+                }
+                is FeedItem.ReplyItem -> {
+                    toggles[item.reply.id]?.let { isLoved ->
+                        FeedItem.ReplyItem(
+                            reply = item.reply.copy(
+                                isLoved = isLoved,
+                                lovesCount = if (isLoved) item.reply.lovesCount + 1 else item.reply.lovesCount - 1
+                            ),
+                            parentPost = item.parentPost
+                        )
+                    } ?: item
+                }
+            }
+        }
+    }
+
     init {
         loadUserProfile()
     }
 
     fun onEvent(event: UserProfileUiEvent) {
         when (event) {
-            is UserProfileUiEvent.Refresh -> refresh()
-            is UserProfileUiEvent.LoadMore -> loadMore()
+            is UserProfileUiEvent.Refresh -> {
+                // Refresh is handled by LazyPagingItems.refresh() in UI layer
+            }
+            is UserProfileUiEvent.LoadMore -> {
+                // LoadMore is handled automatically by Paging3
+            }
             is UserProfileUiEvent.TabSelected -> selectTab(event.tab)
             is UserProfileUiEvent.NavigateToPost -> {
                 viewModelScope.launch {
@@ -57,21 +209,30 @@ class UserProfileViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
 
-            // Simulate loading delay
+            // In a real app, this would fetch user from repository
+            // For now, using mock data from FakeUserRepository via follow/unfollow
+            // The actual user data will come from the repository when we have a GetUserUseCase
+
+            // Simulate loading - in production this would be getUserUseCase(userId)
             kotlinx.coroutines.delay(500)
 
-            // Mock data based on userId
-            val user = createMockUser(userId)
-            val posts = createMockPosts(user)
-            val replies = createMockReplies(user)
-            val lovedItems = createMockLovedItems()
+            // Mock user data (this would come from repository in production)
+            val mockUser = User(
+                id = userId,
+                username = "user_$userId",
+                displayName = "User ${userId.take(5)}",
+                bio = "This is a user profile",
+                profileImageUrl = null,
+                followersCount = 150,
+                followingCount = 75,
+                postsCount = 42,
+                isFollowing = false,
+                createdAt = System.currentTimeMillis() - 86400000L * 30
+            )
 
             _uiState.update {
                 it.copy(
-                    user = user,
-                    posts = posts.toImmutableList(),
-                    replies = replies.toImmutableList(),
-                    lovedItems = lovedItems.toImmutableList(),
+                    user = mockUser,
                     isLoading = false,
                     error = null
                 )
@@ -79,245 +240,140 @@ class UserProfileViewModel(
         }
     }
 
-    private fun refresh() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isRefreshing = true) }
-
-            // Simulate loading delay
-            kotlinx.coroutines.delay(500)
-
-            val user = createMockUser(userId)
-            val posts = createMockPosts(user)
-            val replies = createMockReplies(user)
-            val lovedItems = createMockLovedItems()
-
-            _uiState.update {
-                it.copy(
-                    user = user,
-                    posts = posts.toImmutableList(),
-                    replies = replies.toImmutableList(),
-                    lovedItems = lovedItems.toImmutableList(),
-                    isRefreshing = false,
-                    error = null
-                )
-            }
-        }
-    }
-
-    private fun loadMore() {
-        // Mock pagination - In production, this would:
-        // 1. Check if there's more data available (hasMore flag)
-        // 2. Prevent duplicate requests (loading flag)
-        // 3. Load next page based on current offset/cursor
-        // 4. Append new items to existing list
-        // Example:
-        // if (!_uiState.value.hasMore || _uiState.value.isLoadingMore) return
-        // viewModelScope.launch {
-        //     _uiState.update { it.copy(isLoadingMore = true) }
-        //     val result = repository.getUserPosts(userId, page = currentPage + 1)
-        //     result.fold(
-        //         onSuccess = { newPosts ->
-        //             _uiState.update { state ->
-        //                 state.copy(
-        //                     posts = (state.posts + newPosts).toImmutableList(),
-        //                     currentPage = currentPage + 1,
-        //                     hasMore = newPosts.size >= pageSize,
-        //                     isLoadingMore = false
-        //                 )
-        //             }
-        //         },
-        //         onFailure = { _uiState.update { it.copy(isLoadingMore = false) } }
-        //     )
-        // }
-    }
-
-    private fun selectTab(tab: ProfileTab) {
+    private fun selectTab(tab: UserProfileTab) {
         _uiState.update { it.copy(selectedTab = tab) }
     }
 
     private fun toggleFollow() {
         viewModelScope.launch {
+            val currentUser = _uiState.value.user ?: return@launch
+            val currentFollowState = _isFollowingToggled.value ?: currentUser.isFollowing
+
+            // Determine new state
+            val newFollowState = !currentFollowState
+
+            // Apply optimistic update
+            _isFollowingToggled.value = newFollowState
             _uiState.update { state ->
                 state.copy(
                     user = state.user?.copy(
-                        isFollowing = !state.user.isFollowing,
-                        followersCount = if (state.user.isFollowing)
-                            state.user.followersCount - 1
-                        else
+                        isFollowing = newFollowState,
+                        followersCount = if (newFollowState) {
                             state.user.followersCount + 1
+                        } else {
+                            state.user.followersCount - 1
+                        }
                     )
                 )
+            }
+
+            // Make API call
+            val result = if (newFollowState) {
+                userRepository.followUser(userId)
+            } else {
+                userRepository.unfollowUser(userId)
+            }
+
+            // Revert on failure
+            result.onFailure {
+                _isFollowingToggled.value = currentFollowState
+                _uiState.update { state ->
+                    state.copy(
+                        user = state.user?.copy(
+                            isFollowing = currentFollowState,
+                            followersCount = if (currentFollowState) {
+                                state.user.followersCount + 1
+                            } else {
+                                state.user.followersCount - 1
+                            }
+                        )
+                    )
+                }
+                _uiEffect.send(UserProfileUiEffect.ShowError("Failed to update follow status"))
             }
         }
     }
 
     private fun toggleLovePost(postId: String) {
         viewModelScope.launch {
-            _uiState.update { state ->
-                state.copy(
-                    posts = state.posts.map { post ->
-                        if (post.id == postId) {
-                            post.copy(
-                                isLoved = !post.isLoved,
-                                lovesCount = if (post.isLoved) post.lovesCount - 1 else post.lovesCount + 1
-                            )
-                        } else post
-                    }.toImmutableList(),
-                    lovedItems = state.lovedItems.map { item ->
-                        when (item) {
-                            is FeedItem.PostItem -> {
-                                if (item.post.id == postId) {
-                                    FeedItem.PostItem(
-                                        item.post.copy(
-                                            isLoved = !item.post.isLoved,
-                                            lovesCount = if (item.post.isLoved) item.post.lovesCount - 1 else item.post.lovesCount + 1
-                                        )
-                                    )
-                                } else item
-                            }
-                            is FeedItem.ReplyItem -> item
-                        }
-                    }.toImmutableList()
-                )
+            // Get current state from toggles or assume original state
+            val currentToggles = _toggledLoves.value
+            val currentLoveState = currentToggles[postId]
+
+            // Determine new state (toggle)
+            val newLoveState = when (currentLoveState) {
+                null -> true // Not toggled yet, assume was false, toggle to true
+                true -> false
+                false -> true
+            }
+
+            // Apply optimistic update
+            _toggledLoves.update { current ->
+                current + (postId to newLoveState)
+            }
+
+            // Make API call
+            val result = if (newLoveState) {
+                postRepository.lovePost(postId)
+            } else {
+                postRepository.unlovePost(postId)
+            }
+
+            // Revert on failure
+            result.onFailure {
+                _toggledLoves.update { current ->
+                    if (currentLoveState == null) {
+                        current - postId
+                    } else {
+                        current + (postId to currentLoveState)
+                    }
+                }
+                _uiEffect.send(UserProfileUiEffect.ShowError("Failed to update love status"))
             }
         }
     }
 
     private fun toggleLoveReply(replyId: String) {
         viewModelScope.launch {
-            _uiState.update { state ->
-                state.copy(
-                    replies = state.replies.map { item ->
-                        if (item.reply.id == replyId) {
-                            FeedItem.ReplyItem(
-                                item.reply.copy(
-                                    isLoved = !item.reply.isLoved,
-                                    lovesCount = if (item.reply.isLoved) item.reply.lovesCount - 1 else item.reply.lovesCount + 1
-                                )
-                            )
-                        } else item
-                    }.toImmutableList(),
-                    lovedItems = state.lovedItems.map { item ->
-                        when (item) {
-                            is FeedItem.ReplyItem -> {
-                                if (item.reply.id == replyId) {
-                                    FeedItem.ReplyItem(
-                                        item.reply.copy(
-                                            isLoved = !item.reply.isLoved,
-                                            lovesCount = if (item.reply.isLoved) item.reply.lovesCount - 1 else item.reply.lovesCount + 1
-                                        )
-                                    )
-                                } else item
-                            }
-                            is FeedItem.PostItem -> item
-                        }
-                    }.toImmutableList()
-                )
+            // Get current state from toggles or assume original state
+            val currentToggles = _toggledLoves.value
+            val currentLoveState = currentToggles[replyId]
+
+            // Determine new state (toggle)
+            val newLoveState = when (currentLoveState) {
+                null -> true // Not toggled yet, assume was false, toggle to true
+                true -> false
+                false -> true
+            }
+
+            // Apply optimistic update
+            _toggledLoves.update { current ->
+                current + (replyId to newLoveState)
+            }
+
+            // Make API call
+            val result = if (newLoveState) {
+                postRepository.loveReply(replyId)
+            } else {
+                postRepository.unloveReply(replyId)
+            }
+
+            // Revert on failure
+            result.onFailure {
+                _toggledLoves.update { current ->
+                    if (currentLoveState == null) {
+                        current - replyId
+                    } else {
+                        current + (replyId to currentLoveState)
+                    }
+                }
+                _uiEffect.send(UserProfileUiEffect.ShowError("Failed to update love status"))
             }
         }
     }
 
-    // Mock data helpers
-    private fun createMockUser(userId: String) = User(
-        id = userId,
-        username = "user_$userId",
-        displayName = when (userId) {
-            "1" -> "Cat Lover"
-            "2" -> "Meow Master"
-            "3" -> "Kitty Kingdom"
-            else -> "User $userId"
-        },
-        bio = "Cat enthusiast and photographer 🐱📸\nLove sharing cat moments!",
-        profileImageUrl = "https://picsum.photos/200?random=$userId",
-        followersCount = (500..5000).random(),
-        followingCount = (100..1000).random(),
-        postsCount = (20..200).random(),
-        isFollowing = false,
-        createdAt = System.currentTimeMillis() - 86400000L * 30
-    )
-
-    private fun createMockPosts(user: User): List<Post> = (1..10).map { index ->
-        Post(
-            id = "${user.id}_post_$index",
-            userId = user.id,
-            user = user,
-            caption = "Post #$index from ${user.displayName}",
-            mediaItems = listOf(
-                MediaItem.Image(
-                    url = "https://picsum.photos/800/600?random=${user.id.hashCode() + index}",
-                    thumbnailUrl = "https://picsum.photos/200/150?random=${user.id.hashCode() + index}",
-                    width = 800,
-                    height = if (index % 3 == 0) 1000 else if (index % 2 == 0) 600 else 800
-                )
-            ),
-            location = if (index % 3 == 0) Location(
-                latitude = -6.2088,
-                longitude = 106.8456,
-                address = "Jakarta, Indonesia",
-                name = "Jakarta"
-            ) else null,
-            lovesCount = (50..500).random(),
-            commentsCount = (5..100).random(),
-            repliesCount = (2..50).random(),
-            isLoved = false,
-            createdAt = System.currentTimeMillis() - 3600000L * index
-        )
+    companion object {
+        private const val PAGE_SIZE = 20
+        private const val PREFETCH_DISTANCE = 10
     }
-
-    private fun createMockReplies(user: User): List<FeedItem.ReplyItem> {
-        val otherUser = User(
-            id = "other_user_${user.id}",
-            username = "cat_fan",
-            displayName = "Cat Fan",
-            bio = "Love all cats 🐱",
-            profileImageUrl = "https://picsum.photos/200?random=999",
-            followersCount = 1234,
-            followingCount = 567,
-            postsCount = 89,
-            isFollowing = false,
-            createdAt = System.currentTimeMillis() - 86400000
-        )
-
-        return (1..5).map { index ->
-            val originalPost = Post(
-                id = "original_${user.id}_$index",
-                userId = otherUser.id,
-                user = otherUser,
-                caption = "Original post about cats",
-                mediaItems = listOf(
-                    MediaItem.Image(
-                        url = "https://picsum.photos/800/600?random=${1000 + index}",
-                        thumbnailUrl = "https://picsum.photos/200/150?random=${1000 + index}",
-                        width = 800,
-                        height = 600
-                    )
-                ),
-                location = null,
-                lovesCount = (50..500).random(),
-                commentsCount = (5..100).random(),
-                repliesCount = (2..50).random(),
-                isLoved = false,
-                createdAt = System.currentTimeMillis() - 7200000L * index
-            )
-
-            FeedItem.ReplyItem(
-                Reply(
-                    id = "${user.id}_reply_$index",
-                    originalPostId = originalPost.id,
-                    originalPost = originalPost,
-                    userId = user.id,
-                    user = user,
-                    text = "Reply #$index from ${user.displayName}",
-                    mediaItems = null,
-                    location = null,
-                    lovesCount = (10..200).random(),
-                    commentsCount = (1..50).random(),
-                    isLoved = false,
-                    createdAt = System.currentTimeMillis() - 5400000L * index
-                )
-            )
-        }
-    }
-
-    private fun createMockLovedItems(): List<FeedItem> = emptyList()
 }

@@ -10,16 +10,15 @@ import kotlinx.collections.immutable.persistentListOf
 @Immutable
 data class UserProfileUiState(
     val user: User? = null,
-    val posts: ImmutableList<Post> = persistentListOf(),
-    val replies: ImmutableList<FeedItem.ReplyItem> = persistentListOf(),
-    val lovedItems: ImmutableList<FeedItem> = persistentListOf(),
-    val selectedTab: ProfileTab = ProfileTab.POSTS,
+    // Note: posts, replies, lovedItems moved to Paging3 Flows in ViewModel
+    // (viewModel.posts, viewModel.replies, viewModel.lovedItems)
+    val selectedTab: UserProfileTab = UserProfileTab.POSTS,
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
     val error: String? = null
 )
 
-enum class ProfileTab {
+enum class UserProfileTab {
     POSTS,
     REPLIES,
     LOVED
@@ -28,7 +27,7 @@ enum class ProfileTab {
 sealed class UserProfileUiEvent {
     data object Refresh : UserProfileUiEvent()
     data object LoadMore : UserProfileUiEvent()
-    data class TabSelected(val tab: ProfileTab) : UserProfileUiEvent()
+    data class TabSelected(val tab: UserProfileTab) : UserProfileUiEvent()
     data class NavigateToPost(val postId: String) : UserProfileUiEvent()
     data class LovePost(val postId: String) : UserProfileUiEvent()
     data class LoveReply(val replyId: String) : UserProfileUiEvent()

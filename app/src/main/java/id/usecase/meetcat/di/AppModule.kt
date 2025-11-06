@@ -118,7 +118,12 @@ val appModule = module {
     }
     viewModel { (userId: String) ->
         UserProfileViewModel(
-            userId = userId
+            userId = userId,
+            getUserPostsUseCase = get(),
+            getUserRepliesUseCase = get(),
+            getUserLovedItemsUseCase = get(),
+            postRepository = get(),
+            userRepository = get()
         )
     }
     viewModel { (userId: String) ->
