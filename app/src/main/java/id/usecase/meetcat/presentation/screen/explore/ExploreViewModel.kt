@@ -35,9 +35,10 @@ class ExploreViewModel(
     private val _uiEffect = Channel<ExploreUiEffect>()
     val uiEffect: Flow<ExploreUiEffect> = _uiEffect.receiveAsFlow()
 
-    // Track loved items separately for optimistic UI updates
-    private val _lovedPosts = MutableStateFlow<Set<String>>(emptySet())
-    private val _lovedReplies = MutableStateFlow<Set<String>>(emptySet())
+    // Track love toggles for optimistic UI updates
+    // Set contains IDs that have been toggled from their original state
+    private val _toggledPosts = MutableStateFlow<Set<String>>(emptySet())
+    private val _toggledReplies = MutableStateFlow<Set<String>>(emptySet())
 
     // Paging3 Flow for infinite scroll
     private val pagingFlow: Flow<PagingData<FeedItem>> = Pager(
@@ -49,38 +50,40 @@ class ExploreViewModel(
         pagingSourceFactory = { ExplorePagingSource(getExploreFeedUseCase) }
     ).flow.cachedIn(viewModelScope)
 
-    // Combine paging data with love states for optimistic UI updates
+    // Combine paging data with love toggles for optimistic UI updates
     val feedItems: Flow<PagingData<FeedItem>> = combine(
         pagingFlow,
-        _lovedPosts,
-        _lovedReplies
-    ) { pagingData, lovedPosts, lovedReplies ->
+        _toggledPosts,
+        _toggledReplies
+    ) { pagingData, toggledPosts, toggledReplies ->
         pagingData.map { item ->
             when (item) {
                 is FeedItem.PostItem -> {
-                    val isLocallyLoved = lovedPosts.contains(item.post.id)
-                    if (isLocallyLoved != item.post.isLoved) {
+                    val isToggled = toggledPosts.contains(item.post.id)
+                    if (isToggled) {
+                        // Toggle the love state and adjust count
                         FeedItem.PostItem(
                             item.post.copy(
-                                isLoved = isLocallyLoved,
-                                lovesCount = if (isLocallyLoved)
-                                    item.post.lovesCount + 1
+                                isLoved = !item.post.isLoved, // Toggle from original
+                                lovesCount = if (item.post.isLoved)
+                                    item.post.lovesCount - 1  // Was loved, now unloved
                                 else
-                                    item.post.lovesCount - 1
+                                    item.post.lovesCount + 1  // Was unloved, now loved
                             )
                         )
                     } else item
                 }
                 is FeedItem.ReplyItem -> {
-                    val isLocallyLoved = lovedReplies.contains(item.reply.id)
-                    if (isLocallyLoved != item.reply.isLoved) {
+                    val isToggled = toggledReplies.contains(item.reply.id)
+                    if (isToggled) {
+                        // Toggle the love state and adjust count
                         FeedItem.ReplyItem(
                             item.reply.copy(
-                                isLoved = isLocallyLoved,
-                                lovesCount = if (isLocallyLoved)
-                                    item.reply.lovesCount + 1
+                                isLoved = !item.reply.isLoved, // Toggle from original
+                                lovesCount = if (item.reply.isLoved)
+                                    item.reply.lovesCount - 1  // Was loved, now unloved
                                 else
-                                    item.reply.lovesCount - 1
+                                    item.reply.lovesCount + 1  // Was unloved, now loved
                             )
                         )
                     } else item
@@ -124,66 +127,74 @@ class ExploreViewModel(
 
     private fun toggleLovePost(postId: String) {
         viewModelScope.launch {
-            // Optimistic update
-            val isCurrentlyLoved = _lovedPosts.value.contains(postId)
-            _lovedPosts.update { current ->
-                if (isCurrentlyLoved) {
+            // Optimistic update: toggle the item state
+            val isCurrentlyToggled = _toggledPosts.value.contains(postId)
+            _toggledPosts.update { current ->
+                if (isCurrentlyToggled) {
+                    // Already toggled, un-toggle it (back to original state)
                     current - postId
                 } else {
+                    // Not toggled, toggle it
                     current + postId
                 }
             }
 
-            // Perform API call
-            val result = if (isCurrentlyLoved) {
-                unlovePostUseCase(postId)
-            } else {
+            // Determine action based on current display state
+            // Note: This assumes we're toggling from the currently displayed state
+            // If toggled=false (showing original), we're now adding toggle (loving)
+            // If toggled=true (showing toggled), we're now removing toggle (unloving)
+            val result = if (!isCurrentlyToggled) {
                 lovePostUseCase(postId)
+            } else {
+                unlovePostUseCase(postId)
             }
 
             // Revert on failure
             result.onFailure {
-                _lovedPosts.update { current ->
-                    if (isCurrentlyLoved) {
+                _toggledPosts.update { current ->
+                    if (isCurrentlyToggled) {
                         current + postId
                     } else {
                         current - postId
                     }
                 }
-                _uiEffect.send(ExploreUiEffect.ShowError("Failed to love post"))
+                _uiEffect.send(ExploreUiEffect.ShowError("Failed to update love"))
             }
         }
     }
 
     private fun toggleLoveReply(replyId: String) {
         viewModelScope.launch {
-            // Optimistic update
-            val isCurrentlyLoved = _lovedReplies.value.contains(replyId)
-            _lovedReplies.update { current ->
-                if (isCurrentlyLoved) {
+            // Optimistic update: toggle the item state
+            val isCurrentlyToggled = _toggledReplies.value.contains(replyId)
+            _toggledReplies.update { current ->
+                if (isCurrentlyToggled) {
+                    // Already toggled, un-toggle it (back to original state)
                     current - replyId
                 } else {
+                    // Not toggled, toggle it
                     current + replyId
                 }
             }
 
-            // Perform API call
-            val result = if (isCurrentlyLoved) {
-                unloveReplyUseCase(replyId)
-            } else {
+            // Determine action based on toggle state
+            // If newly toggled: love, if un-toggled: unlove
+            val result = if (!isCurrentlyToggled) {
                 loveReplyUseCase(replyId)
+            } else {
+                unloveReplyUseCase(replyId)
             }
 
             // Revert on failure
             result.onFailure {
-                _lovedReplies.update { current ->
-                    if (isCurrentlyLoved) {
+                _toggledReplies.update { current ->
+                    if (isCurrentlyToggled) {
                         current + replyId
                     } else {
                         current - replyId
                     }
                 }
-                _uiEffect.send(ExploreUiEffect.ShowError("Failed to love reply"))
+                _uiEffect.send(ExploreUiEffect.ShowError("Failed to update love"))
             }
         }
     }

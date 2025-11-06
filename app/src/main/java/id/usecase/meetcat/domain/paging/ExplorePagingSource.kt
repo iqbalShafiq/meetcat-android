@@ -7,6 +7,9 @@ import id.usecase.meetcat.domain.usecase.post.GetExploreFeedUseCase
 
 /**
  * PagingSource for Explore feed with infinite scroll support
+ *
+ * Uses 0-based page indexing for consistency with repository layer.
+ * Properly detects end of pagination when items.size < expected page size.
  */
 class ExplorePagingSource(
     private val getExploreFeedUseCase: GetExploreFeedUseCase
@@ -23,7 +26,9 @@ class ExplorePagingSource(
                     LoadResult.Page(
                         data = items,
                         prevKey = if (page == INITIAL_PAGE) null else page - 1,
-                        nextKey = if (items.isEmpty()) null else page + 1
+                        // nextKey is null if we've reached the end (fewer items than page size)
+                        // or if items is empty
+                        nextKey = if (items.size < params.loadSize) null else page + 1
                     )
                 },
                 onFailure = { error ->
@@ -36,6 +41,8 @@ class ExplorePagingSource(
     }
 
     override fun getRefreshKey(state: PagingState<Int, FeedItem>): Int? {
+        // Try to find the page key of the closest item to the current scroll position
+        // This helps maintain scroll position after refresh
         return state.anchorPosition?.let { anchorPosition ->
             val anchorPage = state.closestPageToPosition(anchorPosition)
             anchorPage?.prevKey?.plus(1) ?: anchorPage?.nextKey?.minus(1)
@@ -43,6 +50,6 @@ class ExplorePagingSource(
     }
 
     companion object {
-        private const val INITIAL_PAGE = 1
+        private const val INITIAL_PAGE = 0 // 0-based indexing
     }
 }
