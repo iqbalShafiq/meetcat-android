@@ -91,6 +91,7 @@ fun SearchScreen(
     SearchContent(
         uiState = uiState,
         searchResults = searchResults,
+        viewModel = viewModel,
         onEvent = viewModel::onEvent,
         onNavigateBack = onNavigateBack,
         snackbarHostState = snackbarHostState,
@@ -104,6 +105,7 @@ fun SearchScreen(
 private fun SearchContent(
     uiState: SearchUiState,
     searchResults: LazyPagingItems<Post>,
+    viewModel: SearchViewModel,
     onEvent: (SearchUiEvent) -> Unit,
     onNavigateBack: () -> Unit,
     snackbarHostState: SnackbarHostState,
@@ -241,6 +243,7 @@ private fun SearchContent(
                 searchResults.itemCount > 0 || searchResults.loadState.refresh is LoadState.Loading -> {
                     SearchResultsGrid(
                         searchResults = searchResults,
+                        viewModel = viewModel,
                         onPostClick = { onEvent(SearchUiEvent.NavigateToPost(it)) },
                         onShowBottomNav = onShowBottomNav,
                         onHideBottomNav = onHideBottomNav
@@ -253,6 +256,7 @@ private fun SearchContent(
                 else -> {
                     RandomPostsGrid(
                         posts = uiState.randomPosts,
+                        viewModel = viewModel,
                         onPostClick = { onEvent(SearchUiEvent.NavigateToPost(it)) },
                         onShowBottomNav = onShowBottomNav,
                         onHideBottomNav = onHideBottomNav
@@ -266,18 +270,25 @@ private fun SearchContent(
 @Composable
 private fun RandomPostsGrid(
     posts: ImmutableList<Post>,
+    viewModel: SearchViewModel,
     onPostClick: (String) -> Unit,
     modifier: Modifier = Modifier,
     onShowBottomNav: () -> Unit = {},
     onHideBottomNav: () -> Unit = {}
 ) {
-    // Use rememberSaveable to preserve scroll position across navigation
-    val lazyGridState = rememberSaveable(
-        saver = androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState.Saver
-    ) {
-        androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState()
+    // Use scroll position from ViewModel to preserve across navigation
+    val lazyGridState = rememberLazyStaggeredGridState(
+        initialFirstVisibleItemIndex = viewModel.randomPostsScrollIndex
+    )
+    var previousIndex by remember { mutableIntStateOf(0) }
+
+    // Save scroll position to ViewModel
+    LaunchedEffect(Unit) {
+        snapshotFlow { lazyGridState.firstVisibleItemIndex }
+            .collect { index ->
+                viewModel.randomPostsScrollIndex = index
+            }
     }
-    var previousIndex by rememberSaveable { mutableIntStateOf(0) }
 
     // Scroll detection: show when scrolling up, hide when scrolling down
     LaunchedEffect(Unit) {
@@ -317,18 +328,25 @@ private fun RandomPostsGrid(
 @Composable
 private fun SearchResultsGrid(
     searchResults: LazyPagingItems<Post>,
+    viewModel: SearchViewModel,
     onPostClick: (String) -> Unit,
     modifier: Modifier = Modifier,
     onShowBottomNav: () -> Unit = {},
     onHideBottomNav: () -> Unit = {}
 ) {
-    // Use rememberSaveable to preserve scroll position across navigation
-    val lazyGridState = rememberSaveable(
-        saver = androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState.Saver
-    ) {
-        androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState()
+    // Use scroll position from ViewModel to preserve across navigation
+    val lazyGridState = rememberLazyStaggeredGridState(
+        initialFirstVisibleItemIndex = viewModel.searchResultsScrollIndex
+    )
+    var previousIndex by remember { mutableIntStateOf(0) }
+
+    // Save scroll position to ViewModel
+    LaunchedEffect(Unit) {
+        snapshotFlow { lazyGridState.firstVisibleItemIndex }
+            .collect { index ->
+                viewModel.searchResultsScrollIndex = index
+            }
     }
-    var previousIndex by rememberSaveable { mutableIntStateOf(0) }
 
     // Scroll detection: show when scrolling up, hide when scrolling down
     LaunchedEffect(Unit) {

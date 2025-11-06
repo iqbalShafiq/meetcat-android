@@ -88,6 +88,7 @@ fun ExploreScreen(
 
     ExploreContent(
         feedItems = feedItems,
+        viewModel = viewModel,
         onEvent = viewModel::onEvent,
         snackbarHostState = snackbarHostState,
         modifier = modifier,
@@ -101,6 +102,7 @@ fun ExploreScreen(
 @Composable
 private fun ExploreContent(
     feedItems: LazyPagingItems<FeedItem>,
+    viewModel: ExploreViewModel,
     onEvent: (ExploreUiEvent) -> Unit,
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier,
@@ -160,6 +162,7 @@ private fun ExploreContent(
                 ) {
                     FeedList(
                         feedItems = feedItems,
+                        viewModel = viewModel,
                         onEvent = onEvent,
                         onShowBottomNav = onShowBottomNav,
                         onHideBottomNav = onHideBottomNav,
@@ -178,13 +181,23 @@ private fun FeedList(
     modifier: Modifier = Modifier,
     onShowBottomNav: () -> Unit = {},
     onHideBottomNav: () -> Unit = {},
-    onNavigateToReply: (String) -> Unit = {}
+    onNavigateToReply: (String) -> Unit = {},
+    viewModel: ExploreViewModel
 ) {
-    // Use rememberSaveable to preserve scroll position across navigation
-    val lazyListState = rememberSaveable(
-        saver = androidx.compose.foundation.lazy.LazyListState.Saver
-    ) {
-        androidx.compose.foundation.lazy.LazyListState()
+    // Use scroll position from ViewModel to preserve across navigation
+    val lazyListState = rememberLazyListState(
+        initialFirstVisibleItemIndex = viewModel.scrollIndex,
+        initialFirstVisibleItemScrollOffset = viewModel.scrollOffset
+    )
+
+    // Save scroll position to ViewModel
+    LaunchedEffect(lazyListState.isScrollInProgress) {
+        snapshotFlow {
+            lazyListState.firstVisibleItemIndex to lazyListState.firstVisibleItemScrollOffset
+        }.collect { (index, offset) ->
+            viewModel.scrollIndex = index
+            viewModel.scrollOffset = offset
+        }
     }
 
     // Simple scroll detection: hide when scrolling down, show when at top

@@ -35,6 +35,10 @@ class ExploreViewModel(
     private val _uiEffect = Channel<ExploreUiEffect>()
     val uiEffect: Flow<ExploreUiEffect> = _uiEffect.receiveAsFlow()
 
+    // Preserve scroll position across navigation
+    var scrollIndex: Int = 0
+    var scrollOffset: Int = 0
+
     // Track love toggles for optimistic UI updates
     // Set contains IDs that have been toggled from their original state
     private val _toggledPosts = MutableStateFlow<Set<String>>(emptySet())

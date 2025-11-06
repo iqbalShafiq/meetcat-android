@@ -205,6 +205,7 @@ private fun ProfileContent(
                             ProfileTab.POSTS -> {
                                 PostsGrid(
                                     posts = posts,
+                                    viewModel = viewModel,
                                     onPostClick = { onEvent(ProfileUiEvent.NavigateToPost(it)) },
                                     onShowBottomNav = onShowBottomNav,
                                     onHideBottomNav = onHideBottomNav
@@ -213,6 +214,7 @@ private fun ProfileContent(
                             ProfileTab.REPLIES -> {
                                 RepliesList(
                                     replies = replies,
+                                    viewModel = viewModel,
                                     onReplyClick = { onEvent(ProfileUiEvent.NavigateToPost(it)) },
                                     onLoveClick = { onEvent(ProfileUiEvent.LoveReply(it)) },
                                     onShowBottomNav = onShowBottomNav,
@@ -222,6 +224,7 @@ private fun ProfileContent(
                             ProfileTab.LOVED -> {
                                 LovedList(
                                     items = lovedItems,
+                                    viewModel = viewModel,
                                     onPostClick = { onEvent(ProfileUiEvent.NavigateToPost(it)) },
                                     onLovePostClick = { onEvent(ProfileUiEvent.LovePost(it)) },
                                     onLoveReplyClick = { onEvent(ProfileUiEvent.LoveReply(it)) },
@@ -270,18 +273,25 @@ private fun ProfileTabRow(
 @Composable
 internal fun PostsGrid(
     posts: LazyPagingItems<Post>,
+    viewModel: ProfileViewModel,
     onPostClick: (String) -> Unit,
     modifier: Modifier = Modifier,
     onShowBottomNav: () -> Unit = {},
     onHideBottomNav: () -> Unit = {}
 ) {
-    // Use rememberSaveable to preserve scroll position across navigation
-    val lazyGridState = rememberSaveable(
-        saver = androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState.Saver
-    ) {
-        androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState()
+    // Use scroll position from ViewModel to preserve across navigation
+    val lazyGridState = rememberLazyStaggeredGridState(
+        initialFirstVisibleItemIndex = viewModel.postsScrollIndex
+    )
+    var previousIndex by remember { mutableIntStateOf(0) }
+
+    // Save scroll position to ViewModel
+    LaunchedEffect(Unit) {
+        snapshotFlow { lazyGridState.firstVisibleItemIndex }
+            .collect { index ->
+                viewModel.postsScrollIndex = index
+            }
     }
-    var previousIndex by rememberSaveable { mutableIntStateOf(0) }
 
     // Scroll detection
     LaunchedEffect(Unit) {
@@ -365,17 +375,24 @@ internal fun PostsGrid(
 @Composable
 internal fun RepliesList(
     replies: LazyPagingItems<FeedItem.ReplyItem>,
+    viewModel: ProfileViewModel,
     onReplyClick: (String) -> Unit,
     onLoveClick: (String) -> Unit,
     modifier: Modifier = Modifier,
     onShowBottomNav: () -> Unit = {},
     onHideBottomNav: () -> Unit = {}
 ) {
-    // Use rememberSaveable to preserve scroll position across navigation
-    val lazyListState = rememberSaveable(
-        saver = androidx.compose.foundation.lazy.LazyListState.Saver
-    ) {
-        androidx.compose.foundation.lazy.LazyListState()
+    // Use scroll position from ViewModel to preserve across navigation
+    val lazyListState = rememberLazyListState(
+        initialFirstVisibleItemIndex = viewModel.repliesScrollIndex
+    )
+
+    // Save scroll position to ViewModel
+    LaunchedEffect(Unit) {
+        snapshotFlow { lazyListState.firstVisibleItemIndex }
+            .collect { index ->
+                viewModel.repliesScrollIndex = index
+            }
     }
 
     // Scroll detection
@@ -464,6 +481,7 @@ internal fun RepliesList(
 @Composable
 internal fun LovedList(
     items: LazyPagingItems<FeedItem>,
+    viewModel: ProfileViewModel,
     onPostClick: (String) -> Unit,
     onLovePostClick: (String) -> Unit,
     onLoveReplyClick: (String) -> Unit,
@@ -471,11 +489,17 @@ internal fun LovedList(
     onShowBottomNav: () -> Unit = {},
     onHideBottomNav: () -> Unit = {}
 ) {
-    // Use rememberSaveable to preserve scroll position across navigation
-    val lazyListState = rememberSaveable(
-        saver = androidx.compose.foundation.lazy.LazyListState.Saver
-    ) {
-        androidx.compose.foundation.lazy.LazyListState()
+    // Use scroll position from ViewModel to preserve across navigation
+    val lazyListState = rememberLazyListState(
+        initialFirstVisibleItemIndex = viewModel.lovedScrollIndex
+    )
+
+    // Save scroll position to ViewModel
+    LaunchedEffect(Unit) {
+        snapshotFlow { lazyListState.firstVisibleItemIndex }
+            .collect { index ->
+                viewModel.lovedScrollIndex = index
+            }
     }
 
     // Scroll detection
