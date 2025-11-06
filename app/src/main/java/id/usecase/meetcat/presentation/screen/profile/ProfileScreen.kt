@@ -8,12 +8,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
-import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.paging.LoadState
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.itemKey
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -61,6 +65,11 @@ fun ProfileScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
+    // Collect Paging3 flows for each tab
+    val posts = viewModel.posts.collectAsLazyPagingItems()
+    val replies = viewModel.replies.collectAsLazyPagingItems()
+    val lovedItems = viewModel.lovedItems.collectAsLazyPagingItems()
+
     LaunchedEffect(Unit) {
         viewModel.uiEffect.collect { effect ->
             when (effect) {
@@ -76,6 +85,9 @@ fun ProfileScreen(
 
     ProfileContent(
         uiState = uiState,
+        posts = posts,
+        replies = replies,
+        lovedItems = lovedItems,
         onEvent = viewModel::onEvent,
         snackbarHostState = snackbarHostState,
         onShowBottomNav = onShowBottomNav,
@@ -88,6 +100,9 @@ fun ProfileScreen(
 @Composable
 private fun ProfileContent(
     uiState: ProfileUiState,
+    posts: LazyPagingItems<Post>,
+    replies: LazyPagingItems<FeedItem.ReplyItem>,
+    lovedItems: LazyPagingItems<FeedItem>,
     onEvent: (ProfileUiEvent) -> Unit,
     snackbarHostState: SnackbarHostState,
     onShowBottomNav: () -> Unit = {},
@@ -154,7 +169,7 @@ private fun ProfileContent(
                         when (uiState.selectedTab) {
                             ProfileTab.POSTS -> {
                                 PostsGrid(
-                                    posts = uiState.posts,
+                                    posts = posts,
                                     onPostClick = { onEvent(ProfileUiEvent.NavigateToPost(it)) },
                                     onShowBottomNav = onShowBottomNav,
                                     onHideBottomNav = onHideBottomNav
@@ -162,7 +177,7 @@ private fun ProfileContent(
                             }
                             ProfileTab.REPLIES -> {
                                 RepliesList(
-                                    replies = uiState.replies,
+                                    replies = replies,
                                     onReplyClick = { onEvent(ProfileUiEvent.NavigateToPost(it)) },
                                     onLoveClick = { onEvent(ProfileUiEvent.LoveReply(it)) },
                                     onShowBottomNav = onShowBottomNav,
@@ -171,7 +186,7 @@ private fun ProfileContent(
                             }
                             ProfileTab.LOVED -> {
                                 LovedList(
-                                    items = uiState.lovedItems,
+                                    items = lovedItems,
                                     onPostClick = { onEvent(ProfileUiEvent.NavigateToPost(it)) },
                                     onLovePostClick = { onEvent(ProfileUiEvent.LovePost(it)) },
                                     onLoveReplyClick = { onEvent(ProfileUiEvent.LoveReply(it)) },
@@ -219,20 +234,12 @@ private fun ProfileTabRow(
 
 @Composable
 private fun PostsGrid(
-    posts: ImmutableList<Post>,
+    posts: LazyPagingItems<Post>,
     onPostClick: (String) -> Unit,
     modifier: Modifier = Modifier,
     onShowBottomNav: () -> Unit = {},
     onHideBottomNav: () -> Unit = {}
 ) {
-    if (posts.isEmpty()) {
-        EmptyView(
-            message = "No posts yet",
-            modifier = modifier.fillMaxSize()
-        )
-        return
-    }
-
     val lazyGridState = rememberLazyStaggeredGridState()
     var previousIndex by remember { mutableIntStateOf(0) }
 
@@ -249,6 +256,15 @@ private fun PostsGrid(
             }
     }
 
+    // Show empty state if no items loaded
+    if (posts.loadState.refresh is LoadState.NotLoading && posts.itemCount == 0) {
+        EmptyView(
+            message = "No posts yet",
+            modifier = modifier.fillMaxSize()
+        )
+        return
+    }
+
     LazyVerticalStaggeredGrid(
         columns = StaggeredGridCells.Fixed(3),
         modifier = modifier.fillMaxSize(),
@@ -260,27 +276,77 @@ private fun PostsGrid(
         state = lazyGridState
     ) {
         items(
-            items = posts,
-            key = { it.id }
-        ) { post ->
-            SearchPostGridItem(
-                post = post,
-                onClick = { onPostClick(post.id) }
-            )
+            count = posts.itemCount,
+            key = posts.itemKey { it.id }
+        ) { index ->
+            posts[index]?.let { post ->
+                SearchPostGridItem(
+                    post = post,
+                    onClick = { onPostClick(post.id) }
+                )
+            }
+        }
+
+        // Handle loading state for infinite scroll
+        posts.loadState.append.let { appendState ->
+            when (appendState) {
+                is LoadState.Loading -> {
+                    item {
+                        androidx.compose.foundation.layout.Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            contentAlignment = androidx.compose.ui.Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    }
+                }
+                is LoadState.Error -> {
+                    item {
+                        androidx.compose.foundation.layout.Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            contentAlignment = androidx.compose.ui.Alignment.Center
+                        ) {
+                            Button(onClick = { posts.retry() }) {
+                                Text("Retry")
+                            }
+                        }
+                    }
+                }
+                else -> {}
+            }
         }
     }
 }
 
 @Composable
 private fun RepliesList(
-    replies: ImmutableList<FeedItem.ReplyItem>,
+    replies: LazyPagingItems<FeedItem.ReplyItem>,
     onReplyClick: (String) -> Unit,
     onLoveClick: (String) -> Unit,
     modifier: Modifier = Modifier,
     onShowBottomNav: () -> Unit = {},
     onHideBottomNav: () -> Unit = {}
 ) {
-    if (replies.isEmpty()) {
+    val lazyListState = rememberLazyListState()
+
+    // Scroll detection
+    LaunchedEffect(lazyListState.isScrollInProgress) {
+        snapshotFlow { lazyListState.firstVisibleItemIndex }
+            .collect { index ->
+                if (index == 0) {
+                    onShowBottomNav()
+                } else {
+                    onHideBottomNav()
+                }
+            }
+    }
+
+    // Show empty state if no items loaded
+    if (replies.loadState.refresh is LoadState.NotLoading && replies.itemCount == 0) {
         EmptyView(
             message = "No replies yet",
             modifier = modifier.fillMaxSize()
@@ -288,20 +354,6 @@ private fun RepliesList(
         return
     }
 
-    val lazyListState = rememberLazyListState()
-
-    // Scroll detection
-    LaunchedEffect(lazyListState.isScrollInProgress) {
-        snapshotFlow { lazyListState.firstVisibleItemIndex }
-            .collect { index ->
-                if (index == 0) {
-                    onShowBottomNav()
-                } else {
-                    onHideBottomNav()
-                }
-            }
-    }
-
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(
@@ -311,27 +363,62 @@ private fun RepliesList(
         state = lazyListState
     ) {
         items(
-            items = replies,
-            key = { it.reply.id }
-        ) { item ->
-            ReplyCard(
-                reply = item.reply,
-                onReplyClick = { onReplyClick(item.reply.id) },
-                onProfileClick = { /* Current user's profile - already on profile screen */ },
-                onOriginalPostClick = { onReplyClick(item.reply.originalPostId) },
-                onOriginalProfileClick = { /* Navigate to original post author - not implemented yet */ },
-                onLoveClick = { onLoveClick(item.reply.id) },
-                onCommentClick = { /* Show comment dialog - not implemented yet */ },
-                onShareClick = { /* Share reply - not implemented yet */ },
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-            )
+            count = replies.itemCount,
+            key = replies.itemKey { it.reply.id }
+        ) { index ->
+            replies[index]?.let { item ->
+                ReplyCard(
+                    reply = item.reply,
+                    onReplyClick = { onReplyClick(item.reply.id) },
+                    onProfileClick = { /* Current user's profile - already on profile screen */ },
+                    onOriginalPostClick = { onReplyClick(item.reply.originalPostId) },
+                    onOriginalProfileClick = { /* Navigate to original post author - not implemented yet */ },
+                    onLoveClick = { onLoveClick(item.reply.id) },
+                    onCommentClick = { /* Show comment dialog - not implemented yet */ },
+                    onShareClick = { /* Share reply - not implemented yet */ },
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
+        }
+
+        // Handle loading state for infinite scroll
+        replies.loadState.append.let { appendState ->
+            when (appendState) {
+                is LoadState.Loading -> {
+                    item {
+                        androidx.compose.foundation.layout.Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            contentAlignment = androidx.compose.ui.Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    }
+                }
+                is LoadState.Error -> {
+                    item {
+                        androidx.compose.foundation.layout.Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            contentAlignment = androidx.compose.ui.Alignment.Center
+                        ) {
+                            Button(onClick = { replies.retry() }) {
+                                Text("Retry")
+                            }
+                        }
+                    }
+                }
+                else -> {}
+            }
         }
     }
 }
 
 @Composable
 private fun LovedList(
-    items: ImmutableList<FeedItem>,
+    items: LazyPagingItems<FeedItem>,
     onPostClick: (String) -> Unit,
     onLovePostClick: (String) -> Unit,
     onLoveReplyClick: (String) -> Unit,
@@ -339,14 +426,6 @@ private fun LovedList(
     onShowBottomNav: () -> Unit = {},
     onHideBottomNav: () -> Unit = {}
 ) {
-    if (items.isEmpty()) {
-        EmptyView(
-            message = "No loved items yet",
-            modifier = modifier.fillMaxSize()
-        )
-        return
-    }
-
     val lazyListState = rememberLazyListState()
 
     // Scroll detection
@@ -361,6 +440,15 @@ private fun LovedList(
             }
     }
 
+    // Show empty state if no items loaded
+    if (items.loadState.refresh is LoadState.NotLoading && items.itemCount == 0) {
+        EmptyView(
+            message = "No loved items yet",
+            modifier = modifier.fillMaxSize()
+        )
+        return
+    }
+
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(
@@ -370,46 +458,83 @@ private fun LovedList(
         state = lazyListState
     ) {
         items(
-            items = items,
-            key = { item ->
+            count = items.itemCount,
+            key = items.itemKey { item ->
                 when (item) {
                     is FeedItem.PostItem -> "post_${item.post.id}"
                     is FeedItem.ReplyItem -> "reply_${item.reply.id}"
                 }
             },
-            contentType = { item ->
-                when (item) {
-                    is FeedItem.PostItem -> "post"
-                    is FeedItem.ReplyItem -> "reply"
+            contentType = { index ->
+                items.peek(index)?.let { item ->
+                    when (item) {
+                        is FeedItem.PostItem -> "post"
+                        is FeedItem.ReplyItem -> "reply"
+                    }
                 }
             }
-        ) { item ->
-            when (item) {
-                is FeedItem.PostItem -> {
-                    PostCard(
-                        post = item.post,
-                        onPostClick = { onPostClick(item.post.id) },
-                        onProfileClick = { /* Navigate to post author profile - not implemented yet */ },
-                        onLoveClick = { onLovePostClick(item.post.id) },
-                        onCommentClick = { /* Show comment dialog - not implemented yet */ },
-                        onReplyClick = { /* Show reply dialog - not implemented yet */ },
-                        onShareClick = { /* Share post - not implemented yet */ },
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                    )
+        ) { index ->
+            items[index]?.let { item ->
+                when (item) {
+                    is FeedItem.PostItem -> {
+                        PostCard(
+                            post = item.post,
+                            onPostClick = { onPostClick(item.post.id) },
+                            onProfileClick = { /* Navigate to post author profile - not implemented yet */ },
+                            onLoveClick = { onLovePostClick(item.post.id) },
+                            onCommentClick = { /* Show comment dialog - not implemented yet */ },
+                            onReplyClick = { /* Show reply dialog - not implemented yet */ },
+                            onShareClick = { /* Share post - not implemented yet */ },
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        )
+                    }
+                    is FeedItem.ReplyItem -> {
+                        ReplyCard(
+                            reply = item.reply,
+                            onReplyClick = { onPostClick(item.reply.id) },
+                            onProfileClick = { /* Navigate to reply author profile - not implemented yet */ },
+                            onOriginalPostClick = { onPostClick(item.reply.originalPostId) },
+                            onOriginalProfileClick = { /* Navigate to original post author - not implemented yet */ },
+                            onLoveClick = { onLoveReplyClick(item.reply.id) },
+                            onCommentClick = { /* Show comment dialog - not implemented yet */ },
+                            onShareClick = { /* Share reply - not implemented yet */ },
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        )
+                    }
                 }
-                is FeedItem.ReplyItem -> {
-                    ReplyCard(
-                        reply = item.reply,
-                        onReplyClick = { onPostClick(item.reply.id) },
-                        onProfileClick = { /* Navigate to reply author profile - not implemented yet */ },
-                        onOriginalPostClick = { onPostClick(item.reply.originalPostId) },
-                        onOriginalProfileClick = { /* Navigate to original post author - not implemented yet */ },
-                        onLoveClick = { onLoveReplyClick(item.reply.id) },
-                        onCommentClick = { /* Show comment dialog - not implemented yet */ },
-                        onShareClick = { /* Share reply - not implemented yet */ },
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                    )
+            }
+        }
+
+        // Handle loading state for infinite scroll
+        items.loadState.append.let { appendState ->
+            when (appendState) {
+                is LoadState.Loading -> {
+                    item {
+                        androidx.compose.foundation.layout.Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            contentAlignment = androidx.compose.ui.Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    }
                 }
+                is LoadState.Error -> {
+                    item {
+                        androidx.compose.foundation.layout.Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            contentAlignment = androidx.compose.ui.Alignment.Center
+                        ) {
+                            Button(onClick = { items.retry() }) {
+                                Text("Retry")
+                            }
+                        }
+                    }
+                }
+                else -> {}
             }
         }
     }
