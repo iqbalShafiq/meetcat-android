@@ -74,8 +74,10 @@ class EditPostViewModel(
             delay(500)
 
             // Mock post data
+            val mockImageUrl = "https://example.com/image.jpg"
             val mockPost = Post(
                 id = postId,
+                userId = "currentUser",
                 user = User(
                     id = "currentUser",
                     username = "myusername",
@@ -88,21 +90,27 @@ class EditPostViewModel(
                     isFollowing = false
                 ),
                 caption = "My cat is so cute!",
-                imageUrl = "https://example.com/image.jpg",
+                mediaItems = listOf(
+                    MediaItem.Image(
+                        url = mockImageUrl,
+                        thumbnailUrl = mockImageUrl,
+                        width = 800,
+                        height = 600
+                    )
+                ),
+                location = null,
                 lovesCount = 42,
+                commentsCount = 0,
                 repliesCount = 10,
-                sharesCount = 5,
                 isLoved = false,
-                createdAt = System.currentTimeMillis(),
-                latitude = null,
-                longitude = null
+                createdAt = System.currentTimeMillis()
             )
 
             _uiState.update {
                 it.copy(
                     post = mockPost,
                     caption = mockPost.caption,
-                    originalImageUrl = mockPost.imageUrl,
+                    originalImageUrl = mockPost.mediaItems.firstOrNull()?.url,
                     isLoading = false
                 )
             }

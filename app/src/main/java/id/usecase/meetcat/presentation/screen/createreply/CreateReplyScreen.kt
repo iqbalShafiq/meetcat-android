@@ -348,6 +348,7 @@ private fun CreateReplyScreenPreview() {
             uiState = CreateReplyUiState(
                 post = Post(
                     id = "1",
+                    userId = "user1",
                     user = User(
                         id = "user1",
                         username = "catowner",
@@ -360,14 +361,13 @@ private fun CreateReplyScreenPreview() {
                         isFollowing = false
                     ),
                     caption = "My cat is so cute! Look at those eyes!",
-                    imageUrl = null,
+                    mediaItems = emptyList(),
+                    location = null,
                     lovesCount = 42,
+                    commentsCount = 0,
                     repliesCount = 10,
-                    sharesCount = 5,
                     isLoved = false,
-                    createdAt = System.currentTimeMillis(),
-                    latitude = null,
-                    longitude = null
+                    createdAt = System.currentTimeMillis()
                 ),
                 replyText = "Aww, so adorable!"
             ),

@@ -133,8 +133,7 @@ class ProfileViewModel(
                     reply = replyItem.reply.copy(
                         isLoved = isLoved,
                         lovesCount = if (isLoved) replyItem.reply.lovesCount + 1 else replyItem.reply.lovesCount - 1
-                    ),
-                    parentPost = replyItem.parentPost
+                    )
                 )
             } ?: replyItem
         }
@@ -163,8 +162,7 @@ class ProfileViewModel(
                             reply = item.reply.copy(
                                 isLoved = isLoved,
                                 lovesCount = if (isLoved) item.reply.lovesCount + 1 else item.reply.lovesCount - 1
-                            ),
-                            parentPost = item.parentPost
+                            )
                         )
                     } ?: item
                 }
@@ -199,10 +197,25 @@ class ProfileViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
 
-            val result = getCurrentUserUseCase()
+            try {
+                val authUser = getCurrentUserUseCase()
 
-            result.fold(
-                onSuccess = { user ->
+                if (authUser != null) {
+                    // Convert AuthUser to User
+                    // Note: This is a simplified conversion. In a real app, you'd fetch the full User object
+                    val user = id.usecase.meetcat.domain.model.User(
+                        id = authUser.uid,
+                        username = authUser.displayName ?: authUser.uid,
+                        displayName = authUser.displayName ?: "Unknown",
+                        bio = null,
+                        profileImageUrl = authUser.photoUrl,
+                        followersCount = 0,
+                        followingCount = 0,
+                        postsCount = 0,
+                        isFollowing = false,
+                        createdAt = System.currentTimeMillis()
+                    )
+
                     currentUserId = user.id
                     _uiState.update {
                         it.copy(
@@ -211,21 +224,26 @@ class ProfileViewModel(
                             error = null
                         )
                     }
-                },
-                onFailure = { error ->
+                } else {
+                    val errorMessage = "Failed to load profile"
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            error = error.message
+                            error = errorMessage
                         )
                     }
-                    _uiEffect.send(
-                        ProfileUiEffect.ShowError(
-                            error.message ?: "Failed to load profile"
-                        )
+                    _uiEffect.send(ProfileUiEffect.ShowError(errorMessage))
+                }
+            } catch (e: Exception) {
+                val errorMessage = e.message ?: "Failed to load profile"
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        error = errorMessage
                     )
                 }
-            )
+                _uiEffect.send(ProfileUiEffect.ShowError(errorMessage))
+            }
         }
     }
 
