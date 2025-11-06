@@ -1,5 +1,6 @@
 package id.usecase.meetcat.data.repository
 
+import id.usecase.meetcat.domain.model.Comment
 import id.usecase.meetcat.domain.model.FeedItem
 import id.usecase.meetcat.domain.model.Location
 import id.usecase.meetcat.domain.model.MediaItem
@@ -173,6 +174,49 @@ class FakePostRepository : PostRepository {
         )
     )
 
+    private val mockComments = listOf(
+        Comment(
+            id = "comment1",
+            postId = "post1",
+            userId = "2",
+            user = mockUsers[1],
+            text = "This is such a great photo! 😍",
+            lovesCount = 12,
+            isLoved = false,
+            createdAt = System.currentTimeMillis() - 1800000
+        ),
+        Comment(
+            id = "comment2",
+            postId = "post1",
+            userId = "3",
+            user = mockUsers[2],
+            text = "Absolutely adorable! Where did you take this?",
+            lovesCount = 25,
+            isLoved = true,
+            createdAt = System.currentTimeMillis() - 2400000
+        ),
+        Comment(
+            id = "comment3",
+            postId = "post2",
+            userId = "1",
+            user = mockUsers[0],
+            text = "Amazing! My cat can't do that yet 😂",
+            lovesCount = 8,
+            isLoved = false,
+            createdAt = System.currentTimeMillis() - 3000000
+        ),
+        Comment(
+            id = "comment4",
+            postId = "reply1",
+            userId = "1",
+            user = mockUsers[0],
+            text = "Thanks for your comment! 💕",
+            lovesCount = 5,
+            isLoved = false,
+            createdAt = System.currentTimeMillis() - 3600000
+        )
+    )
+
     private val feedItems = listOf(
         FeedItem.PostItem(mockPosts[0]),
         FeedItem.ReplyItem(mockReplies[0]),
@@ -323,5 +367,47 @@ class FakePostRepository : PostRepository {
         val distance = earthRadiusKm * c
 
         return distance <= radiusKm
+    }
+
+    override suspend fun getPostById(postId: String): Result<Post> {
+        delay(500)
+        val post = mockPosts.find { it.id == postId }
+        return if (post != null) {
+            Result.success(post)
+        } else {
+            Result.failure(Exception("Post not found"))
+        }
+    }
+
+    override suspend fun getReplyById(replyId: String): Result<Reply> {
+        delay(500)
+        val reply = mockReplies.find { it.id == replyId }
+        return if (reply != null) {
+            Result.success(reply)
+        } else {
+            Result.failure(Exception("Reply not found"))
+        }
+    }
+
+    override suspend fun getPostComments(postId: String): Result<List<Comment>> {
+        delay(500)
+        val comments = mockComments.filter { it.postId == postId }
+        return Result.success(comments)
+    }
+
+    override suspend fun getReplyComments(replyId: String): Result<List<Comment>> {
+        delay(500)
+        val comments = mockComments.filter { it.postId == replyId }
+        return Result.success(comments)
+    }
+
+    override suspend fun loveComment(commentId: String): Result<Unit> {
+        delay(300)
+        return Result.success(Unit)
+    }
+
+    override suspend fun unloveComment(commentId: String): Result<Unit> {
+        delay(300)
+        return Result.success(Unit)
     }
 }

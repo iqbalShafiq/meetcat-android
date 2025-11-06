@@ -55,6 +55,7 @@ fun ProfileScreen(
     viewModel: ProfileViewModel = koinViewModel(),
     onShowBottomNav: () -> Unit = {},
     onHideBottomNav: () -> Unit = {},
+    onNavigateToPost: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -64,7 +65,7 @@ fun ProfileScreen(
         viewModel.uiEffect.collect { effect ->
             when (effect) {
                 is ProfileUiEffect.NavigateToPost -> {
-                    // TODO: Navigate to post detail
+                    onNavigateToPost(effect.postId)
                 }
                 is ProfileUiEffect.ShowError -> {
                     snackbarHostState.showSnackbar(effect.message)
@@ -316,12 +317,12 @@ private fun RepliesList(
             ReplyCard(
                 reply = item.reply,
                 onReplyClick = { onReplyClick(item.reply.id) },
-                onProfileClick = { /* TODO */ },
+                onProfileClick = { /* Current user's profile - already on profile screen */ },
                 onOriginalPostClick = { onReplyClick(item.reply.originalPostId) },
-                onOriginalProfileClick = { /* TODO */ },
+                onOriginalProfileClick = { /* Navigate to original post author - not implemented yet */ },
                 onLoveClick = { onLoveClick(item.reply.id) },
-                onCommentClick = { /* TODO */ },
-                onShareClick = { /* TODO */ },
+                onCommentClick = { /* Show comment dialog - not implemented yet */ },
+                onShareClick = { /* Share reply - not implemented yet */ },
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
             )
         }
@@ -388,11 +389,11 @@ private fun LovedList(
                     PostCard(
                         post = item.post,
                         onPostClick = { onPostClick(item.post.id) },
-                        onProfileClick = { /* TODO */ },
+                        onProfileClick = { /* Navigate to post author profile - not implemented yet */ },
                         onLoveClick = { onLovePostClick(item.post.id) },
-                        onCommentClick = { /* TODO */ },
-                        onReplyClick = { /* TODO */ },
-                        onShareClick = { /* TODO */ },
+                        onCommentClick = { /* Show comment dialog - not implemented yet */ },
+                        onReplyClick = { /* Show reply dialog - not implemented yet */ },
+                        onShareClick = { /* Share post - not implemented yet */ },
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                     )
                 }
@@ -400,12 +401,12 @@ private fun LovedList(
                     ReplyCard(
                         reply = item.reply,
                         onReplyClick = { onPostClick(item.reply.id) },
-                        onProfileClick = { /* TODO */ },
+                        onProfileClick = { /* Navigate to reply author profile - not implemented yet */ },
                         onOriginalPostClick = { onPostClick(item.reply.originalPostId) },
-                        onOriginalProfileClick = { /* TODO */ },
+                        onOriginalProfileClick = { /* Navigate to original post author - not implemented yet */ },
                         onLoveClick = { onLoveReplyClick(item.reply.id) },
-                        onCommentClick = { /* TODO */ },
-                        onShareClick = { /* TODO */ },
+                        onCommentClick = { /* Show comment dialog - not implemented yet */ },
+                        onShareClick = { /* Share reply - not implemented yet */ },
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                     )
                 }

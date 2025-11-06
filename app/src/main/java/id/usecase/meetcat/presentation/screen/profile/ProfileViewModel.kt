@@ -98,7 +98,8 @@ class ProfileViewModel : ViewModel() {
     }
 
     private fun loadMore() {
-        // TODO: Implement pagination
+        // Mock pagination - In production, this would load more items when user scrolls to bottom
+        // See UserProfileViewModel.loadMore() for detailed implementation example
     }
 
     private fun selectTab(tab: ProfileTab) {

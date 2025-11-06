@@ -1,5 +1,6 @@
 package id.usecase.meetcat.presentation.preview
 
+import id.usecase.meetcat.domain.model.Comment
 import id.usecase.meetcat.domain.model.Location
 import id.usecase.meetcat.domain.model.MediaItem
 import id.usecase.meetcat.domain.model.Post
@@ -107,5 +108,23 @@ object PreviewData {
         text = "Wow! That's incredible! How did you train your cat to do that?",
         mediaItems = null,
         location = null
+    )
+
+    val mockComment = Comment(
+        id = "comment1",
+        postId = "post1",
+        userId = "2",
+        user = mockUser2,
+        text = "This is such a great photo! 😍",
+        lovesCount = 12,
+        isLoved = false,
+        createdAt = System.currentTimeMillis() - 1800000
+    )
+
+    val mockCommentLoved = mockComment.copy(
+        id = "comment2",
+        text = "Absolutely adorable! Where did you take this?",
+        lovesCount = 25,
+        isLoved = true
     )
 }

@@ -3,12 +3,19 @@ package id.usecase.meetcat.di
 import android.content.Context
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
+import id.usecase.meetcat.data.repository.FakeAuthRepository
 import id.usecase.meetcat.data.repository.FakePostRepository
 import id.usecase.meetcat.data.repository.FakeSearchHistoryRepository
 import id.usecase.meetcat.data.repository.LocationRepositoryImpl
+import id.usecase.meetcat.domain.repository.AuthRepository
 import id.usecase.meetcat.domain.repository.LocationRepository
 import id.usecase.meetcat.domain.repository.PostRepository
 import id.usecase.meetcat.domain.repository.SearchHistoryRepository
+import id.usecase.meetcat.domain.usecase.auth.GetCurrentUserUseCase
+import id.usecase.meetcat.domain.usecase.auth.LoginUseCase
+import id.usecase.meetcat.domain.usecase.auth.LogoutUseCase
+import id.usecase.meetcat.domain.usecase.auth.RegisterUseCase
+import id.usecase.meetcat.domain.usecase.auth.ResetPasswordUseCase
 import id.usecase.meetcat.domain.usecase.location.GetCurrentLocationUseCase
 import id.usecase.meetcat.domain.usecase.location.HasLocationPermissionUseCase
 import id.usecase.meetcat.domain.usecase.post.GetExploreFeedUseCase
@@ -23,12 +30,31 @@ import id.usecase.meetcat.domain.usecase.search.ClearSearchHistoryUseCase
 import id.usecase.meetcat.domain.usecase.search.DeleteSearchQueryUseCase
 import id.usecase.meetcat.domain.usecase.search.GetSearchHistoryUseCase
 import id.usecase.meetcat.domain.usecase.search.SaveSearchQueryUseCase
+import id.usecase.meetcat.presentation.screen.auth.forgotpassword.ForgotPasswordViewModel
+import id.usecase.meetcat.presentation.screen.auth.login.LoginViewModel
+import id.usecase.meetcat.presentation.screen.auth.register.RegisterViewModel
+import id.usecase.meetcat.presentation.screen.auth.splash.SplashViewModel
+import id.usecase.meetcat.presentation.screen.createpost.CreatePostViewModel
+import id.usecase.meetcat.presentation.screen.createreply.CreateReplyViewModel
+import id.usecase.meetcat.presentation.screen.editpost.EditPostViewModel
+import id.usecase.meetcat.presentation.screen.editprofile.EditProfileViewModel
 import id.usecase.meetcat.presentation.screen.explore.ExploreViewModel
+import id.usecase.meetcat.presentation.screen.followerslist.FollowersListViewModel
+import id.usecase.meetcat.presentation.screen.followinglist.FollowingListViewModel
 import id.usecase.meetcat.presentation.screen.main.MainViewModel
 import id.usecase.meetcat.presentation.screen.maps.MapsViewModel
+import id.usecase.meetcat.presentation.screen.mediapicker.MediaPickerViewModel
+import id.usecase.meetcat.presentation.screen.postdetail.PostDetailViewModel
 import id.usecase.meetcat.presentation.screen.profile.ProfileViewModel
+import id.usecase.meetcat.presentation.screen.replydetail.ReplyDetailViewModel
 import id.usecase.meetcat.presentation.screen.search.SearchViewModel
+import id.usecase.meetcat.presentation.screen.settings.SettingsViewModel
+import id.usecase.meetcat.presentation.screen.settings.about.AboutViewModel
+import id.usecase.meetcat.presentation.screen.settings.account.AccountSettingsViewModel
+import id.usecase.meetcat.presentation.screen.settings.privacy.PrivacySettingsViewModel
+import id.usecase.meetcat.presentation.screen.userprofile.UserProfileViewModel
 import org.koin.android.ext.koin.androidContext
+import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.core.module.dsl.singleOf
@@ -36,14 +62,80 @@ import org.koin.dsl.bind
 import org.koin.dsl.module
 
 val appModule = module {
+    // Auth ViewModels
+    viewModelOf(::SplashViewModel)
+    viewModelOf(::LoginViewModel)
+    viewModelOf(::RegisterViewModel)
+    viewModelOf(::ForgotPasswordViewModel)
+
+    // Main ViewModels
     viewModelOf(::ExploreViewModel)
     viewModelOf(::MainViewModel)
     viewModelOf(::SearchViewModel)
     viewModelOf(::MapsViewModel)
     viewModelOf(::ProfileViewModel)
+
+    // Profile Management ViewModels
+    viewModelOf(::EditProfileViewModel)
+
+    // Content Creation ViewModels
+    viewModelOf(::CreatePostViewModel)
+    viewModelOf(::MediaPickerViewModel)
+
+    // Settings ViewModels
+    viewModelOf(::SettingsViewModel)
+    viewModelOf(::AccountSettingsViewModel)
+    viewModelOf(::PrivacySettingsViewModel)
+    viewModelOf(::AboutViewModel)
+
+    // Detail screen ViewModels with parameters
+    viewModel { (postId: String) ->
+        PostDetailViewModel(
+            postRepository = get(),
+            postId = postId
+        )
+    }
+    viewModel { (replyId: String) ->
+        ReplyDetailViewModel(
+            postRepository = get(),
+            replyId = replyId
+        )
+    }
+    viewModel { (userId: String) ->
+        UserProfileViewModel(
+            userId = userId
+        )
+    }
+    viewModel { (userId: String) ->
+        FollowersListViewModel(
+            userId = userId
+        )
+    }
+    viewModel { (userId: String) ->
+        FollowingListViewModel(
+            userId = userId
+        )
+    }
+    viewModel { (postId: String) ->
+        CreateReplyViewModel(
+            postId = postId
+        )
+    }
+    viewModel { (postId: String) ->
+        EditPostViewModel(
+            postId = postId
+        )
+    }
 }
 
 val domainModule = module {
+    // Auth use cases
+    factoryOf(::LoginUseCase)
+    factoryOf(::RegisterUseCase)
+    factoryOf(::ResetPasswordUseCase)
+    factoryOf(::LogoutUseCase)
+    factoryOf(::GetCurrentUserUseCase)
+
     // Post use cases
     factoryOf(::GetExploreFeedUseCase)
     factoryOf(::GetRandomPostsUseCase)
@@ -66,6 +158,11 @@ val domainModule = module {
 }
 
 val dataModule = module {
+    // Auth Repository
+    single<AuthRepository> {
+        FakeAuthRepository(context = androidContext())
+    }
+
     singleOf(::FakePostRepository) bind PostRepository::class
     singleOf(::FakeSearchHistoryRepository) bind SearchHistoryRepository::class
 
