@@ -36,14 +36,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
+import id.usecase.meetcat.domain.model.FeedItem
+import id.usecase.meetcat.domain.model.Post
 import id.usecase.meetcat.presentation.component.state.EmptyView
 import id.usecase.meetcat.presentation.component.state.LoadingView
 import id.usecase.meetcat.presentation.component.user.ProfileStat
 import id.usecase.meetcat.presentation.component.user.UserProfileHeader
-import id.usecase.meetcat.presentation.screen.profile.ProfileTab
+import id.usecase.meetcat.presentation.screen.profile.LovedList
 import id.usecase.meetcat.presentation.screen.profile.PostsGrid
 import id.usecase.meetcat.presentation.screen.profile.RepliesList
-import id.usecase.meetcat.presentation.screen.profile.LovedList
 import id.usecase.meetcat.ui.theme.MeetCatTheme
 import kotlinx.coroutines.flow.collectLatest
 import org.koin.androidx.compose.koinViewModel
@@ -59,6 +62,11 @@ fun UserProfileScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+
+    // Collect Paging3 flows for each tab
+    val posts = viewModel.posts.collectAsLazyPagingItems()
+    val replies = viewModel.replies.collectAsLazyPagingItems()
+    val lovedItems = viewModel.lovedItems.collectAsLazyPagingItems()
 
     LaunchedEffect(Unit) {
         viewModel.uiEffect.collectLatest { effect ->
@@ -78,6 +86,9 @@ fun UserProfileScreen(
 
     UserProfileContent(
         uiState = uiState,
+        posts = posts,
+        replies = replies,
+        lovedItems = lovedItems,
         onEvent = viewModel::onEvent,
         snackbarHostState = snackbarHostState,
         modifier = modifier
@@ -88,6 +99,9 @@ fun UserProfileScreen(
 @Composable
 private fun UserProfileContent(
     uiState: UserProfileUiState,
+    posts: LazyPagingItems<Post>,
+    replies: LazyPagingItems<FeedItem.ReplyItem>,
+    lovedItems: LazyPagingItems<FeedItem>,
     onEvent: (UserProfileUiEvent) -> Unit,
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier
@@ -162,26 +176,26 @@ private fun UserProfileContent(
 
                         // Tab Content
                         when (uiState.selectedTab) {
-                            ProfileTab.POSTS -> {
+                            UserProfileTab.POSTS -> {
                                 PostsGrid(
-                                    posts = uiState.posts,
+                                    posts = posts,
                                     onPostClick = { onEvent(UserProfileUiEvent.NavigateToPost(it)) },
                                     onShowBottomNav = {},
                                     onHideBottomNav = {}
                                 )
                             }
-                            ProfileTab.REPLIES -> {
+                            UserProfileTab.REPLIES -> {
                                 RepliesList(
-                                    replies = uiState.replies,
+                                    replies = replies,
                                     onReplyClick = { onEvent(UserProfileUiEvent.NavigateToPost(it)) },
                                     onLoveClick = { onEvent(UserProfileUiEvent.LoveReply(it)) },
                                     onShowBottomNav = {},
                                     onHideBottomNav = {}
                                 )
                             }
-                            ProfileTab.LOVED -> {
+                            UserProfileTab.LOVED -> {
                                 LovedList(
-                                    items = uiState.lovedItems,
+                                    items = lovedItems,
                                     onPostClick = { onEvent(UserProfileUiEvent.NavigateToPost(it)) },
                                     onLovePostClick = { onEvent(UserProfileUiEvent.LovePost(it)) },
                                     onLoveReplyClick = { onEvent(UserProfileUiEvent.LoveReply(it)) },
@@ -256,8 +270,8 @@ private fun UserProfileHeaderSection(
 
 @Composable
 private fun ProfileTabRow(
-    selectedTab: ProfileTab,
-    onTabSelected: (ProfileTab) -> Unit,
+    selectedTab: UserProfileTab,
+    onTabSelected: (UserProfileTab) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
@@ -265,18 +279,18 @@ private fun ProfileTabRow(
             selectedTabIndex = selectedTab.ordinal
         ) {
             Tab(
-                selected = selectedTab == ProfileTab.POSTS,
-                onClick = { onTabSelected(ProfileTab.POSTS) },
+                selected = selectedTab == UserProfileTab.POSTS,
+                onClick = { onTabSelected(UserProfileTab.POSTS) },
                 text = { Text("Posts") }
             )
             Tab(
-                selected = selectedTab == ProfileTab.REPLIES,
-                onClick = { onTabSelected(ProfileTab.REPLIES) },
+                selected = selectedTab == UserProfileTab.REPLIES,
+                onClick = { onTabSelected(UserProfileTab.REPLIES) },
                 text = { Text("Replies") }
             )
             Tab(
-                selected = selectedTab == ProfileTab.LOVED,
-                onClick = { onTabSelected(ProfileTab.LOVED) },
+                selected = selectedTab == UserProfileTab.LOVED,
+                onClick = { onTabSelected(UserProfileTab.LOVED) },
                 text = { Text("Loved") }
             )
         }
