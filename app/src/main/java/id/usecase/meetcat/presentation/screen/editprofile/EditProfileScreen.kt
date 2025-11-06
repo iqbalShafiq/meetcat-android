@@ -174,7 +174,16 @@ private fun EditProfileContent(
                         .clickable { onEvent(EditProfileUiEvent.ChangeProfilePhoto) },
                     contentAlignment = Alignment.Center
                 ) {
-                    // TODO: Add AsyncImage for profile photo
+                    // Mock: In production, would use Coil's AsyncImage to load profile photo:
+                    // AsyncImage(
+                    //     model = uiState.profileImageUrl,
+                    //     contentDescription = "Profile photo",
+                    //     modifier = Modifier.fillMaxSize(),
+                    //     contentScale = ContentScale.Crop,
+                    //     placeholder = painterResource(R.drawable.placeholder_avatar),
+                    //     error = painterResource(R.drawable.placeholder_avatar)
+                    // )
+                    // For now, showing camera icon as placeholder
                     Icon(
                         imageVector = Icons.Default.CameraAlt,
                         contentDescription = "Change photo",

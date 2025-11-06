@@ -217,7 +217,10 @@ private fun ReplyDetailContent(
                             ) { comment ->
                                 CommentCard(
                                     comment = comment,
-                                    onCommentClick = { /* TODO: Navigate to comment detail or expand */ },
+                                    onCommentClick = {
+                                        // Note: Comment detail/expansion not implemented in current scope
+                                        // Comments are display-only. Future: could expand to show nested replies
+                                    },
                                     onProfileClick = {
                                         onEvent(ReplyDetailUiEvent.NavigateToProfile(comment.userId))
                                     },
