@@ -84,6 +84,14 @@ fun PostDetailScreen(
                 is PostDetailUiEffect.ShowShareDialog -> {
                     uiState.post?.let { sharePost(context, it) }
                 }
+                is PostDetailUiEffect.CommentSubmitted -> {
+                    showCommentDialog = false
+                    snackbarHostState.showSnackbar("Comment submitted successfully")
+                }
+                is PostDetailUiEffect.ReplySubmitted -> {
+                    showReplyDialog = false
+                    snackbarHostState.showSnackbar("Reply submitted successfully")
+                }
             }
         }
     }
@@ -102,9 +110,7 @@ fun PostDetailScreen(
             reply = null,
             onDismiss = { showCommentDialog = false },
             onCommentSubmit = { commentText ->
-                // TODO: Submit comment to repository
-                snackbarHostState.currentSnackbarData?.dismiss()
-                showCommentDialog = false
+                viewModel.onEvent(PostDetailUiEvent.SubmitComment(commentText))
             }
         )
     }
@@ -115,9 +121,7 @@ fun PostDetailScreen(
             post = uiState.post,
             onDismiss = { showReplyDialog = false },
             onReplySubmit = { replyText ->
-                // TODO: Submit reply to repository
-                snackbarHostState.currentSnackbarData?.dismiss()
-                showReplyDialog = false
+                viewModel.onEvent(PostDetailUiEvent.SubmitReply(replyText))
             }
         )
     }

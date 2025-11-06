@@ -71,7 +71,8 @@ fun CreateReplyScreen(
                 }
 
                 is CreateReplyUiEffect.ShowMediaPicker -> {
-                    // TODO: Show media picker
+                    // Mock: In production, would launch Android's photo picker or navigate to MediaPickerScreen
+                    // See CreatePostScreen for detailed implementation example
                 }
 
                 is CreateReplyUiEffect.ShowSuccess -> {

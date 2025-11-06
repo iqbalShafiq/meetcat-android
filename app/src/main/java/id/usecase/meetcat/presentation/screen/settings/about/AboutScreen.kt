@@ -58,15 +58,21 @@ fun AboutScreen(
         viewModel.uiEffect.collectLatest { effect ->
             when (effect) {
                 is AboutUiEffect.NavigateToPrivacyPolicy -> {
-                    // TODO: Navigate to privacy policy
+                    // Mock: In production, this would open a WebView or external browser
+                    // with the privacy policy URL
+                    snackbarHostState.showSnackbar("Privacy Policy - Not yet implemented")
                 }
 
                 is AboutUiEffect.NavigateToTermsOfService -> {
-                    // TODO: Navigate to terms of service
+                    // Mock: In production, this would open a WebView or external browser
+                    // with the terms of service URL
+                    snackbarHostState.showSnackbar("Terms of Service - Not yet implemented")
                 }
 
                 is AboutUiEffect.NavigateToLicenses -> {
-                    // TODO: Navigate to licenses
+                    // Mock: In production, this would navigate to a licenses screen
+                    // showing all open source library licenses
+                    snackbarHostState.showSnackbar("Open Source Licenses - Not yet implemented")
                 }
 
                 is AboutUiEffect.NavigateBack -> {

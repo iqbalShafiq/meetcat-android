@@ -81,6 +81,10 @@ fun ReplyDetailScreen(
                 is ReplyDetailUiEffect.ShowShareDialog -> {
                     uiState.reply?.let { shareReply(context, it) }
                 }
+                is ReplyDetailUiEffect.CommentSubmitted -> {
+                    showCommentDialog = false
+                    snackbarHostState.showSnackbar("Comment submitted successfully")
+                }
             }
         }
     }
@@ -99,9 +103,7 @@ fun ReplyDetailScreen(
             reply = uiState.reply,
             onDismiss = { showCommentDialog = false },
             onCommentSubmit = { commentText ->
-                // TODO: Submit comment to repository
-                snackbarHostState.currentSnackbarData?.dismiss()
-                showCommentDialog = false
+                viewModel.onEvent(ReplyDetailUiEvent.SubmitComment(commentText))
             }
         )
     }

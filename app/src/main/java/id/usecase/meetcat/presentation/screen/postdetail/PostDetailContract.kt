@@ -24,6 +24,8 @@ sealed class PostDetailUiEvent {
     data object CommentClick : PostDetailUiEvent()
     data object ReplyClick : PostDetailUiEvent()
     data object ShareClick : PostDetailUiEvent()
+    data class SubmitComment(val commentText: String) : PostDetailUiEvent()
+    data class SubmitReply(val replyText: String) : PostDetailUiEvent()
 }
 
 sealed class PostDetailUiEffect {
@@ -33,4 +35,6 @@ sealed class PostDetailUiEffect {
     data class ShowCommentDialog(val postId: String) : PostDetailUiEffect()
     data class ShowReplyDialog(val postId: String) : PostDetailUiEffect()
     data class ShowShareDialog(val postId: String) : PostDetailUiEffect()
+    data object CommentSubmitted : PostDetailUiEffect()
+    data object ReplySubmitted : PostDetailUiEffect()
 }

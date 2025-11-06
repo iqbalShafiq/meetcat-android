@@ -24,6 +24,7 @@ sealed class ReplyDetailUiEvent {
     data class LoveComment(val commentId: String) : ReplyDetailUiEvent()
     data object CommentClick : ReplyDetailUiEvent()
     data object ShareClick : ReplyDetailUiEvent()
+    data class SubmitComment(val commentText: String) : ReplyDetailUiEvent()
 }
 
 sealed class ReplyDetailUiEffect {
@@ -33,4 +34,5 @@ sealed class ReplyDetailUiEffect {
     data class ShowError(val message: String) : ReplyDetailUiEffect()
     data class ShowCommentDialog(val replyId: String) : ReplyDetailUiEffect()
     data class ShowShareDialog(val replyId: String) : ReplyDetailUiEffect()
+    data object CommentSubmitted : ReplyDetailUiEffect()
 }

@@ -69,11 +69,21 @@ fun CreatePostScreen(
                 }
 
                 is CreatePostUiEffect.ShowMediaPicker -> {
-                    // TODO: Show media picker
+                    // Mock: In production, this would navigate to MediaPickerScreen or launch
+                    // Android's photo picker using ActivityResultContracts.PickVisualMedia
+                    // Example:
+                    // val photoPickerLauncher = rememberLauncherForActivityResult(
+                    //     contract = ActivityResultContracts.PickVisualMedia()
+                    // ) { uri -> if (uri != null) viewModel.onMediaSelected(uri) }
+                    // photoPickerLauncher.launch(PickVisualMediaRequest(PickVisualMedia.ImageAndVideo))
                 }
 
                 is CreatePostUiEffect.ShowLocationPicker -> {
-                    // TODO: Show location picker
+                    // Mock: In production, this would either:
+                    // 1. Navigate to a location picker screen with map
+                    // 2. Show a bottom sheet with nearby locations
+                    // 3. Use Google Places API to search locations
+                    // Would require location permissions and Google Maps SDK
                 }
 
                 is CreatePostUiEffect.ShowSuccess -> {
@@ -206,7 +216,13 @@ private fun CreatePostContent(
                             .clip(RoundedCornerShape(12.dp))
                             .background(MaterialTheme.colorScheme.surfaceVariant)
                     ) {
-                        // TODO: Add AsyncImage to display media
+                        // Mock: In production, would use Coil's AsyncImage to load the selected media:
+                        // AsyncImage(
+                        //     model = uiState.mediaUri,
+                        //     contentDescription = "Selected media",
+                        //     modifier = Modifier.fillMaxSize(),
+                        //     contentScale = ContentScale.Crop
+                        // )
                         Icon(
                             imageVector = Icons.Default.Image,
                             contentDescription = "Selected image",

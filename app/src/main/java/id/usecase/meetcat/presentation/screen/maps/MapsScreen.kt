@@ -67,6 +67,8 @@ import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun MapsScreen(
+    onNavigateToPost: (String) -> Unit = {},
+    onNavigateToProfile: (String) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: MapsViewModel = koinViewModel()
 ) {
@@ -98,11 +100,11 @@ fun MapsScreen(
                 }
 
                 is MapsUiEffect.NavigateToPost -> {
-                    // TODO: Navigate to post detail when implemented
+                    onNavigateToPost(effect.postId)
                 }
 
                 is MapsUiEffect.NavigateToProfile -> {
-                    // TODO: Navigate to profile when implemented
+                    onNavigateToProfile(effect.userId)
                 }
 
                 is MapsUiEffect.ShowError -> {
@@ -210,6 +212,7 @@ private fun MapsContent(
                 selectedPost?.let { post ->
                     PostDetailBubble(
                         post = post,
+                        onPostClick = { onEvent(MapsUiEvent.NavigateToPost(post.id)) },
                         onDismiss = { onEvent(MapsUiEvent.DismissMarkerDetail) },
                         onLoveClick = { onEvent(MapsUiEvent.LovePost(post.id)) },
                         onProfileClick = { onEvent(MapsUiEvent.NavigateToProfile(post.userId)) },
@@ -276,6 +279,7 @@ private fun MapView(
 @Composable
 private fun PostDetailBubble(
     post: Post,
+    onPostClick: () -> Unit,
     onDismiss: () -> Unit,
     onLoveClick: () -> Unit,
     onProfileClick: () -> Unit,
@@ -291,7 +295,7 @@ private fun PostDetailBubble(
                 color = MaterialTheme.colorScheme.outlineVariant,
                 shape = RoundedCornerShape(16.dp)
             )
-            .clickable { onDismiss() }
+            .clickable { onPostClick() }
             .padding(16.dp)
     ) {
         Row(
@@ -594,6 +598,7 @@ private fun PostDetailBubblePreview() {
         ) {
             PostDetailBubble(
                 post = createMockPost(),
+                onPostClick = {},
                 onDismiss = {},
                 onLoveClick = {},
                 onProfileClick = {}
@@ -615,6 +620,7 @@ private fun PostDetailBubbleLovedPreview() {
         ) {
             PostDetailBubble(
                 post = createMockPost(isLoved = true),
+                onPostClick = {},
                 onDismiss = {},
                 onLoveClick = {},
                 onProfileClick = {}

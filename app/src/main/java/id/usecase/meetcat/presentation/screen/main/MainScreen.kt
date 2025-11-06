@@ -110,6 +110,12 @@ private fun MainContent(
 
             mainUiState.currentRoute == BottomNavItem.NearMe.route -> {
                 MapsScreen(
+                    onNavigateToPost = { postId ->
+                        onEvent(MainUiEvent.NavigateTo("post_detail/$postId"))
+                    },
+                    onNavigateToProfile = { userId ->
+                        onEvent(MainUiEvent.NavigateTo("user_profile/$userId"))
+                    },
                     viewModel = mapsViewModel,
                     modifier = Modifier.fillMaxSize()
                 )

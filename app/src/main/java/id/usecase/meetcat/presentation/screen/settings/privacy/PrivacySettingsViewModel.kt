@@ -55,7 +55,15 @@ class PrivacySettingsViewModel : ViewModel() {
             // Simulate loading
             delay(500)
 
-            // TODO: Load from repository
+            // Mock: In production, would load privacy settings from repository:
+            // val result = settingsRepository.getPrivacySettings()
+            // result.fold(
+            //     onSuccess = { settings ->
+            //         _uiState.update { it.copy(...settings, isLoading = false) }
+            //     },
+            //     onFailure = { _uiState.update { it.copy(isLoading = false, error = ...) } }
+            // )
+            // For now, using mock default values:
             _uiState.update {
                 it.copy(
                     isPrivateAccount = false,

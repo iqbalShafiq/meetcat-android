@@ -58,6 +58,8 @@ class PostDetailViewModel(
                     _uiEffect.send(PostDetailUiEffect.ShowShareDialog(postId))
                 }
             }
+            is PostDetailUiEvent.SubmitComment -> submitComment(event.commentText)
+            is PostDetailUiEvent.SubmitReply -> submitReply(event.replyText)
         }
     }
 
@@ -224,6 +226,32 @@ class PostDetailViewModel(
                 }
                 _uiEffect.send(PostDetailUiEffect.ShowError("Failed to love comment"))
             }
+        }
+    }
+
+    private fun submitComment(commentText: String) {
+        viewModelScope.launch {
+            // Mock comment submission - in production, this would call:
+            // postRepository.createComment(postId, commentText)
+
+            // For now, just send success effect and refresh
+            _uiEffect.send(PostDetailUiEffect.CommentSubmitted)
+
+            // Refresh to show new comment (in mock, comments won't actually change)
+            refresh()
+        }
+    }
+
+    private fun submitReply(replyText: String) {
+        viewModelScope.launch {
+            // Mock reply submission - in production, this would call:
+            // postRepository.createReply(postId, replyText)
+
+            // For now, just send success effect
+            _uiEffect.send(PostDetailUiEffect.ReplySubmitted)
+
+            // Note: Reply creates a new post, so we just dismiss the dialog
+            // In production, you might navigate to the new reply or refresh feed
         }
     }
 }

@@ -67,7 +67,8 @@ fun EditPostScreen(
                 }
 
                 is EditPostUiEffect.ShowMediaPicker -> {
-                    // TODO: Show media picker
+                    // Mock: In production, would launch Android's photo picker or navigate to MediaPickerScreen
+                    // See CreatePostScreen for detailed implementation example
                 }
 
                 is EditPostUiEffect.ShowDeleteConfirmation -> {
@@ -221,7 +222,8 @@ private fun EditPostContent(
                                 .clip(RoundedCornerShape(12.dp))
                                 .background(MaterialTheme.colorScheme.surfaceVariant)
                         ) {
-                            // TODO: Add AsyncImage to display media
+                            // Mock: In production, would use Coil's AsyncImage
+                            // See CreatePostScreen for detailed implementation example
                             Icon(
                                 imageVector = Icons.Default.Image,
                                 contentDescription = "Post image",

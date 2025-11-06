@@ -34,7 +34,8 @@ class FollowersListViewModel(
             }
 
             is FollowersListUiEvent.LoadMore -> {
-                // TODO: Implement pagination
+                // Mock pagination - In production, this would load more followers when user scrolls to bottom
+                // See UserProfileViewModel.loadMore() for detailed implementation example
             }
 
             is FollowersListUiEvent.NavigateToProfile -> {

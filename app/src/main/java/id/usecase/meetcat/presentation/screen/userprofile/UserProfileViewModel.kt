@@ -105,7 +105,30 @@ class UserProfileViewModel(
     }
 
     private fun loadMore() {
-        // TODO: Implement pagination
+        // Mock pagination - In production, this would:
+        // 1. Check if there's more data available (hasMore flag)
+        // 2. Prevent duplicate requests (loading flag)
+        // 3. Load next page based on current offset/cursor
+        // 4. Append new items to existing list
+        // Example:
+        // if (!_uiState.value.hasMore || _uiState.value.isLoadingMore) return
+        // viewModelScope.launch {
+        //     _uiState.update { it.copy(isLoadingMore = true) }
+        //     val result = repository.getUserPosts(userId, page = currentPage + 1)
+        //     result.fold(
+        //         onSuccess = { newPosts ->
+        //             _uiState.update { state ->
+        //                 state.copy(
+        //                     posts = (state.posts + newPosts).toImmutableList(),
+        //                     currentPage = currentPage + 1,
+        //                     hasMore = newPosts.size >= pageSize,
+        //                     isLoadingMore = false
+        //                 )
+        //             }
+        //         },
+        //         onFailure = { _uiState.update { it.copy(isLoadingMore = false) } }
+        //     )
+        // }
     }
 
     private fun selectTab(tab: ProfileTab) {

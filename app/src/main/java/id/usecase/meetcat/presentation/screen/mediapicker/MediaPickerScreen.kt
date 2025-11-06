@@ -66,19 +66,29 @@ fun MediaPickerScreen(
                 }
 
                 is MediaPickerUiEffect.RequestCameraPermission -> {
-                    // TODO: Request camera permission
+                    // Mock: In production, would use:
+                    // val permissionLauncher = rememberLauncherForActivityResult(
+                    //     contract = ActivityResultContracts.RequestPermission()
+                    // ) { granted -> viewModel.onCameraPermissionResult(granted) }
+                    // permissionLauncher.launch(Manifest.permission.CAMERA)
                 }
 
                 is MediaPickerUiEffect.RequestStoragePermission -> {
-                    // TODO: Request storage permission
+                    // Mock: In production, would request READ_MEDIA_IMAGES/READ_MEDIA_VIDEO
+                    // on Android 13+ or READ_EXTERNAL_STORAGE on older versions
                 }
 
                 is MediaPickerUiEffect.LaunchCamera -> {
-                    // TODO: Launch camera
+                    // Mock: In production, would use:
+                    // val takePictureLauncher = rememberLauncherForActivityResult(
+                    //     contract = ActivityResultContracts.TakePicture()
+                    // ) { success -> if (success) viewModel.onPhotoTaken(photoUri) }
+                    // takePictureLauncher.launch(photoUri)
                 }
 
                 is MediaPickerUiEffect.LaunchGallery -> {
-                    // TODO: Launch gallery
+                    // Mock: In production, would use ActivityResultContracts.PickVisualMedia
+                    // or GetContent to launch system gallery picker
                 }
 
                 is MediaPickerUiEffect.ShowError -> {

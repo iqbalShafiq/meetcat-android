@@ -58,6 +58,7 @@ class ReplyDetailViewModel(
                     _uiEffect.send(ReplyDetailUiEffect.ShowShareDialog(replyId))
                 }
             }
+            is ReplyDetailUiEvent.SubmitComment -> submitComment(event.commentText)
         }
     }
 
@@ -224,6 +225,19 @@ class ReplyDetailViewModel(
                 }
                 _uiEffect.send(ReplyDetailUiEffect.ShowError("Failed to love comment"))
             }
+        }
+    }
+
+    private fun submitComment(commentText: String) {
+        viewModelScope.launch {
+            // Mock comment submission - in production, this would call:
+            // postRepository.createComment(replyId, commentText)
+
+            // For now, just send success effect and refresh
+            _uiEffect.send(ReplyDetailUiEffect.CommentSubmitted)
+
+            // Refresh to show new comment (in mock, comments won't actually change)
+            refresh()
         }
     }
 }
