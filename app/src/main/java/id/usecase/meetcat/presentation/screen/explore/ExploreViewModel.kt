@@ -2,18 +2,24 @@ package id.usecase.meetcat.presentation.screen.explore
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
+import androidx.paging.map
 import id.usecase.meetcat.domain.model.FeedItem
+import id.usecase.meetcat.domain.paging.ExplorePagingSource
 import id.usecase.meetcat.domain.usecase.post.GetExploreFeedUseCase
 import id.usecase.meetcat.domain.usecase.post.LovePostUseCase
 import id.usecase.meetcat.domain.usecase.post.LoveReplyUseCase
 import id.usecase.meetcat.domain.usecase.post.UnlovePostUseCase
 import id.usecase.meetcat.domain.usecase.post.UnloveReplyUseCase
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -26,22 +32,71 @@ class ExploreViewModel(
     private val unloveReplyUseCase: UnloveReplyUseCase
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(ExploreUiState())
-    val uiState: StateFlow<ExploreUiState> = _uiState.asStateFlow()
-
     private val _uiEffect = Channel<ExploreUiEffect>()
     val uiEffect: Flow<ExploreUiEffect> = _uiEffect.receiveAsFlow()
 
-    private var currentPage = 0
+    // Track loved items separately for optimistic UI updates
+    private val _lovedPosts = MutableStateFlow<Set<String>>(emptySet())
+    private val _lovedReplies = MutableStateFlow<Set<String>>(emptySet())
 
-    init {
-        loadInitialFeed()
+    // Paging3 Flow for infinite scroll
+    private val pagingFlow: Flow<PagingData<FeedItem>> = Pager(
+        config = PagingConfig(
+            pageSize = PAGE_SIZE,
+            prefetchDistance = PREFETCH_DISTANCE,
+            enablePlaceholders = false
+        ),
+        pagingSourceFactory = { ExplorePagingSource(getExploreFeedUseCase) }
+    ).flow.cachedIn(viewModelScope)
+
+    // Combine paging data with love states for optimistic UI updates
+    val feedItems: Flow<PagingData<FeedItem>> = combine(
+        pagingFlow,
+        _lovedPosts,
+        _lovedReplies
+    ) { pagingData, lovedPosts, lovedReplies ->
+        pagingData.map { item ->
+            when (item) {
+                is FeedItem.PostItem -> {
+                    val isLocallyLoved = lovedPosts.contains(item.post.id)
+                    if (isLocallyLoved != item.post.isLoved) {
+                        FeedItem.PostItem(
+                            item.post.copy(
+                                isLoved = isLocallyLoved,
+                                lovesCount = if (isLocallyLoved)
+                                    item.post.lovesCount + 1
+                                else
+                                    item.post.lovesCount - 1
+                            )
+                        )
+                    } else item
+                }
+                is FeedItem.ReplyItem -> {
+                    val isLocallyLoved = lovedReplies.contains(item.reply.id)
+                    if (isLocallyLoved != item.reply.isLoved) {
+                        FeedItem.ReplyItem(
+                            item.reply.copy(
+                                isLoved = isLocallyLoved,
+                                lovesCount = if (isLocallyLoved)
+                                    item.reply.lovesCount + 1
+                                else
+                                    item.reply.lovesCount - 1
+                            )
+                        )
+                    } else item
+                }
+            }
+        }
     }
 
     fun onEvent(event: ExploreUiEvent) {
         when (event) {
-            is ExploreUiEvent.Refresh -> refresh()
-            is ExploreUiEvent.LoadMore -> loadMore()
+            is ExploreUiEvent.Refresh -> {
+                // Refresh is handled by LazyPagingItems.refresh() in UI layer
+            }
+            is ExploreUiEvent.LoadMore -> {
+                // LoadMore is handled automatically by Paging3
+            }
             is ExploreUiEvent.LovePost -> toggleLovePost(event.postId)
             is ExploreUiEvent.LoveReply -> toggleLoveReply(event.replyId)
             is ExploreUiEvent.NavigateToPost -> {
@@ -67,147 +122,33 @@ class ExploreViewModel(
         }
     }
 
-    private fun loadInitialFeed() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
-
-            val result = getExploreFeedUseCase(page = 0)
-
-            result.fold(
-                onSuccess = { items ->
-                    currentPage = 0
-                    _uiState.update {
-                        it.copy(
-                            feedItems = items.toImmutableList(),
-                            isLoading = false,
-                            hasMore = items.size >= PAGE_SIZE,
-                            error = null
-                        )
-                    }
-                },
-                onFailure = { error ->
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            error = error.message ?: "Unknown error"
-                        )
-                    }
-                }
-            )
-        }
-    }
-
-    private fun refresh() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isRefreshing = true) }
-
-            val result = getExploreFeedUseCase(page = 0)
-
-            result.fold(
-                onSuccess = { items ->
-                    currentPage = 0
-                    _uiState.update {
-                        it.copy(
-                            feedItems = items.toImmutableList(),
-                            isRefreshing = false,
-                            hasMore = items.size >= PAGE_SIZE,
-                            error = null
-                        )
-                    }
-                },
-                onFailure = { error ->
-                    _uiState.update { it.copy(isRefreshing = false) }
-                    _uiEffect.send(
-                        ExploreUiEffect.ShowError(error.message ?: "Failed to refresh")
-                    )
-                }
-            )
-        }
-    }
-
-    private fun loadMore() {
-        if (_uiState.value.isLoading || !_uiState.value.hasMore) return
-
-        viewModelScope.launch {
-            val nextPage = currentPage + 1
-            val result = getExploreFeedUseCase(page = nextPage)
-
-            result.fold(
-                onSuccess = { items ->
-                    currentPage = nextPage
-                    _uiState.update {
-                        it.copy(
-                            feedItems = (it.feedItems + items).toImmutableList(),
-                            hasMore = items.size >= PAGE_SIZE
-                        )
-                    }
-                },
-                onFailure = { error ->
-                    _uiEffect.send(
-                        ExploreUiEffect.ShowError(error.message ?: "Failed to load more")
-                    )
-                }
-            )
-        }
-    }
-
     private fun toggleLovePost(postId: String) {
         viewModelScope.launch {
-            _uiState.update { state ->
-                state.copy(
-                    feedItems = state.feedItems.map { item ->
-                        when (item) {
-                            is FeedItem.PostItem -> {
-                                if (item.post.id == postId) {
-                                    FeedItem.PostItem(
-                                        item.post.copy(
-                                            isLoved = !item.post.isLoved,
-                                            lovesCount = if (item.post.isLoved)
-                                                item.post.lovesCount - 1
-                                            else
-                                                item.post.lovesCount + 1
-                                        )
-                                    )
-                                } else item
-                            }
-                            is FeedItem.ReplyItem -> item
-                        }
-                    }.toImmutableList()
-                )
+            // Optimistic update
+            val isCurrentlyLoved = _lovedPosts.value.contains(postId)
+            _lovedPosts.update { current ->
+                if (isCurrentlyLoved) {
+                    current - postId
+                } else {
+                    current + postId
+                }
             }
 
-            val currentPost = _uiState.value.feedItems
-                .filterIsInstance<FeedItem.PostItem>()
-                .find { it.post.id == postId }?.post
-
-            val result = if (currentPost?.isLoved == true) {
+            // Perform API call
+            val result = if (isCurrentlyLoved) {
                 unlovePostUseCase(postId)
             } else {
                 lovePostUseCase(postId)
             }
 
+            // Revert on failure
             result.onFailure {
-                _uiState.update { state ->
-                    state.copy(
-                        feedItems = state.feedItems.map { item ->
-                            when (item) {
-                                is FeedItem.PostItem -> {
-                                    if (item.post.id == postId) {
-                                        FeedItem.PostItem(
-                                            item.post.copy(
-                                                isLoved = !item.post.isLoved,
-                                                lovesCount = if (item.post.isLoved)
-                                                    item.post.lovesCount - 1
-                                                else
-                                                    item.post.lovesCount + 1
-                                            )
-                                        )
-                                    } else item
-                                }
-                                is FeedItem.ReplyItem -> item
-                            }
-                        }.toImmutableList()
-                    )
+                _lovedPosts.update { current ->
+                    if (isCurrentlyLoved) {
+                        current + postId
+                    } else {
+                        current - postId
+                    }
                 }
                 _uiEffect.send(ExploreUiEffect.ShowError("Failed to love post"))
             }
@@ -216,61 +157,31 @@ class ExploreViewModel(
 
     private fun toggleLoveReply(replyId: String) {
         viewModelScope.launch {
-            _uiState.update { state ->
-                state.copy(
-                    feedItems = state.feedItems.map { item ->
-                        when (item) {
-                            is FeedItem.ReplyItem -> {
-                                if (item.reply.id == replyId) {
-                                    FeedItem.ReplyItem(
-                                        item.reply.copy(
-                                            isLoved = !item.reply.isLoved,
-                                            lovesCount = if (item.reply.isLoved)
-                                                item.reply.lovesCount - 1
-                                            else
-                                                item.reply.lovesCount + 1
-                                        )
-                                    )
-                                } else item
-                            }
-                            is FeedItem.PostItem -> item
-                        }
-                    }.toImmutableList()
-                )
+            // Optimistic update
+            val isCurrentlyLoved = _lovedReplies.value.contains(replyId)
+            _lovedReplies.update { current ->
+                if (isCurrentlyLoved) {
+                    current - replyId
+                } else {
+                    current + replyId
+                }
             }
 
-            val currentReply = _uiState.value.feedItems
-                .filterIsInstance<FeedItem.ReplyItem>()
-                .find { it.reply.id == replyId }?.reply
-
-            val result = if (currentReply?.isLoved == true) {
+            // Perform API call
+            val result = if (isCurrentlyLoved) {
                 unloveReplyUseCase(replyId)
             } else {
                 loveReplyUseCase(replyId)
             }
 
+            // Revert on failure
             result.onFailure {
-                _uiState.update { state ->
-                    state.copy(
-                        feedItems = state.feedItems.map { item ->
-                            when (item) {
-                                is FeedItem.ReplyItem -> {
-                                    if (item.reply.id == replyId) {
-                                        FeedItem.ReplyItem(
-                                            item.reply.copy(
-                                                isLoved = !item.reply.isLoved,
-                                                lovesCount = if (item.reply.isLoved)
-                                                    item.reply.lovesCount - 1
-                                                else
-                                                    item.reply.lovesCount + 1
-                                            )
-                                        )
-                                    } else item
-                                }
-                                is FeedItem.PostItem -> item
-                            }
-                        }.toImmutableList()
-                    )
+                _lovedReplies.update { current ->
+                    if (isCurrentlyLoved) {
+                        current + replyId
+                    } else {
+                        current - replyId
+                    }
                 }
                 _uiEffect.send(ExploreUiEffect.ShowError("Failed to love reply"))
             }
@@ -279,5 +190,6 @@ class ExploreViewModel(
 
     companion object {
         private const val PAGE_SIZE = 20
+        private const val PREFETCH_DISTANCE = 10 // Load more when 10 items from bottom
     }
 }
