@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -40,11 +39,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.paging.LoadState
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.itemKey
 import id.usecase.meetcat.domain.model.User
 import id.usecase.meetcat.presentation.component.state.EmptyView
 import id.usecase.meetcat.ui.theme.MeetCatTheme
-import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable
@@ -54,7 +55,7 @@ fun FollowingListScreen(
     onNavigateToProfile: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val following = viewModel.following.collectAsLazyPagingItems()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
@@ -76,7 +77,7 @@ fun FollowingListScreen(
     }
 
     FollowingListContent(
-        uiState = uiState,
+        following = following,
         onEvent = viewModel::onEvent,
         snackbarHostState = snackbarHostState,
         modifier = modifier
@@ -86,7 +87,7 @@ fun FollowingListScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun FollowingListContent(
-    uiState: FollowingListUiState,
+    following: LazyPagingItems<User>,
     onEvent: (FollowingListUiEvent) -> Unit,
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier
@@ -118,15 +119,17 @@ private fun FollowingListContent(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
+        val isRefreshing = following.loadState.refresh is LoadState.Loading
+
         PullToRefreshBox(
-            isRefreshing = uiState.isRefreshing,
-            onRefresh = { onEvent(FollowingListUiEvent.Refresh) },
+            isRefreshing = isRefreshing,
+            onRefresh = { following.refresh() },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
             when {
-                uiState.isLoading -> {
+                following.loadState.refresh is LoadState.Loading && following.itemCount == 0 -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
@@ -135,7 +138,7 @@ private fun FollowingListContent(
                     }
                 }
 
-                uiState.following.isEmpty() -> {
+                following.loadState.refresh is LoadState.NotLoading && following.itemCount == 0 -> {
                     EmptyView(
                         message = "Not following anyone yet",
                         modifier = Modifier.fillMaxSize()
@@ -147,14 +150,53 @@ private fun FollowingListContent(
                         modifier = Modifier.fillMaxSize()
                     ) {
                         items(
-                            items = uiState.following,
-                            key = { it.id }
-                        ) { user ->
-                            UserListItem(
-                                user = user,
-                                onUserClick = { onEvent(FollowingListUiEvent.NavigateToProfile(user.id)) },
-                                onFollowClick = { onEvent(FollowingListUiEvent.ToggleFollow(user.id)) }
-                            )
+                            count = following.itemCount,
+                            key = following.itemKey { it.id }
+                        ) { index ->
+                            following[index]?.let { user ->
+                                UserListItem(
+                                    user = user,
+                                    onUserClick = { onEvent(FollowingListUiEvent.NavigateToProfile(user.id)) },
+                                    onFollowClick = { onEvent(FollowingListUiEvent.ToggleFollow(user.id)) }
+                                )
+                            }
+                        }
+
+                        // Handle append state (loading more items)
+                        following.loadState.append.let { appendState ->
+                            when (appendState) {
+                                is LoadState.Loading -> {
+                                    item {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(16.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            CircularProgressIndicator()
+                                        }
+                                    }
+                                }
+
+                                is LoadState.Error -> {
+                                    item {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(16.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Button(onClick = { following.retry() }) {
+                                                Text("Retry")
+                                            }
+                                        }
+                                    }
+                                }
+
+                                is LoadState.NotLoading -> {
+                                    // End of list - do nothing
+                                }
+                            }
                         }
                     }
                 }
@@ -242,39 +284,5 @@ private fun UserListItem(
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-private fun FollowingListScreenPreview() {
-    MeetCatTheme {
-        FollowingListContent(
-            uiState = FollowingListUiState(
-                following = persistentListOf(
-                    User(
-                        id = "1",
-                        username = "cat_photos",
-                        displayName = "Cat Photos",
-                        profileImageUrl = null,
-                        bio = "Best cat photos",
-                        followersCount = 500,
-                        followingCount = 234,
-                        postsCount = 120,
-                        isFollowing = true
-                    ),
-                    User(
-                        id = "2",
-                        username = "cute_cats",
-                        displayName = "Cute Cats",
-                        profileImageUrl = null,
-                        bio = null,
-                        followersCount = 789,
-                        followingCount = 345,
-                        postsCount = 234,
-                        isFollowing = true
-                    )
-                )
-            ),
-            onEvent = {},
-            snackbarHostState = remember { SnackbarHostState() }
-        )
-    }
-}
+// Preview removed - Paging3 LazyPagingItems cannot be easily previewed
+// Use actual device/emulator testing for this screen

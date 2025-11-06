@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -40,12 +39,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.paging.LoadState
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.itemKey
 import id.usecase.meetcat.domain.model.User
 import id.usecase.meetcat.presentation.component.state.EmptyView
 import id.usecase.meetcat.ui.theme.MeetCatTheme
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable
@@ -55,7 +55,7 @@ fun FollowersListScreen(
     onNavigateToProfile: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val followers = viewModel.followers.collectAsLazyPagingItems()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
@@ -77,7 +77,7 @@ fun FollowersListScreen(
     }
 
     FollowersListContent(
-        uiState = uiState,
+        followers = followers,
         onEvent = viewModel::onEvent,
         snackbarHostState = snackbarHostState,
         modifier = modifier
@@ -87,7 +87,7 @@ fun FollowersListScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun FollowersListContent(
-    uiState: FollowersListUiState,
+    followers: LazyPagingItems<User>,
     onEvent: (FollowersListUiEvent) -> Unit,
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier
@@ -119,15 +119,17 @@ private fun FollowersListContent(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
+        val isRefreshing = followers.loadState.refresh is LoadState.Loading
+
         PullToRefreshBox(
-            isRefreshing = uiState.isRefreshing,
-            onRefresh = { onEvent(FollowersListUiEvent.Refresh) },
+            isRefreshing = isRefreshing,
+            onRefresh = { followers.refresh() },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
             when {
-                uiState.isLoading -> {
+                followers.loadState.refresh is LoadState.Loading && followers.itemCount == 0 -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
@@ -136,7 +138,7 @@ private fun FollowersListContent(
                     }
                 }
 
-                uiState.followers.isEmpty() -> {
+                followers.loadState.refresh is LoadState.NotLoading && followers.itemCount == 0 -> {
                     EmptyView(
                         message = "No followers yet",
                         modifier = Modifier.fillMaxSize()
@@ -148,14 +150,53 @@ private fun FollowersListContent(
                         modifier = Modifier.fillMaxSize()
                     ) {
                         items(
-                            items = uiState.followers,
-                            key = { it.id }
-                        ) { user ->
-                            UserListItem(
-                                user = user,
-                                onUserClick = { onEvent(FollowersListUiEvent.NavigateToProfile(user.id)) },
-                                onFollowClick = { onEvent(FollowersListUiEvent.ToggleFollow(user.id)) }
-                            )
+                            count = followers.itemCount,
+                            key = followers.itemKey { it.id }
+                        ) { index ->
+                            followers[index]?.let { user ->
+                                UserListItem(
+                                    user = user,
+                                    onUserClick = { onEvent(FollowersListUiEvent.NavigateToProfile(user.id)) },
+                                    onFollowClick = { onEvent(FollowersListUiEvent.ToggleFollow(user.id)) }
+                                )
+                            }
+                        }
+
+                        // Handle append state (loading more items)
+                        followers.loadState.append.let { appendState ->
+                            when (appendState) {
+                                is LoadState.Loading -> {
+                                    item {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(16.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            CircularProgressIndicator()
+                                        }
+                                    }
+                                }
+
+                                is LoadState.Error -> {
+                                    item {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(16.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Button(onClick = { followers.retry() }) {
+                                                Text("Retry")
+                                            }
+                                        }
+                                    }
+                                }
+
+                                is LoadState.NotLoading -> {
+                                    // End of list - do nothing
+                                }
+                            }
                         }
                     }
                 }
@@ -243,39 +284,5 @@ private fun UserListItem(
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-private fun FollowersListScreenPreview() {
-    MeetCatTheme {
-        FollowersListContent(
-            uiState = FollowersListUiState(
-                followers = persistentListOf(
-                    User(
-                        id = "1",
-                        username = "cat_lover",
-                        displayName = "Cat Lover",
-                        profileImageUrl = null,
-                        bio = "I love cats!",
-                        followersCount = 150,
-                        followingCount = 89,
-                        postsCount = 45,
-                        isFollowing = true
-                    ),
-                    User(
-                        id = "2",
-                        username = "kitty_fan",
-                        displayName = "Kitty Fan",
-                        profileImageUrl = null,
-                        bio = null,
-                        followersCount = 230,
-                        followingCount = 156,
-                        postsCount = 78,
-                        isFollowing = false
-                    )
-                )
-            ),
-            onEvent = {},
-            snackbarHostState = remember { SnackbarHostState() }
-        )
-    }
-}
+// Preview removed - Paging3 LazyPagingItems cannot be easily previewed
+// Use actual device/emulator testing for this screen

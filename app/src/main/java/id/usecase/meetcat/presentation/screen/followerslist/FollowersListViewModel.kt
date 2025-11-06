@@ -2,40 +2,66 @@ package id.usecase.meetcat.presentation.screen.followerslist
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
+import androidx.paging.map
 import id.usecase.meetcat.domain.model.User
-import kotlinx.collections.immutable.toImmutableList
+import id.usecase.meetcat.domain.paging.FollowersPagingSource
+import id.usecase.meetcat.domain.repository.UserRepository
+import id.usecase.meetcat.domain.usecase.user.GetFollowersUseCase
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class FollowersListViewModel(
-    private val userId: String
+    private val userId: String,
+    private val getFollowersUseCase: GetFollowersUseCase,
+    private val userRepository: UserRepository
 ) : ViewModel() {
-
-    private val _uiState = MutableStateFlow(FollowersListUiState(userId = userId))
-    val uiState: StateFlow<FollowersListUiState> = _uiState.asStateFlow()
 
     private val _uiEffect = Channel<FollowersListUiEffect>()
     val uiEffect = _uiEffect.receiveAsFlow()
 
-    init {
-        loadFollowers()
+    // Track follow toggles for optimistic UI updates
+    private val _toggledFollows = MutableStateFlow<Map<String, Boolean>>(emptyMap())
+
+    // Paging3 Flow for infinite scroll
+    private val pagingFlow: Flow<PagingData<User>> = Pager(
+        config = PagingConfig(
+            pageSize = PAGE_SIZE,
+            prefetchDistance = PREFETCH_DISTANCE,
+            enablePlaceholders = false
+        ),
+        pagingSourceFactory = { FollowersPagingSource(userId, getFollowersUseCase) }
+    ).flow.cachedIn(viewModelScope)
+
+    // Combine paging data with follow toggles for optimistic UI updates
+    val followers: Flow<PagingData<User>> = combine(
+        pagingFlow,
+        _toggledFollows
+    ) { pagingData, toggledFollows ->
+        pagingData.map { user ->
+            // If user has been toggled, apply the optimistic update
+            toggledFollows[user.id]?.let { isFollowing ->
+                user.copy(isFollowing = isFollowing)
+            } ?: user
+        }
     }
 
     fun onEvent(event: FollowersListUiEvent) {
         when (event) {
             is FollowersListUiEvent.Refresh -> {
-                loadFollowers(isRefresh = true)
+                // Refresh is handled by LazyPagingItems.refresh() in UI layer
             }
 
             is FollowersListUiEvent.LoadMore -> {
-                // Mock pagination - In production, this would load more followers when user scrolls to bottom
-                // See UserProfileViewModel.loadMore() for detailed implementation example
+                // LoadMore is handled automatically by Paging3
             }
 
             is FollowersListUiEvent.NavigateToProfile -> {
@@ -56,75 +82,47 @@ class FollowersListViewModel(
         }
     }
 
-    private fun loadFollowers(isRefresh: Boolean = false) {
+    private fun toggleFollow(targetUserId: String) {
         viewModelScope.launch {
-            if (isRefresh) {
-                _uiState.update { it.copy(isRefreshing = true) }
-            } else {
-                _uiState.update { it.copy(isLoading = true) }
+            // Get current state
+            val currentToggles = _toggledFollows.value
+            val currentFollowState = currentToggles[targetUserId]
+
+            // Determine new follow state (optimistic update)
+            val newFollowState = when (currentFollowState) {
+                null -> true // Not toggled yet, assume was false, toggle to true
+                true -> false
+                false -> true
             }
 
-            // Simulate loading
-            delay(1000)
+            // Apply optimistic update
+            _toggledFollows.update { current ->
+                current + (targetUserId to newFollowState)
+            }
 
-            // Mock followers data
-            val mockFollowers = listOf(
-                User(
-                    id = "follower1",
-                    username = "cat_lover",
-                    displayName = "Cat Lover",
-                    profileImageUrl = null,
-                    bio = "I love cats!",
-                    followersCount = 150,
-                    followingCount = 89,
-                    postsCount = 45,
-                    isFollowing = true
-                ),
-                User(
-                    id = "follower2",
-                    username = "kitty_fan",
-                    displayName = "Kitty Fan",
-                    profileImageUrl = null,
-                    bio = "Cat enthusiast",
-                    followersCount = 230,
-                    followingCount = 156,
-                    postsCount = 78,
-                    isFollowing = false
-                ),
-                User(
-                    id = "follower3",
-                    username = "meow_meow",
-                    displayName = "Meow Meow",
-                    profileImageUrl = null,
-                    bio = "Meow meow meow",
-                    followersCount = 89,
-                    followingCount = 67,
-                    postsCount = 34,
-                    isFollowing = true
-                )
-            )
+            // Make API call
+            val result = if (newFollowState) {
+                userRepository.followUser(targetUserId)
+            } else {
+                userRepository.unfollowUser(targetUserId)
+            }
 
-            _uiState.update {
-                it.copy(
-                    followers = mockFollowers.toImmutableList(),
-                    isLoading = false,
-                    isRefreshing = false
-                )
+            // Revert on failure
+            result.onFailure {
+                _toggledFollows.update { current ->
+                    if (currentFollowState == null) {
+                        current - targetUserId
+                    } else {
+                        current + (targetUserId to currentFollowState)
+                    }
+                }
+                _uiEffect.send(FollowersListUiEffect.ShowError("Failed to update follow status"))
             }
         }
     }
 
-    private fun toggleFollow(userId: String) {
-        viewModelScope.launch {
-            val updatedFollowers = _uiState.value.followers.map { user ->
-                if (user.id == userId) {
-                    user.copy(isFollowing = !user.isFollowing)
-                } else {
-                    user
-                }
-            }.toImmutableList()
-
-            _uiState.update { it.copy(followers = updatedFollowers) }
-        }
+    companion object {
+        private const val PAGE_SIZE = 20
+        private const val PREFETCH_DISTANCE = 10
     }
 }
