@@ -34,13 +34,20 @@ import id.usecase.meetcat.presentation.screen.auth.forgotpassword.ForgotPassword
 import id.usecase.meetcat.presentation.screen.auth.login.LoginViewModel
 import id.usecase.meetcat.presentation.screen.auth.register.RegisterViewModel
 import id.usecase.meetcat.presentation.screen.auth.splash.SplashViewModel
+import id.usecase.meetcat.presentation.screen.editprofile.EditProfileViewModel
 import id.usecase.meetcat.presentation.screen.explore.ExploreViewModel
+import id.usecase.meetcat.presentation.screen.followerslist.FollowersListViewModel
+import id.usecase.meetcat.presentation.screen.followinglist.FollowingListViewModel
 import id.usecase.meetcat.presentation.screen.main.MainViewModel
 import id.usecase.meetcat.presentation.screen.maps.MapsViewModel
 import id.usecase.meetcat.presentation.screen.postdetail.PostDetailViewModel
 import id.usecase.meetcat.presentation.screen.profile.ProfileViewModel
 import id.usecase.meetcat.presentation.screen.replydetail.ReplyDetailViewModel
 import id.usecase.meetcat.presentation.screen.search.SearchViewModel
+import id.usecase.meetcat.presentation.screen.settings.SettingsViewModel
+import id.usecase.meetcat.presentation.screen.settings.about.AboutViewModel
+import id.usecase.meetcat.presentation.screen.settings.account.AccountSettingsViewModel
+import id.usecase.meetcat.presentation.screen.settings.privacy.PrivacySettingsViewModel
 import id.usecase.meetcat.presentation.screen.userprofile.UserProfileViewModel
 import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
@@ -64,6 +71,15 @@ val appModule = module {
     viewModelOf(::MapsViewModel)
     viewModelOf(::ProfileViewModel)
 
+    // Profile Management ViewModels
+    viewModelOf(::EditProfileViewModel)
+
+    // Settings ViewModels
+    viewModelOf(::SettingsViewModel)
+    viewModelOf(::AccountSettingsViewModel)
+    viewModelOf(::PrivacySettingsViewModel)
+    viewModelOf(::AboutViewModel)
+
     // Detail screen ViewModels with parameters
     viewModel { (postId: String) ->
         PostDetailViewModel(
@@ -79,6 +95,16 @@ val appModule = module {
     }
     viewModel { (userId: String) ->
         UserProfileViewModel(
+            userId = userId
+        )
+    }
+    viewModel { (userId: String) ->
+        FollowersListViewModel(
+            userId = userId
+        )
+    }
+    viewModel { (userId: String) ->
+        FollowingListViewModel(
             userId = userId
         )
     }
