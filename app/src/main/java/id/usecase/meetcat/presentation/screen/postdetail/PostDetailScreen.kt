@@ -35,8 +35,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.google.accompanist.swiperefresh.SwipeRefresh
-import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import id.usecase.meetcat.presentation.component.card.CommentCard
 import id.usecase.meetcat.presentation.component.card.PostCard
 import id.usecase.meetcat.presentation.component.dialog.CommentDialog
@@ -116,14 +115,16 @@ fun PostDetailScreen(
     }
 
     // Reply Dialog
-    if (showReplyDialog && uiState.post != null) {
-        ReplyDialog(
-            post = uiState.post,
-            onDismiss = { showReplyDialog = false },
-            onReplySubmit = { replyText ->
-                viewModel.onEvent(PostDetailUiEvent.SubmitReply(replyText))
-            }
-        )
+    if (showReplyDialog) {
+        uiState.post?.let { post ->
+            ReplyDialog(
+                post = post,
+                onDismiss = { showReplyDialog = false },
+                onReplySubmit = { replyText ->
+                    viewModel.onEvent(PostDetailUiEvent.SubmitReply(replyText))
+                }
+            )
+        }
     }
 }
 
@@ -176,8 +177,8 @@ private fun PostDetailContent(
             }
 
             uiState.post != null -> {
-                SwipeRefresh(
-                    state = rememberSwipeRefreshState(uiState.isRefreshing),
+                PullToRefreshBox(
+                    isRefreshing = uiState.isRefreshing,
                     onRefresh = { onEvent(PostDetailUiEvent.Refresh) },
                     modifier = Modifier
                         .fillMaxSize()

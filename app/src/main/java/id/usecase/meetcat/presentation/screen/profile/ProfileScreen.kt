@@ -233,7 +233,7 @@ private fun ProfileTabRow(
 }
 
 @Composable
-private fun PostsGrid(
+internal fun PostsGrid(
     posts: LazyPagingItems<Post>,
     onPostClick: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -323,7 +323,7 @@ private fun PostsGrid(
 }
 
 @Composable
-private fun RepliesList(
+internal fun RepliesList(
     replies: LazyPagingItems<FeedItem.ReplyItem>,
     onReplyClick: (String) -> Unit,
     onLoveClick: (String) -> Unit,
@@ -417,7 +417,7 @@ private fun RepliesList(
 }
 
 @Composable
-private fun LovedList(
+internal fun LovedList(
     items: LazyPagingItems<FeedItem>,
     onPostClick: (String) -> Unit,
     onLovePostClick: (String) -> Unit,
@@ -547,28 +547,5 @@ private fun calculateTotalLoves(user: User): Int {
     return user.postsCount * 25
 }
 
-@Preview(showBackground = true)
-@Composable
-private fun ProfileScreenPreview() {
-    MeetCatTheme {
-        ProfileContent(
-            uiState = ProfileUiState(
-                user = User(
-                    id = "1",
-                    username = "catwhiskerer",
-                    displayName = "Cat Whisperer",
-                    bio = "Passionate about cats and photography 🐱📸",
-                    profileImageUrl = null,
-                    followersCount = 2456,
-                    followingCount = 342,
-                    postsCount = 156,
-                    isFollowing = false,
-                    createdAt = System.currentTimeMillis()
-                ),
-                posts = persistentListOf()
-            ),
-            onEvent = {},
-            snackbarHostState = remember { SnackbarHostState() }
-        )
-    }
-}
+// Note: Previews for ProfileContent are not included as they require LazyPagingItems
+// which cannot be easily mocked in Compose previews.

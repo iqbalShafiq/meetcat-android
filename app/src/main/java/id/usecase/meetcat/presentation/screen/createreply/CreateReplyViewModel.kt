@@ -70,6 +70,7 @@ class CreateReplyViewModel(
             // Mock post data
             val mockPost = Post(
                 id = postId,
+                userId = "user1",
                 user = User(
                     id = "user1",
                     username = "catowner",
@@ -82,14 +83,13 @@ class CreateReplyViewModel(
                     isFollowing = false
                 ),
                 caption = "My cat is so cute!",
-                imageUrl = null,
+                mediaItems = emptyList(),
+                location = null,
                 lovesCount = 42,
+                commentsCount = 0,
                 repliesCount = 10,
-                sharesCount = 5,
                 isLoved = false,
-                createdAt = System.currentTimeMillis(),
-                latitude = null,
-                longitude = null
+                createdAt = System.currentTimeMillis()
             )
 
             _uiState.update { it.copy(post = mockPost, isLoading = false) }

@@ -137,8 +137,7 @@ class UserProfileViewModel(
                     reply = replyItem.reply.copy(
                         isLoved = isLoved,
                         lovesCount = if (isLoved) replyItem.reply.lovesCount + 1 else replyItem.reply.lovesCount - 1
-                    ),
-                    parentPost = replyItem.parentPost
+                    )
                 )
             } ?: replyItem
         }
@@ -167,8 +166,7 @@ class UserProfileViewModel(
                             reply = item.reply.copy(
                                 isLoved = isLoved,
                                 lovesCount = if (isLoved) item.reply.lovesCount + 1 else item.reply.lovesCount - 1
-                            ),
-                            parentPost = item.parentPost
+                            )
                         )
                     } ?: item
                 }

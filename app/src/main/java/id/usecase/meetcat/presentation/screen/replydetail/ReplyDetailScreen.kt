@@ -35,8 +35,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.google.accompanist.swiperefresh.SwipeRefresh
-import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import id.usecase.meetcat.presentation.component.card.CommentCard
 import id.usecase.meetcat.presentation.component.card.ReplyCard
 import id.usecase.meetcat.presentation.component.dialog.CommentDialog
@@ -158,8 +157,8 @@ private fun ReplyDetailContent(
             }
 
             uiState.reply != null -> {
-                SwipeRefresh(
-                    state = rememberSwipeRefreshState(uiState.isRefreshing),
+                PullToRefreshBox(
+                    isRefreshing = uiState.isRefreshing,
                     onRefresh = { onEvent(ReplyDetailUiEvent.Refresh) },
                     modifier = Modifier
                         .fillMaxSize()
