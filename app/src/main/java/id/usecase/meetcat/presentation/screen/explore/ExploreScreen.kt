@@ -1,17 +1,22 @@
 package id.usecase.meetcat.presentation.screen.explore
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -20,11 +25,16 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.paging.LoadState
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
 import id.usecase.meetcat.domain.model.FeedItem
 import id.usecase.meetcat.presentation.component.card.PostCard
 import id.usecase.meetcat.presentation.component.card.ReplyCard
@@ -46,7 +56,7 @@ fun ExploreScreen(
     onNavigateToReply: (String) -> Unit = {},
     onNavigateToProfile: (String) -> Unit = {}
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val feedItems = viewModel.feedItems.collectAsLazyPagingItems()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
@@ -76,7 +86,7 @@ fun ExploreScreen(
     }
 
     ExploreContent(
-        uiState = uiState,
+        feedItems = feedItems,
         onEvent = viewModel::onEvent,
         snackbarHostState = snackbarHostState,
         modifier = modifier,
@@ -89,7 +99,7 @@ fun ExploreScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ExploreContent(
-    uiState: ExploreUiState,
+    feedItems: LazyPagingItems<FeedItem>,
     onEvent: (ExploreUiEvent) -> Unit,
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier,
@@ -116,20 +126,23 @@ private fun ExploreContent(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
+        val loadState = feedItems.loadState
+
         when {
-            uiState.isLoading && uiState.feedItems.isEmpty() -> {
+            loadState.refresh is LoadState.Loading && feedItems.itemCount == 0 -> {
                 LoadingView(modifier = Modifier.padding(paddingValues))
             }
 
-            uiState.error != null && uiState.feedItems.isEmpty() -> {
+            loadState.refresh is LoadState.Error && feedItems.itemCount == 0 -> {
                 ErrorView(
-                    message = uiState.error,
-                    onRetry = { onEvent(ExploreUiEvent.Refresh) },
+                    message = (loadState.refresh as LoadState.Error).error.message
+                        ?: "Failed to load feed",
+                    onRetry = { feedItems.refresh() },
                     modifier = Modifier.padding(paddingValues)
                 )
             }
 
-            uiState.feedItems.isEmpty() -> {
+            loadState.refresh is LoadState.NotLoading && feedItems.itemCount == 0 -> {
                 EmptyView(
                     message = "No posts yet\nBe the first to share a cat photo!",
                     modifier = Modifier.padding(paddingValues)
@@ -138,14 +151,14 @@ private fun ExploreContent(
 
             else -> {
                 PullToRefreshBox(
-                    isRefreshing = uiState.isRefreshing,
-                    onRefresh = { onEvent(ExploreUiEvent.Refresh) },
+                    isRefreshing = loadState.refresh is LoadState.Loading && feedItems.itemCount > 0,
+                    onRefresh = { feedItems.refresh() },
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues)
                 ) {
                     FeedList(
-                        feedItems = uiState.feedItems,
+                        feedItems = feedItems,
                         onEvent = onEvent,
                         onShowBottomNav = onShowBottomNav,
                         onHideBottomNav = onHideBottomNav,
@@ -159,7 +172,7 @@ private fun ExploreContent(
 
 @Composable
 private fun FeedList(
-    feedItems: List<FeedItem>,
+    feedItems: LazyPagingItems<FeedItem>,
     onEvent: (ExploreUiEvent) -> Unit,
     modifier: Modifier = Modifier,
     onShowBottomNav: () -> Unit = {},
@@ -189,72 +202,132 @@ private fun FeedList(
         state = lazyListState
     ) {
         items(
-            items = feedItems,
-            key = { item ->
-                when (item) {
-                    is FeedItem.PostItem -> "post_${item.post.id}"
-                    is FeedItem.ReplyItem -> "reply_${item.reply.id}"
-                }
+            count = feedItems.itemCount,
+            key = { index ->
+                feedItems[index]?.let { item ->
+                    when (item) {
+                        is FeedItem.PostItem -> "post_${item.post.id}"
+                        is FeedItem.ReplyItem -> "reply_${item.reply.id}"
+                    }
+                } ?: "item_$index"
             },
-            contentType = { item ->
+            contentType = { index ->
+                feedItems[index]?.let { item ->
+                    when (item) {
+                        is FeedItem.PostItem -> "post"
+                        is FeedItem.ReplyItem -> "reply"
+                    }
+                } ?: "unknown"
+            }
+        ) { index ->
+            feedItems[index]?.let { item ->
                 when (item) {
-                    is FeedItem.PostItem -> "post"
-                    is FeedItem.ReplyItem -> "reply"
+                    is FeedItem.PostItem -> {
+                        PostCard(
+                            post = item.post,
+                            onPostClick = {
+                                onEvent(ExploreUiEvent.NavigateToPost(item.post.id))
+                            },
+                            onProfileClick = {
+                                onEvent(ExploreUiEvent.NavigateToProfile(item.post.userId))
+                            },
+                            onLoveClick = {
+                                onEvent(ExploreUiEvent.LovePost(item.post.id))
+                            },
+                            onCommentClick = {
+                                onEvent(ExploreUiEvent.NavigateToComments(item.post.id))
+                            },
+                            onReplyClick = {
+                                onEvent(ExploreUiEvent.NavigateToReply(item.post.id))
+                            },
+                            onShareClick = {
+                                // Share action
+                            },
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        )
+                    }
+
+                    is FeedItem.ReplyItem -> {
+                        ReplyCard(
+                            reply = item.reply,
+                            onReplyClick = {
+                                onNavigateToReply(item.reply.id)
+                            },
+                            onProfileClick = {
+                                onEvent(ExploreUiEvent.NavigateToProfile(item.reply.userId))
+                            },
+                            onOriginalPostClick = {
+                                onEvent(ExploreUiEvent.NavigateToPost(item.reply.originalPostId))
+                            },
+                            onOriginalProfileClick = {
+                                onEvent(ExploreUiEvent.NavigateToProfile(item.reply.originalPost.userId))
+                            },
+                            onLoveClick = {
+                                onEvent(ExploreUiEvent.LoveReply(item.reply.id))
+                            },
+                            onCommentClick = {
+                                onEvent(ExploreUiEvent.NavigateToComments(item.reply.id))
+                            },
+                            onShareClick = {
+                                // Share action
+                            },
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        )
+                    }
                 }
             }
-        ) { item ->
-            when (item) {
-                is FeedItem.PostItem -> {
-                    PostCard(
-                        post = item.post,
-                        onPostClick = {
-                            onEvent(ExploreUiEvent.NavigateToPost(item.post.id))
-                        },
-                        onProfileClick = {
-                            onEvent(ExploreUiEvent.NavigateToProfile(item.post.userId))
-                        },
-                        onLoveClick = {
-                            onEvent(ExploreUiEvent.LovePost(item.post.id))
-                        },
-                        onCommentClick = {
-                            onEvent(ExploreUiEvent.NavigateToComments(item.post.id))
-                        },
-                        onReplyClick = {
-                            onEvent(ExploreUiEvent.NavigateToReply(item.post.id))
-                        },
-                        onShareClick = {
-                            // Share action
-                        },
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                    )
-                }
+        }
 
-                is FeedItem.ReplyItem -> {
-                    ReplyCard(
-                        reply = item.reply,
-                        onReplyClick = {
-                            onNavigateToReply(item.reply.id)
-                        },
-                        onProfileClick = {
-                            onEvent(ExploreUiEvent.NavigateToProfile(item.reply.userId))
-                        },
-                        onOriginalPostClick = {
-                            onEvent(ExploreUiEvent.NavigateToPost(item.reply.originalPostId))
-                        },
-                        onOriginalProfileClick = {
-                            onEvent(ExploreUiEvent.NavigateToProfile(item.reply.originalPost.userId))
-                        },
-                        onLoveClick = {
-                            onEvent(ExploreUiEvent.LoveReply(item.reply.id))
-                        },
-                        onCommentClick = {
-                            onEvent(ExploreUiEvent.NavigateToComments(item.reply.id))
-                        },
-                        onShareClick = {
-                            // Share action
-                        },
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                    )
+        // Loading indicator at bottom (append state)
+        feedItems.loadState.append.let { appendState ->
+            when (appendState) {
+                is LoadState.Loading -> {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    }
+                }
+                is LoadState.Error -> {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            TextButton(onClick = { feedItems.retry() }) {
+                                Text(
+                                    text = "Failed to load more. Tap to retry",
+                                    color = MaterialTheme.colorScheme.error,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
+                    }
+                }
+                is LoadState.NotLoading -> {
+                    if (appendState.endOfPaginationReached && feedItems.itemCount > 0) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "You've reached the end",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }

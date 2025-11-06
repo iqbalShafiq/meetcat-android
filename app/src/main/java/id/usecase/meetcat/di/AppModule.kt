@@ -6,11 +6,13 @@ import com.google.android.gms.location.LocationServices
 import id.usecase.meetcat.data.repository.FakeAuthRepository
 import id.usecase.meetcat.data.repository.FakePostRepository
 import id.usecase.meetcat.data.repository.FakeSearchHistoryRepository
+import id.usecase.meetcat.data.repository.FakeUserRepository
 import id.usecase.meetcat.data.repository.LocationRepositoryImpl
 import id.usecase.meetcat.domain.repository.AuthRepository
 import id.usecase.meetcat.domain.repository.LocationRepository
 import id.usecase.meetcat.domain.repository.PostRepository
 import id.usecase.meetcat.domain.repository.SearchHistoryRepository
+import id.usecase.meetcat.domain.repository.UserRepository
 import id.usecase.meetcat.domain.usecase.auth.GetCurrentUserUseCase
 import id.usecase.meetcat.domain.usecase.auth.LoginUseCase
 import id.usecase.meetcat.domain.usecase.auth.LogoutUseCase
@@ -30,6 +32,11 @@ import id.usecase.meetcat.domain.usecase.search.ClearSearchHistoryUseCase
 import id.usecase.meetcat.domain.usecase.search.DeleteSearchQueryUseCase
 import id.usecase.meetcat.domain.usecase.search.GetSearchHistoryUseCase
 import id.usecase.meetcat.domain.usecase.search.SaveSearchQueryUseCase
+import id.usecase.meetcat.domain.usecase.user.GetFollowersUseCase
+import id.usecase.meetcat.domain.usecase.user.GetFollowingUseCase
+import id.usecase.meetcat.domain.usecase.user.GetUserLovedItemsUseCase
+import id.usecase.meetcat.domain.usecase.user.GetUserPostsUseCase
+import id.usecase.meetcat.domain.usecase.user.GetUserRepliesUseCase
 import id.usecase.meetcat.presentation.screen.auth.forgotpassword.ForgotPasswordViewModel
 import id.usecase.meetcat.presentation.screen.auth.login.LoginViewModel
 import id.usecase.meetcat.presentation.screen.auth.register.RegisterViewModel
@@ -73,7 +80,15 @@ val appModule = module {
     viewModelOf(::MainViewModel)
     viewModelOf(::SearchViewModel)
     viewModelOf(::MapsViewModel)
-    viewModelOf(::ProfileViewModel)
+    viewModel {
+        ProfileViewModel(
+            getCurrentUserUseCase = get(),
+            getUserPostsUseCase = get(),
+            getUserRepliesUseCase = get(),
+            getUserLovedItemsUseCase = get(),
+            postRepository = get()
+        )
+    }
 
     // Profile Management ViewModels
     viewModelOf(::EditProfileViewModel)
@@ -103,17 +118,26 @@ val appModule = module {
     }
     viewModel { (userId: String) ->
         UserProfileViewModel(
-            userId = userId
+            userId = userId,
+            getUserPostsUseCase = get(),
+            getUserRepliesUseCase = get(),
+            getUserLovedItemsUseCase = get(),
+            postRepository = get(),
+            userRepository = get()
         )
     }
     viewModel { (userId: String) ->
         FollowersListViewModel(
-            userId = userId
+            userId = userId,
+            getFollowersUseCase = get(),
+            userRepository = get()
         )
     }
     viewModel { (userId: String) ->
         FollowingListViewModel(
-            userId = userId
+            userId = userId,
+            getFollowingUseCase = get(),
+            userRepository = get()
         )
     }
     viewModel { (postId: String) ->
@@ -155,18 +179,30 @@ val domainModule = module {
     // Location use cases
     factoryOf(::GetCurrentLocationUseCase)
     factoryOf(::HasLocationPermissionUseCase)
+
+    // User use cases
+    factoryOf(::GetUserPostsUseCase)
+    factoryOf(::GetUserRepliesUseCase)
+    factoryOf(::GetUserLovedItemsUseCase)
+    factoryOf(::GetFollowersUseCase)
+    factoryOf(::GetFollowingUseCase)
 }
 
 val dataModule = module {
-    // Auth Repository
-    single<AuthRepository> {
-        FakeAuthRepository(context = androidContext())
-    }
+    // Auth Repository - Fully testable with no Android dependencies
+    singleOf(::FakeAuthRepository) bind AuthRepository::class
 
+    // Post Repository - Fully testable
     singleOf(::FakePostRepository) bind PostRepository::class
+
+    // User Repository - Fully testable
+    singleOf(::FakeUserRepository) bind UserRepository::class
+
+    // Search History Repository - Fully testable
     singleOf(::FakeSearchHistoryRepository) bind SearchHistoryRepository::class
 
-    // Location Services
+    // Location Services - Real implementation with Android dependencies
+    // Tests should use FakeLocationRepository instead
     single<FusedLocationProviderClient> {
         LocationServices.getFusedLocationProviderClient(androidContext())
     }

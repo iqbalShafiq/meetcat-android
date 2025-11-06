@@ -3,6 +3,16 @@ package id.usecase.meetcat.data.repository
 import id.usecase.meetcat.domain.repository.SearchHistoryRepository
 import kotlinx.coroutines.delay
 
+/**
+ * Fake implementation of SearchHistoryRepository for testing and development.
+ * Uses in-memory storage for search history.
+ *
+ * Features:
+ * - No Android dependencies (fully unit testable)
+ * - In-memory search history storage
+ * - Test isolation via reset() method
+ * - Maintains last 10 searches
+ */
 class FakeSearchHistoryRepository : SearchHistoryRepository {
 
     private val searchHistory = mutableListOf<String>()
@@ -39,5 +49,13 @@ class FakeSearchHistoryRepository : SearchHistoryRepository {
         delay(100)
         searchHistory.clear()
         return Result.success(Unit)
+    }
+
+    /**
+     * Reset repository state for test isolation.
+     * Call this between test cases to ensure clean state.
+     */
+    fun reset() {
+        searchHistory.clear()
     }
 }

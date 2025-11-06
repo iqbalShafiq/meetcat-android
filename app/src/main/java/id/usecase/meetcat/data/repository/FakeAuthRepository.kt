@@ -1,15 +1,24 @@
 package id.usecase.meetcat.data.repository
 
-import android.content.Context
 import id.usecase.meetcat.domain.model.AuthUser
 import id.usecase.meetcat.domain.repository.AuthRepository
 import kotlinx.coroutines.delay
 
-class FakeAuthRepository(
-    private val context: Context
-) : AuthRepository {
+/**
+ * Fake implementation of AuthRepository for testing and development.
+ * Uses in-memory storage instead of SharedPreferences to enable pure unit testing.
+ *
+ * Features:
+ * - No Android dependencies (fully unit testable)
+ * - In-memory user storage
+ * - Test isolation via reset() method
+ * - Thread-safe operations
+ */
+class FakeAuthRepository : AuthRepository {
 
-    private val prefs = context.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE)
+    // In-memory storage (replaces SharedPreferences)
+    private var currentUser: AuthUser? = null
+    private var isUserLoggedIn: Boolean = false
 
     // Mock users database
     private val mockUsers = mutableMapOf(
@@ -36,16 +45,9 @@ class FakeAuthRepository(
                 token = "fake_token_${System.currentTimeMillis()}"
             )
 
-            // Save to preferences
-            prefs.edit().apply {
-                putString("user_id", authUser.id)
-                putString("email", authUser.email)
-                putString("username", authUser.username)
-                putString("display_name", authUser.displayName)
-                putString("token", authUser.token)
-                putBoolean("is_logged_in", true)
-                apply()
-            }
+            // Save to in-memory storage (replaces SharedPreferences)
+            currentUser = authUser
+            isUserLoggedIn = true
 
             Result.success(authUser)
         } else {
@@ -90,25 +92,35 @@ class FakeAuthRepository(
     }
 
     override suspend fun isLoggedIn(): Boolean {
-        return prefs.getBoolean("is_logged_in", false)
+        return isUserLoggedIn
     }
 
     override suspend fun getCurrentUser(): AuthUser? {
-        if (!isLoggedIn()) return null
-
-        return AuthUser(
-            id = prefs.getString("user_id", "") ?: "",
-            email = prefs.getString("email", "") ?: "",
-            username = prefs.getString("username", "") ?: "",
-            displayName = prefs.getString("display_name", "") ?: "",
-            profileImageUrl = prefs.getString("profile_image_url", null),
-            token = prefs.getString("token", "") ?: ""
-        )
+        return if (isUserLoggedIn) currentUser else null
     }
 
     override suspend fun logout(): Result<Unit> {
-        prefs.edit().clear().apply()
+        // Clear in-memory storage (replaces SharedPreferences.clear())
+        currentUser = null
+        isUserLoggedIn = false
         return Result.success(Unit)
+    }
+
+    /**
+     * Reset repository state for test isolation.
+     * Call this between test cases to ensure clean state.
+     */
+    fun reset() {
+        currentUser = null
+        isUserLoggedIn = false
+        // Reset to default mock users
+        mockUsers.clear()
+        mockUsers["test@meetcat.com"] = MockUser(
+            email = "test@meetcat.com",
+            username = "testuser",
+            displayName = "Test User",
+            password = "password123"
+        )
     }
 
     private data class MockUser(

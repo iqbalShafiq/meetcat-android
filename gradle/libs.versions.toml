@@ -12,6 +12,8 @@ koin = "4.0.1"
 coil = "3.0.4"
 kotlinxCollectionsImmutable = "0.3.7"
 lifecycleViewmodelCompose = "2.9.4"
+paging = "3.3.5"
+pagingCompose = "3.3.5"
 mapsCompose = "6.2.1"
 playServicesMaps = "19.0.0"
 playServicesLocation = "21.3.0"
@@ -45,6 +47,10 @@ coil-network-okhttp = { group = "io.coil-kt.coil3", name = "coil-network-okhttp"
 
 # Kotlinx Collections Immutable
 kotlinx-collections-immutable = { group = "org.jetbrains.kotlinx", name = "kotlinx-collections-immutable", version.ref = "kotlinxCollectionsImmutable" }
+
+# Paging3
+androidx-paging-runtime = { group = "androidx.paging", name = "paging-runtime", version.ref = "paging" }
+androidx-paging-compose = { group = "androidx.paging", name = "paging-compose", version.ref = "pagingCompose" }
 
 # Google Maps
 maps-compose = { group = "com.google.maps.android", name = "maps-compose", version.ref = "mapsCompose" }

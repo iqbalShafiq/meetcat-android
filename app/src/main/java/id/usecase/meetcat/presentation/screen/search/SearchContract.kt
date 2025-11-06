@@ -11,7 +11,7 @@ data class SearchUiState(
     val isSearchActive: Boolean = false,
     val searchHistory: ImmutableList<String> = persistentListOf(),
     val randomPosts: ImmutableList<Post> = persistentListOf(),
-    val searchResults: ImmutableList<Post> = persistentListOf(),
+    // Note: searchResults moved to Paging3 Flow in ViewModel (viewModel.searchResults)
     val isLoading: Boolean = false,
     val isSearching: Boolean = false,
     val error: String? = null

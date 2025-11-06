@@ -66,6 +66,10 @@ dependencies {
     // Kotlinx
     implementation(libs.kotlinx.collections.immutable)
 
+    // Paging3
+    implementation(libs.androidx.paging.runtime)
+    implementation(libs.androidx.paging.compose)
+
     // Google Maps
     implementation(libs.maps.compose)
     implementation(libs.play.services.maps)

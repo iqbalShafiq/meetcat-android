@@ -2,6 +2,12 @@ package id.usecase.meetcat.presentation.screen.search
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
+import id.usecase.meetcat.domain.model.Post
+import id.usecase.meetcat.domain.paging.SearchPagingSource
 import id.usecase.meetcat.domain.usecase.post.GetRandomPostsUseCase
 import id.usecase.meetcat.domain.usecase.post.SearchPostsUseCase
 import id.usecase.meetcat.domain.usecase.search.ClearSearchHistoryUseCase
@@ -14,6 +20,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -32,6 +40,29 @@ class SearchViewModel(
 
     private val _uiEffect = Channel<SearchUiEffect>()
     val uiEffect: Flow<SearchUiEffect> = _uiEffect.receiveAsFlow()
+
+    // Track the submitted query for Paging3
+    private val _searchQuery = MutableStateFlow<String?>(null)
+
+    // Paging3 Flow for search results - recreates when query changes
+    val searchResults: Flow<PagingData<Post>> = _searchQuery
+        .flatMapLatest { query ->
+            if (query.isNullOrBlank()) {
+                // No search query, return empty paging data
+                flowOf(PagingData.empty())
+            } else {
+                // Create new Pager for this query
+                Pager(
+                    config = PagingConfig(
+                        pageSize = PAGE_SIZE,
+                        prefetchDistance = PREFETCH_DISTANCE,
+                        enablePlaceholders = false
+                    ),
+                    pagingSourceFactory = { SearchPagingSource(query, searchPostsUseCase) }
+                ).flow
+            }
+        }
+        .cachedIn(viewModelScope)
 
     init {
         loadRandomPosts()
@@ -74,10 +105,11 @@ class SearchViewModel(
         _uiState.update {
             it.copy(
                 isSearchActive = false,
-                query = "",
-                searchResults = it.searchResults
+                query = ""
             )
         }
+        // Clear search results when deactivating
+        _searchQuery.value = null
     }
 
     private fun submitSearch() {
@@ -85,34 +117,22 @@ class SearchViewModel(
         if (query.isEmpty()) return
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isSearching = true) }
+            _uiState.update {
+                it.copy(
+                    isSearchActive = false,
+                    isSearching = true
+                )
+            }
 
             // Save query to history
             saveSearchQueryUseCase(query)
 
-            // Perform search
-            val result = searchPostsUseCase(query)
+            // Trigger search via Paging3 by updating the query
+            _searchQuery.value = query
 
-            result.fold(
-                onSuccess = { posts ->
-                    _uiState.update {
-                        it.copy(
-                            searchResults = posts.toImmutableList(),
-                            isSearching = false,
-                            isSearchActive = false,
-                            error = null
-                        )
-                    }
-                },
-                onFailure = { error ->
-                    _uiState.update { it.copy(isSearching = false) }
-                    _uiEffect.send(
-                        SearchUiEffect.ShowError(
-                            error.message ?: "Failed to search posts"
-                        )
-                    )
-                }
-            )
+            // Mark searching as complete after a short delay
+            // (Paging3 will handle the actual loading state)
+            _uiState.update { it.copy(isSearching = false) }
         }
     }
 
@@ -183,5 +203,10 @@ class SearchViewModel(
                 }
             )
         }
+    }
+
+    companion object {
+        private const val PAGE_SIZE = 20
+        private const val PREFETCH_DISTANCE = 10
     }
 }

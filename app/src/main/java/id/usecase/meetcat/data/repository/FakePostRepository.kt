@@ -227,7 +227,72 @@ class FakePostRepository : PostRepository {
 
     override suspend fun getExploreFeed(page: Int, pageSize: Int): Result<List<FeedItem>> {
         delay(1000)
-        return Result.success(feedItems)
+
+        // Simulate paginated feed with generated data
+        val allFeedItems = generatePaginatedFeed(totalItems = 100)
+
+        val startIndex = page * pageSize
+        val endIndex = minOf(startIndex + pageSize, allFeedItems.size)
+
+        return if (startIndex < allFeedItems.size) {
+            Result.success(allFeedItems.subList(startIndex, endIndex))
+        } else {
+            Result.success(emptyList())
+        }
+    }
+
+    private fun generatePaginatedFeed(totalItems: Int): List<FeedItem> {
+        val items = mutableListOf<FeedItem>()
+
+        for (i in 0 until totalItems) {
+            val userIndex = i % mockUsers.size
+            val postIndex = i % mockPosts.size
+            val replyIndex = i % mockReplies.size
+
+            // Mix posts and replies (60% posts, 40% replies)
+            if (i % 5 != 4) {
+                // Generate post with unique ID
+                val basePost = mockPosts[postIndex]
+                val post = basePost.copy(
+                    id = "post_page_$i",
+                    user = mockUsers[userIndex],
+                    userId = mockUsers[userIndex].id,
+                    caption = when (i % 6) {
+                        0 -> "My cat enjoying the sunny afternoon ☀️🐱 #${i}"
+                        1 -> "Caught this cute moment while napping 😴 #${i}"
+                        2 -> "Play time is the best time! 🎾 #${i}"
+                        3 -> "Look at those beautiful eyes 👀✨ #${i}"
+                        4 -> "Another day, another cat photo 📸 #${i}"
+                        else -> "Beautiful cat content 🐱💕 #${i}"
+                    },
+                    lovesCount = (10..1000).random(),
+                    commentsCount = (0..200).random(),
+                    repliesCount = (0..50).random(),
+                    isLoved = false, // Default to not loved
+                    createdAt = System.currentTimeMillis() - (3600000L * i)
+                )
+                items.add(FeedItem.PostItem(post))
+            } else {
+                // Generate reply with unique ID
+                val baseReply = mockReplies[replyIndex]
+                val originalPost = mockPosts[postIndex].copy(id = "original_post_$i")
+                val reply = baseReply.copy(
+                    id = "reply_page_$i",
+                    user = mockUsers[userIndex],
+                    userId = mockUsers[userIndex].id,
+                    originalPostId = originalPost.id,
+                    originalPost = originalPost,
+                    text = "Reply #$i - Great content! 💕",
+                    lovesCount = (5..500).random(),
+                    commentsCount = (0..100).random(),
+                    isLoved = false, // Default to not loved
+                    createdAt = System.currentTimeMillis() - (3600000L * i)
+                )
+                items.add(FeedItem.ReplyItem(reply))
+            }
+        }
+
+        return items
     }
 
     override suspend fun lovePost(postId: String): Result<Unit> {
@@ -409,5 +474,15 @@ class FakePostRepository : PostRepository {
     override suspend fun unloveComment(commentId: String): Result<Unit> {
         delay(300)
         return Result.success(Unit)
+    }
+
+    /**
+     * Reset repository state for test isolation.
+     * Note: This repository is stateless, so reset() is provided for consistency
+     * with other Fake repositories. Future stateful features can use this method.
+     */
+    fun reset() {
+        // Currently stateless - no state to reset
+        // Add state clearing here if mutable state is added in the future
     }
 }
