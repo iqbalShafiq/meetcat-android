@@ -28,6 +28,8 @@ import id.usecase.meetcat.presentation.screen.profile.ProfileViewModel
 import id.usecase.meetcat.presentation.screen.replydetail.ReplyDetailScreen
 import id.usecase.meetcat.presentation.screen.search.SearchScreen
 import id.usecase.meetcat.presentation.screen.search.SearchViewModel
+import id.usecase.meetcat.presentation.screen.settings.SettingsScreen
+import id.usecase.meetcat.presentation.screen.settings.SettingsViewModel
 import id.usecase.meetcat.presentation.screen.userprofile.UserProfileScreen
 import id.usecase.meetcat.ui.theme.MeetCatTheme
 import org.koin.androidx.compose.koinViewModel
@@ -39,6 +41,7 @@ fun MainScreen(
     searchViewModel: SearchViewModel = koinViewModel(),
     mapsViewModel: MapsViewModel = koinViewModel(),
     profileViewModel: ProfileViewModel = koinViewModel(),
+    settingsViewModel: SettingsViewModel = koinViewModel(),
     modifier: Modifier = Modifier
 ) {
     val mainUiState by mainViewModel.uiState.collectAsStateWithLifecycle()
@@ -52,6 +55,7 @@ fun MainScreen(
         searchViewModel = searchViewModel,
         mapsViewModel = mapsViewModel,
         profileViewModel = profileViewModel,
+        settingsViewModel = settingsViewModel,
         modifier = modifier
     )
 }
@@ -65,6 +69,7 @@ private fun MainContent(
     searchViewModel: SearchViewModel,
     mapsViewModel: MapsViewModel,
     profileViewModel: ProfileViewModel,
+    settingsViewModel: SettingsViewModel,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -128,6 +133,30 @@ private fun MainContent(
                     onHideBottomNav = { onEvent(MainUiEvent.HideBottomNav) },
                     onNavigateToPost = { postId ->
                         onEvent(MainUiEvent.NavigateTo("post_detail/$postId"))
+                    },
+                    onNavigateToSettings = {
+                        onEvent(MainUiEvent.NavigateTo("settings"))
+                    }
+                )
+            }
+
+            mainUiState.currentRoute == "settings" -> {
+                SettingsScreen(
+                    viewModel = settingsViewModel,
+                    onNavigateBack = {
+                        onEvent(MainUiEvent.NavigateTo(BottomNavItem.Profile.route))
+                    },
+                    onNavigateToAccountSettings = {
+                        // TODO: Implement account settings screen
+                    },
+                    onNavigateToPrivacySettings = {
+                        // TODO: Implement privacy settings screen
+                    },
+                    onNavigateToAbout = {
+                        // TODO: Implement about screen
+                    },
+                    onNavigateToLogin = {
+                        // TODO: Handle logout and navigate to login
                     }
                 )
             }
@@ -241,7 +270,8 @@ private fun MainScreenPreview() {
             exploreViewModel = koinViewModel(),
             searchViewModel = koinViewModel(),
             mapsViewModel = koinViewModel(),
-            profileViewModel = koinViewModel()
+            profileViewModel = koinViewModel(),
+            settingsViewModel = koinViewModel()
         )
     }
 }
