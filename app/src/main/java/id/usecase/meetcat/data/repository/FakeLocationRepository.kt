@@ -4,10 +4,20 @@ import id.usecase.meetcat.domain.model.Location
 import id.usecase.meetcat.domain.repository.LocationRepository
 import kotlinx.coroutines.delay
 
+/**
+ * Fake implementation of LocationRepository for testing and development.
+ * Returns a default fake location (Jakarta, Indonesia).
+ *
+ * Features:
+ * - No Android dependencies (fully unit testable)
+ * - Simulates permission checking
+ * - Test isolation via reset() method
+ * - Configurable fake location
+ */
 class FakeLocationRepository : LocationRepository {
 
     // Default fake location (Jakarta, Indonesia)
-    private val fakeLocation = Location(
+    private var fakeLocation = Location(
         latitude = -6.2088,
         longitude = 106.8456,
         address = "Jakarta, Indonesia",
@@ -32,5 +42,27 @@ class FakeLocationRepository : LocationRepository {
 
     override fun updatePermissionStatus(granted: Boolean) {
         hasPermission = granted
+    }
+
+    /**
+     * Set custom fake location for testing.
+     * Useful for testing location-based features.
+     */
+    fun setFakeLocation(location: Location) {
+        fakeLocation = location
+    }
+
+    /**
+     * Reset repository state for test isolation.
+     * Call this between test cases to ensure clean state.
+     */
+    fun reset() {
+        hasPermission = false
+        fakeLocation = Location(
+            latitude = -6.2088,
+            longitude = 106.8456,
+            address = "Jakarta, Indonesia",
+            name = "Jakarta"
+        )
     }
 }

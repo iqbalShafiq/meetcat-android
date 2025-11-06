@@ -158,15 +158,17 @@ val domainModule = module {
 }
 
 val dataModule = module {
-    // Auth Repository
-    single<AuthRepository> {
-        FakeAuthRepository(context = androidContext())
-    }
+    // Auth Repository - Fully testable with no Android dependencies
+    singleOf(::FakeAuthRepository) bind AuthRepository::class
 
+    // Post Repository - Fully testable
     singleOf(::FakePostRepository) bind PostRepository::class
+
+    // Search History Repository - Fully testable
     singleOf(::FakeSearchHistoryRepository) bind SearchHistoryRepository::class
 
-    // Location Services
+    // Location Services - Real implementation with Android dependencies
+    // Tests should use FakeLocationRepository instead
     single<FusedLocationProviderClient> {
         LocationServices.getFusedLocationProviderClient(androidContext())
     }

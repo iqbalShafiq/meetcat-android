@@ -475,4 +475,14 @@ class FakePostRepository : PostRepository {
         delay(300)
         return Result.success(Unit)
     }
+
+    /**
+     * Reset repository state for test isolation.
+     * Note: This repository is stateless, so reset() is provided for consistency
+     * with other Fake repositories. Future stateful features can use this method.
+     */
+    fun reset() {
+        // Currently stateless - no state to reset
+        // Add state clearing here if mutable state is added in the future
+    }
 }
