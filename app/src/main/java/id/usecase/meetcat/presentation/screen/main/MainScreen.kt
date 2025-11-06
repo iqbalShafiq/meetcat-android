@@ -42,6 +42,12 @@ import id.usecase.meetcat.presentation.screen.search.SearchScreen
 import id.usecase.meetcat.presentation.screen.search.SearchViewModel
 import id.usecase.meetcat.presentation.screen.settings.SettingsScreen
 import id.usecase.meetcat.presentation.screen.settings.SettingsViewModel
+import id.usecase.meetcat.presentation.screen.settings.about.AboutScreen
+import id.usecase.meetcat.presentation.screen.settings.about.AboutViewModel
+import id.usecase.meetcat.presentation.screen.settings.account.AccountSettingsScreen
+import id.usecase.meetcat.presentation.screen.settings.account.AccountSettingsViewModel
+import id.usecase.meetcat.presentation.screen.settings.privacy.PrivacySettingsScreen
+import id.usecase.meetcat.presentation.screen.settings.privacy.PrivacySettingsViewModel
 import id.usecase.meetcat.presentation.screen.userprofile.UserProfileScreen
 import id.usecase.meetcat.ui.theme.MeetCatTheme
 import org.koin.androidx.compose.koinViewModel
@@ -54,6 +60,9 @@ fun MainScreen(
     mapsViewModel: MapsViewModel = koinViewModel(),
     profileViewModel: ProfileViewModel = koinViewModel(),
     settingsViewModel: SettingsViewModel = koinViewModel(),
+    aboutViewModel: AboutViewModel = koinViewModel(),
+    accountSettingsViewModel: AccountSettingsViewModel = koinViewModel(),
+    privacySettingsViewModel: PrivacySettingsViewModel = koinViewModel(),
     modifier: Modifier = Modifier
 ) {
     val mainUiState by mainViewModel.uiState.collectAsStateWithLifecycle()
@@ -68,6 +77,9 @@ fun MainScreen(
         mapsViewModel = mapsViewModel,
         profileViewModel = profileViewModel,
         settingsViewModel = settingsViewModel,
+        aboutViewModel = aboutViewModel,
+        accountSettingsViewModel = accountSettingsViewModel,
+        privacySettingsViewModel = privacySettingsViewModel,
         modifier = modifier
     )
 }
@@ -82,6 +94,9 @@ private fun MainContent(
     mapsViewModel: MapsViewModel,
     profileViewModel: ProfileViewModel,
     settingsViewModel: SettingsViewModel,
+    aboutViewModel: AboutViewModel,
+    accountSettingsViewModel: AccountSettingsViewModel,
+    privacySettingsViewModel: PrivacySettingsViewModel,
     modifier: Modifier = Modifier
 ) {
     // Handle system back button
@@ -179,21 +194,22 @@ private fun MainContent(
             }
 
             mainUiState.currentRoute == "account_settings" -> {
-                PlaceholderSettingsScreen(
-                    title = "Account Settings",
+                AccountSettingsScreen(
+                    viewModel = accountSettingsViewModel,
                     onNavigateBack = { onEvent(MainUiEvent.NavigateBack) }
                 )
             }
 
             mainUiState.currentRoute == "privacy_settings" -> {
-                PlaceholderSettingsScreen(
-                    title = "Privacy Settings",
+                PrivacySettingsScreen(
+                    viewModel = privacySettingsViewModel,
                     onNavigateBack = { onEvent(MainUiEvent.NavigateBack) }
                 )
             }
 
             mainUiState.currentRoute == "about" -> {
                 AboutScreen(
+                    viewModel = aboutViewModel,
                     onNavigateBack = { onEvent(MainUiEvent.NavigateBack) }
                 )
             }
@@ -278,138 +294,6 @@ private fun ExploreScreenWithScrollDetection(
     )
 }
 
-@Composable
-private fun PlaceholderScreen(
-    screenName: String,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = "$screenName Screen\n(Coming soon)",
-            style = MaterialTheme.typography.headlineSmall
-        )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun PlaceholderSettingsScreen(
-    title: String,
-    onNavigateBack: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
-                )
-            )
-        }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "Coming soon",
-                style = MaterialTheme.typography.headlineSmall,
-                textAlign = TextAlign.Center
-            )
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun AboutScreen(
-    onNavigateBack: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = "About MeetCat",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
-                )
-            )
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "MeetCat",
-                style = MaterialTheme.typography.displaySmall,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(top = 32.dp)
-            )
-            Text(
-                text = "Version 1.0.0",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 8.dp)
-            )
-            Text(
-                text = "A social platform for cat lovers to share and discover amazing cat content.",
-                style = MaterialTheme.typography.bodyLarge,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = 32.dp)
-            )
-            Text(
-                text = "© 2024 MeetCat. All rights reserved.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = 48.dp)
-            )
-        }
-    }
-}
-
 @Preview(showBackground = true)
 @Composable
 private fun MainScreenPreview() {
@@ -424,7 +308,10 @@ private fun MainScreenPreview() {
             searchViewModel = koinViewModel(),
             mapsViewModel = koinViewModel(),
             profileViewModel = koinViewModel(),
-            settingsViewModel = koinViewModel()
+            settingsViewModel = koinViewModel(),
+            aboutViewModel = koinViewModel(),
+            accountSettingsViewModel = koinViewModel(),
+            privacySettingsViewModel = koinViewModel()
         )
     }
 }
