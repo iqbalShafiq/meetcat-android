@@ -3,12 +3,19 @@ package id.usecase.meetcat.di
 import android.content.Context
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
+import id.usecase.meetcat.data.repository.FakeAuthRepository
 import id.usecase.meetcat.data.repository.FakePostRepository
 import id.usecase.meetcat.data.repository.FakeSearchHistoryRepository
 import id.usecase.meetcat.data.repository.LocationRepositoryImpl
+import id.usecase.meetcat.domain.repository.AuthRepository
 import id.usecase.meetcat.domain.repository.LocationRepository
 import id.usecase.meetcat.domain.repository.PostRepository
 import id.usecase.meetcat.domain.repository.SearchHistoryRepository
+import id.usecase.meetcat.domain.usecase.auth.GetCurrentUserUseCase
+import id.usecase.meetcat.domain.usecase.auth.LoginUseCase
+import id.usecase.meetcat.domain.usecase.auth.LogoutUseCase
+import id.usecase.meetcat.domain.usecase.auth.RegisterUseCase
+import id.usecase.meetcat.domain.usecase.auth.ResetPasswordUseCase
 import id.usecase.meetcat.domain.usecase.location.GetCurrentLocationUseCase
 import id.usecase.meetcat.domain.usecase.location.HasLocationPermissionUseCase
 import id.usecase.meetcat.domain.usecase.post.GetExploreFeedUseCase
@@ -23,6 +30,10 @@ import id.usecase.meetcat.domain.usecase.search.ClearSearchHistoryUseCase
 import id.usecase.meetcat.domain.usecase.search.DeleteSearchQueryUseCase
 import id.usecase.meetcat.domain.usecase.search.GetSearchHistoryUseCase
 import id.usecase.meetcat.domain.usecase.search.SaveSearchQueryUseCase
+import id.usecase.meetcat.presentation.screen.auth.forgotpassword.ForgotPasswordViewModel
+import id.usecase.meetcat.presentation.screen.auth.login.LoginViewModel
+import id.usecase.meetcat.presentation.screen.auth.register.RegisterViewModel
+import id.usecase.meetcat.presentation.screen.auth.splash.SplashViewModel
 import id.usecase.meetcat.presentation.screen.explore.ExploreViewModel
 import id.usecase.meetcat.presentation.screen.main.MainViewModel
 import id.usecase.meetcat.presentation.screen.maps.MapsViewModel
@@ -40,6 +51,13 @@ import org.koin.dsl.bind
 import org.koin.dsl.module
 
 val appModule = module {
+    // Auth ViewModels
+    viewModelOf(::SplashViewModel)
+    viewModelOf(::LoginViewModel)
+    viewModelOf(::RegisterViewModel)
+    viewModelOf(::ForgotPasswordViewModel)
+
+    // Main ViewModels
     viewModelOf(::ExploreViewModel)
     viewModelOf(::MainViewModel)
     viewModelOf(::SearchViewModel)
@@ -67,6 +85,13 @@ val appModule = module {
 }
 
 val domainModule = module {
+    // Auth use cases
+    factoryOf(::LoginUseCase)
+    factoryOf(::RegisterUseCase)
+    factoryOf(::ResetPasswordUseCase)
+    factoryOf(::LogoutUseCase)
+    factoryOf(::GetCurrentUserUseCase)
+
     // Post use cases
     factoryOf(::GetExploreFeedUseCase)
     factoryOf(::GetRandomPostsUseCase)
@@ -89,6 +114,11 @@ val domainModule = module {
 }
 
 val dataModule = module {
+    // Auth Repository
+    single<AuthRepository> {
+        FakeAuthRepository(context = androidContext())
+    }
+
     singleOf(::FakePostRepository) bind PostRepository::class
     singleOf(::FakeSearchHistoryRepository) bind SearchHistoryRepository::class
 
