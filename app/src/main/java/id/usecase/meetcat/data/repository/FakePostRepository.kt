@@ -436,22 +436,92 @@ class FakePostRepository : PostRepository {
 
     override suspend fun getPostById(postId: String): Result<Post> {
         delay(500)
+
+        // First try to find in hardcoded mockPosts
         val post = mockPosts.find { it.id == postId }
-        return if (post != null) {
-            Result.success(post)
-        } else {
-            Result.failure(Exception("Post not found"))
+        if (post != null) {
+            return Result.success(post)
         }
+
+        // Handle paginated posts (post_page_X format)
+        if (postId.startsWith("post_page_")) {
+            val pageNum = postId.substringAfter("post_page_").toIntOrNull()
+            if (pageNum != null) {
+                val userIndex = pageNum % mockUsers.size
+                val postIndex = pageNum % mockPosts.size
+                val basePost = mockPosts[postIndex]
+
+                val generatedPost = basePost.copy(
+                    id = postId,
+                    user = mockUsers[userIndex],
+                    userId = mockUsers[userIndex].id,
+                    caption = when (pageNum % 6) {
+                        0 -> "My cat enjoying the sunny afternoon ☀️🐱 #${pageNum}"
+                        1 -> "Caught this cute moment while napping 😴 #${pageNum}"
+                        2 -> "Play time is the best time! 🎾 #${pageNum}"
+                        3 -> "Look at those beautiful eyes 👀✨ #${pageNum}"
+                        4 -> "Another day, another cat photo 📸 #${pageNum}"
+                        else -> "Beautiful cat content 🐱💕 #${pageNum}"
+                    },
+                    lovesCount = (10..1000).random(),
+                    commentsCount = (0..200).random(),
+                    repliesCount = (0..50).random(),
+                    isLoved = false,
+                    createdAt = System.currentTimeMillis() - (3600000L * pageNum)
+                )
+                return Result.success(generatedPost)
+            }
+        }
+
+        // Handle original posts from replies (original_post_X format)
+        if (postId.startsWith("original_post_")) {
+            val pageNum = postId.substringAfter("original_post_").toIntOrNull()
+            if (pageNum != null) {
+                val postIndex = pageNum % mockPosts.size
+                val generatedPost = mockPosts[postIndex].copy(id = postId)
+                return Result.success(generatedPost)
+            }
+        }
+
+        return Result.failure(Exception("Post not found"))
     }
 
     override suspend fun getReplyById(replyId: String): Result<Reply> {
         delay(500)
+
+        // First try to find in hardcoded mockReplies
         val reply = mockReplies.find { it.id == replyId }
-        return if (reply != null) {
-            Result.success(reply)
-        } else {
-            Result.failure(Exception("Reply not found"))
+        if (reply != null) {
+            return Result.success(reply)
         }
+
+        // Handle paginated replies (reply_page_X format)
+        if (replyId.startsWith("reply_page_")) {
+            val pageNum = replyId.substringAfter("reply_page_").toIntOrNull()
+            if (pageNum != null) {
+                val userIndex = pageNum % mockUsers.size
+                val replyIndex = pageNum % mockReplies.size
+                val postIndex = pageNum % mockPosts.size
+                val baseReply = mockReplies[replyIndex]
+
+                val originalPost = mockPosts[postIndex].copy(id = "original_post_$pageNum")
+                val generatedReply = baseReply.copy(
+                    id = replyId,
+                    user = mockUsers[userIndex],
+                    userId = mockUsers[userIndex].id,
+                    originalPostId = originalPost.id,
+                    originalPost = originalPost,
+                    text = "Reply #$pageNum - Great content! 💕",
+                    lovesCount = (5..500).random(),
+                    commentsCount = (0..100).random(),
+                    isLoved = false,
+                    createdAt = System.currentTimeMillis() - (3600000L * pageNum)
+                )
+                return Result.success(generatedReply)
+            }
+        }
+
+        return Result.failure(Exception("Reply not found"))
     }
 
     override suspend fun getPostComments(postId: String): Result<List<Comment>> {
