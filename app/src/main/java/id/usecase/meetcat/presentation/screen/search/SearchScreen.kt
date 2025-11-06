@@ -14,6 +14,9 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
+import androidx.paging.LoadState
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
@@ -65,6 +68,7 @@ fun SearchScreen(
     onHideBottomNav: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val searchResults = viewModel.searchResults.collectAsLazyPagingItems()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
@@ -81,6 +85,7 @@ fun SearchScreen(
 
     SearchContent(
         uiState = uiState,
+        searchResults = searchResults,
         onEvent = viewModel::onEvent,
         onNavigateBack = onNavigateBack,
         snackbarHostState = snackbarHostState,
@@ -93,6 +98,7 @@ fun SearchScreen(
 @Composable
 private fun SearchContent(
     uiState: SearchUiState,
+    searchResults: LazyPagingItems<Post>,
     onEvent: (SearchUiEvent) -> Unit,
     onNavigateBack: () -> Unit,
     snackbarHostState: SnackbarHostState,
@@ -226,16 +232,18 @@ private fun SearchContent(
                         onRetry = { onEvent(SearchUiEvent.LoadRandomPosts) }
                     )
                 }
-                uiState.query.isNotEmpty() && uiState.searchResults.isEmpty() && !uiState.isSearching -> {
-                    EmptyView(message = "No results found for \"${uiState.query}\"")
-                }
-                uiState.searchResults.isNotEmpty() -> {
+                // Show search results if we have paginated data
+                searchResults.itemCount > 0 || searchResults.loadState.refresh is LoadState.Loading -> {
                     SearchResultsGrid(
-                        posts = uiState.searchResults,
+                        searchResults = searchResults,
                         onPostClick = { onEvent(SearchUiEvent.NavigateToPost(it)) },
                         onShowBottomNav = onShowBottomNav,
                         onHideBottomNav = onHideBottomNav
                     )
+                }
+                // Show empty state if search was performed but no results
+                searchResults.loadState.refresh is LoadState.NotLoading && searchResults.itemCount == 0 && uiState.query.isNotEmpty() -> {
+                    EmptyView(message = "No results found")
                 }
                 else -> {
                     RandomPostsGrid(
@@ -298,7 +306,7 @@ private fun RandomPostsGrid(
 
 @Composable
 private fun SearchResultsGrid(
-    posts: ImmutableList<Post>,
+    searchResults: LazyPagingItems<Post>,
     onPostClick: (String) -> Unit,
     modifier: Modifier = Modifier,
     onShowBottomNav: () -> Unit = {},
@@ -330,14 +338,91 @@ private fun SearchResultsGrid(
         verticalItemSpacing = 0.dp,
         state = lazyGridState
     ) {
+        // Display paged items
         items(
-            items = posts,
-            key = { it.id }
-        ) { post ->
-            SearchPostGridItem(
-                post = post,
-                onClick = { onPostClick(post.id) }
-            )
+            count = searchResults.itemCount,
+            key = { index -> searchResults.peek(index)?.id ?: index }
+        ) { index ->
+            searchResults[index]?.let { post ->
+                SearchPostGridItem(
+                    post = post,
+                    onClick = { onPostClick(post.id) }
+                )
+            }
+        }
+
+        // Handle loading state at bottom for infinite scroll
+        searchResults.loadState.append.let { appendState ->
+            when (appendState) {
+                is LoadState.Loading -> {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            androidx.compose.material3.CircularProgressIndicator()
+                        }
+                    }
+                }
+                is LoadState.Error -> {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            androidx.compose.material3.Button(onClick = { searchResults.retry() }) {
+                                Text("Retry")
+                            }
+                        }
+                    }
+                }
+                is LoadState.NotLoading -> {
+                    // End of list - do nothing
+                }
+            }
+        }
+
+        // Handle initial loading state
+        searchResults.loadState.refresh.let { refreshState ->
+            when (refreshState) {
+                is LoadState.Loading -> {
+                    if (searchResults.itemCount == 0) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(32.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                androidx.compose.material3.CircularProgressIndicator()
+                            }
+                        }
+                    }
+                }
+                is LoadState.Error -> {
+                    if (searchResults.itemCount == 0) {
+                        item {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(32.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text("Error loading results")
+                                androidx.compose.material3.Button(onClick = { searchResults.retry() }) {
+                                    Text("Retry")
+                                }
+                            }
+                        }
+                    }
+                }
+                else -> {}
+            }
         }
     }
 }
