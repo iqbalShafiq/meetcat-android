@@ -80,7 +80,15 @@ val appModule = module {
     viewModelOf(::MainViewModel)
     viewModelOf(::SearchViewModel)
     viewModelOf(::MapsViewModel)
-    viewModelOf(::ProfileViewModel)
+    viewModel {
+        ProfileViewModel(
+            getCurrentUserUseCase = get(),
+            getUserPostsUseCase = get(),
+            getUserRepliesUseCase = get(),
+            getUserLovedItemsUseCase = get(),
+            postRepository = get()
+        )
+    }
 
     // Profile Management ViewModels
     viewModelOf(::EditProfileViewModel)

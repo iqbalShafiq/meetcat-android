@@ -9,9 +9,8 @@ import kotlinx.collections.immutable.persistentListOf
 data class ProfileUiState(
     val user: User? = null,
     val selectedTab: ProfileTab = ProfileTab.POSTS,
-    val posts: ImmutableList<Post> = persistentListOf(),
-    val replies: ImmutableList<FeedItem.ReplyItem> = persistentListOf(),
-    val lovedItems: ImmutableList<FeedItem> = persistentListOf(),
+    // Note: posts, replies, lovedItems moved to Paging3 Flows in ViewModel
+    // (viewModel.posts, viewModel.replies, viewModel.lovedItems)
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
     val error: String? = null
