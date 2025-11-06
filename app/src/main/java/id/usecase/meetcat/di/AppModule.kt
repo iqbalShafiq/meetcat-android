@@ -34,12 +34,16 @@ import id.usecase.meetcat.presentation.screen.auth.forgotpassword.ForgotPassword
 import id.usecase.meetcat.presentation.screen.auth.login.LoginViewModel
 import id.usecase.meetcat.presentation.screen.auth.register.RegisterViewModel
 import id.usecase.meetcat.presentation.screen.auth.splash.SplashViewModel
+import id.usecase.meetcat.presentation.screen.createpost.CreatePostViewModel
+import id.usecase.meetcat.presentation.screen.createreply.CreateReplyViewModel
+import id.usecase.meetcat.presentation.screen.editpost.EditPostViewModel
 import id.usecase.meetcat.presentation.screen.editprofile.EditProfileViewModel
 import id.usecase.meetcat.presentation.screen.explore.ExploreViewModel
 import id.usecase.meetcat.presentation.screen.followerslist.FollowersListViewModel
 import id.usecase.meetcat.presentation.screen.followinglist.FollowingListViewModel
 import id.usecase.meetcat.presentation.screen.main.MainViewModel
 import id.usecase.meetcat.presentation.screen.maps.MapsViewModel
+import id.usecase.meetcat.presentation.screen.mediapicker.MediaPickerViewModel
 import id.usecase.meetcat.presentation.screen.postdetail.PostDetailViewModel
 import id.usecase.meetcat.presentation.screen.profile.ProfileViewModel
 import id.usecase.meetcat.presentation.screen.replydetail.ReplyDetailViewModel
@@ -74,6 +78,10 @@ val appModule = module {
     // Profile Management ViewModels
     viewModelOf(::EditProfileViewModel)
 
+    // Content Creation ViewModels
+    viewModelOf(::CreatePostViewModel)
+    viewModelOf(::MediaPickerViewModel)
+
     // Settings ViewModels
     viewModelOf(::SettingsViewModel)
     viewModelOf(::AccountSettingsViewModel)
@@ -106,6 +114,16 @@ val appModule = module {
     viewModel { (userId: String) ->
         FollowingListViewModel(
             userId = userId
+        )
+    }
+    viewModel { (postId: String) ->
+        CreateReplyViewModel(
+            postId = postId
+        )
+    }
+    viewModel { (postId: String) ->
+        EditPostViewModel(
+            postId = postId
         )
     }
 }
