@@ -204,11 +204,11 @@ class ProfileViewModel(
                     // Convert AuthUser to User
                     // Note: This is a simplified conversion. In a real app, you'd fetch the full User object
                     val user = id.usecase.meetcat.domain.model.User(
-                        id = authUser.uid,
-                        username = authUser.displayName ?: authUser.uid,
-                        displayName = authUser.displayName ?: "Unknown",
+                        id = authUser.id,
+                        username = authUser.username,
+                        displayName = authUser.displayName,
                         bio = null,
-                        profileImageUrl = authUser.photoUrl,
+                        profileImageUrl = authUser.profileImageUrl,
                         followersCount = 0,
                         followingCount = 0,
                         postsCount = 0,

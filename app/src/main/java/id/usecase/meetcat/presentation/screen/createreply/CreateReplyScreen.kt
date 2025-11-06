@@ -353,12 +353,13 @@ private fun CreateReplyScreenPreview() {
                         id = "user1",
                         username = "catowner",
                         displayName = "Cat Owner",
-                        profileImageUrl = null,
                         bio = null,
+                        profileImageUrl = null,
                         followersCount = 100,
                         followingCount = 50,
                         postsCount = 25,
-                        isFollowing = false
+                        isFollowing = false,
+                        createdAt = System.currentTimeMillis()
                     ),
                     caption = "My cat is so cute! Look at those eyes!",
                     mediaItems = emptyList(),
