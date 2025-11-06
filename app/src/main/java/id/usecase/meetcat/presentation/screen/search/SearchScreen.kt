@@ -71,6 +71,12 @@ fun SearchScreen(
     val searchResults = viewModel.searchResults.collectAsLazyPagingItems()
     val snackbarHostState = remember { SnackbarHostState() }
 
+    // Load random posts when screen is first composed
+    LaunchedEffect(Unit) {
+        // Trigger load - ViewModel will handle deduplication
+        viewModel.onEvent(SearchUiEvent.LoadRandomPosts)
+    }
+
     LaunchedEffect(Unit) {
         viewModel.uiEffect.collect { effect ->
             when (effect) {

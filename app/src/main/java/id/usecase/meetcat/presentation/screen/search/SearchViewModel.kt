@@ -65,7 +65,8 @@ class SearchViewModel(
         .cachedIn(viewModelScope)
 
     init {
-        loadRandomPosts()
+        // Don't load random posts here - let the screen trigger it when composed
+        // This prevents loading before the screen is ever navigated to
         loadSearchHistory()
     }
 
@@ -156,6 +157,11 @@ class SearchViewModel(
     }
 
     private fun loadRandomPosts() {
+        // Don't reload if we already have posts or currently loading
+        if (_uiState.value.randomPosts.isNotEmpty() || _uiState.value.isLoading) {
+            return
+        }
+
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
 
