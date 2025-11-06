@@ -29,9 +29,11 @@ sealed interface ProfileUiEvent {
     data class NavigateToPost(val postId: String) : ProfileUiEvent
     data class LovePost(val postId: String) : ProfileUiEvent
     data class LoveReply(val replyId: String) : ProfileUiEvent
+    data object NavigateToSettings : ProfileUiEvent
 }
 
 sealed interface ProfileUiEffect {
     data class NavigateToPost(val postId: String) : ProfileUiEffect
     data class ShowError(val message: String) : ProfileUiEffect
+    data object NavigateToSettings : ProfileUiEffect
 }

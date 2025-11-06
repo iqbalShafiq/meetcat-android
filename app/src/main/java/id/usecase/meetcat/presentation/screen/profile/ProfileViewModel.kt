@@ -190,6 +190,11 @@ class ProfileViewModel(
             }
             is ProfileUiEvent.LovePost -> toggleLovePost(event.postId)
             is ProfileUiEvent.LoveReply -> toggleLoveReply(event.replyId)
+            is ProfileUiEvent.NavigateToSettings -> {
+                viewModelScope.launch {
+                    _uiEffect.send(ProfileUiEffect.NavigateToSettings)
+                }
+            }
         }
     }
 

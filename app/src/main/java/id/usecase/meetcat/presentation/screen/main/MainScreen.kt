@@ -1,5 +1,6 @@
 package id.usecase.meetcat.presentation.screen.main
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
@@ -28,6 +29,8 @@ import id.usecase.meetcat.presentation.screen.profile.ProfileViewModel
 import id.usecase.meetcat.presentation.screen.replydetail.ReplyDetailScreen
 import id.usecase.meetcat.presentation.screen.search.SearchScreen
 import id.usecase.meetcat.presentation.screen.search.SearchViewModel
+import id.usecase.meetcat.presentation.screen.settings.SettingsScreen
+import id.usecase.meetcat.presentation.screen.settings.SettingsViewModel
 import id.usecase.meetcat.presentation.screen.userprofile.UserProfileScreen
 import id.usecase.meetcat.ui.theme.MeetCatTheme
 import org.koin.androidx.compose.koinViewModel
@@ -39,6 +42,7 @@ fun MainScreen(
     searchViewModel: SearchViewModel = koinViewModel(),
     mapsViewModel: MapsViewModel = koinViewModel(),
     profileViewModel: ProfileViewModel = koinViewModel(),
+    settingsViewModel: SettingsViewModel = koinViewModel(),
     modifier: Modifier = Modifier
 ) {
     val mainUiState by mainViewModel.uiState.collectAsStateWithLifecycle()
@@ -52,6 +56,7 @@ fun MainScreen(
         searchViewModel = searchViewModel,
         mapsViewModel = mapsViewModel,
         profileViewModel = profileViewModel,
+        settingsViewModel = settingsViewModel,
         modifier = modifier
     )
 }
@@ -65,8 +70,14 @@ private fun MainContent(
     searchViewModel: SearchViewModel,
     mapsViewModel: MapsViewModel,
     profileViewModel: ProfileViewModel,
+    settingsViewModel: SettingsViewModel,
     modifier: Modifier = Modifier
 ) {
+    // Handle system back button
+    BackHandler(enabled = mainUiState.backStack.size > 1) {
+        onEvent(MainUiEvent.NavigateBack)
+    }
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -101,7 +112,7 @@ private fun MainContent(
                         onEvent(MainUiEvent.NavigateTo("user_profile/$userId"))
                     },
                     onNavigateBack = {
-                        onEvent(MainUiEvent.NavigateTo(BottomNavItem.Explore.route))
+                        onEvent(MainUiEvent.NavigateBack)
                     },
                     onShowBottomNav = { onEvent(MainUiEvent.ShowBottomNav) },
                     onHideBottomNav = { onEvent(MainUiEvent.HideBottomNav) }
@@ -128,6 +139,30 @@ private fun MainContent(
                     onHideBottomNav = { onEvent(MainUiEvent.HideBottomNav) },
                     onNavigateToPost = { postId ->
                         onEvent(MainUiEvent.NavigateTo("post_detail/$postId"))
+                    },
+                    onNavigateToSettings = {
+                        onEvent(MainUiEvent.NavigateTo("settings"))
+                    }
+                )
+            }
+
+            mainUiState.currentRoute == "settings" -> {
+                SettingsScreen(
+                    viewModel = settingsViewModel,
+                    onNavigateBack = {
+                        onEvent(MainUiEvent.NavigateBack)
+                    },
+                    onNavigateToAccountSettings = {
+                        // TODO: Implement account settings screen
+                    },
+                    onNavigateToPrivacySettings = {
+                        // TODO: Implement privacy settings screen
+                    },
+                    onNavigateToAbout = {
+                        // TODO: Implement about screen
+                    },
+                    onNavigateToLogin = {
+                        // TODO: Handle logout and navigate to login
                     }
                 )
             }
@@ -137,7 +172,7 @@ private fun MainContent(
                 PostDetailScreen(
                     postId = postId,
                     onNavigateBack = {
-                        onEvent(MainUiEvent.NavigateTo(BottomNavItem.Explore.route))
+                        onEvent(MainUiEvent.NavigateBack)
                     },
                     onNavigateToProfile = { userId ->
                         onEvent(MainUiEvent.NavigateTo("user_profile/$userId"))
@@ -150,7 +185,7 @@ private fun MainContent(
                 ReplyDetailScreen(
                     replyId = replyId,
                     onNavigateBack = {
-                        onEvent(MainUiEvent.NavigateTo(BottomNavItem.Explore.route))
+                        onEvent(MainUiEvent.NavigateBack)
                     },
                     onNavigateToProfile = { userId ->
                         onEvent(MainUiEvent.NavigateTo("user_profile/$userId"))
@@ -166,7 +201,7 @@ private fun MainContent(
                 UserProfileScreen(
                     userId = userId,
                     onNavigateBack = {
-                        onEvent(MainUiEvent.NavigateTo(BottomNavItem.Explore.route))
+                        onEvent(MainUiEvent.NavigateBack)
                     },
                     onNavigateToPost = { postId ->
                         onEvent(MainUiEvent.NavigateTo("post_detail/$postId"))
@@ -241,7 +276,8 @@ private fun MainScreenPreview() {
             exploreViewModel = koinViewModel(),
             searchViewModel = koinViewModel(),
             mapsViewModel = koinViewModel(),
-            profileViewModel = koinViewModel()
+            profileViewModel = koinViewModel(),
+            settingsViewModel = koinViewModel()
         )
     }
 }
