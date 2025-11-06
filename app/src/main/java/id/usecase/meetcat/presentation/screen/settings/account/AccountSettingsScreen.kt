@@ -54,6 +54,8 @@ fun AccountSettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    var showChangePasswordDialog by remember { mutableStateOf(false) }
+    var showDeleteAccountDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.uiEffect.collectLatest { effect ->
@@ -63,11 +65,11 @@ fun AccountSettingsScreen(
                 }
 
                 is AccountSettingsUiEffect.ShowChangePasswordDialog -> {
-                    // TODO: Show change password dialog
+                    showChangePasswordDialog = true
                 }
 
                 is AccountSettingsUiEffect.ShowDeleteAccountDialog -> {
-                    // TODO: Show delete account dialog
+                    showDeleteAccountDialog = true
                 }
 
                 is AccountSettingsUiEffect.ShowError -> {
@@ -84,6 +86,10 @@ fun AccountSettingsScreen(
     AccountSettingsContent(
         uiState = uiState,
         onEvent = viewModel::onEvent,
+        showChangePasswordDialog = showChangePasswordDialog,
+        onDismissChangePasswordDialog = { showChangePasswordDialog = false },
+        showDeleteAccountDialog = showDeleteAccountDialog,
+        onDismissDeleteAccountDialog = { showDeleteAccountDialog = false },
         snackbarHostState = snackbarHostState,
         modifier = modifier
     )
@@ -94,6 +100,10 @@ fun AccountSettingsScreen(
 private fun AccountSettingsContent(
     uiState: AccountSettingsUiState,
     onEvent: (AccountSettingsUiEvent) -> Unit,
+    showChangePasswordDialog: Boolean,
+    onDismissChangePasswordDialog: () -> Unit,
+    showDeleteAccountDialog: Boolean,
+    onDismissDeleteAccountDialog: () -> Unit,
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier
 ) {
@@ -175,6 +185,57 @@ private fun AccountSettingsContent(
                 HorizontalDivider()
             }
         }
+    }
+
+    // Change Password Dialog
+    if (showChangePasswordDialog) {
+        AlertDialog(
+            onDismissRequest = onDismissChangePasswordDialog,
+            title = { Text("Change Password") },
+            text = {
+                Text(
+                    "Password change functionality requires backend integration.\n\n" +
+                    "In a production app, this would:\n" +
+                    "• Verify current password\n" +
+                    "• Validate new password strength\n" +
+                    "• Update password in secure backend"
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = onDismissChangePasswordDialog) {
+                    Text("OK")
+                }
+            }
+        )
+    }
+
+    // Delete Account Dialog
+    if (showDeleteAccountDialog) {
+        AlertDialog(
+            onDismissRequest = onDismissDeleteAccountDialog,
+            title = { Text("Delete Account") },
+            text = {
+                Text(
+                    "Are you sure you want to delete your account?\n\n" +
+                    "This action cannot be undone. All your posts, replies, and data will be permanently deleted."
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onDismissDeleteAccountDialog()
+                        // Note: Actual implementation would call backend API
+                    }
+                ) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onDismissDeleteAccountDialog) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 
@@ -265,6 +326,10 @@ private fun AccountSettingsScreenPreview() {
                 displayName = "Test User"
             ),
             onEvent = {},
+            showChangePasswordDialog = false,
+            onDismissChangePasswordDialog = {},
+            showDeleteAccountDialog = false,
+            onDismissDeleteAccountDialog = {},
             snackbarHostState = remember { SnackbarHostState() }
         )
     }

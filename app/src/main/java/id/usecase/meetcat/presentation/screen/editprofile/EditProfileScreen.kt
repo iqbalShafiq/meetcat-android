@@ -2,8 +2,10 @@ package id.usecase.meetcat.presentation.screen.editprofile
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,6 +18,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -33,7 +37,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,6 +59,7 @@ fun EditProfileScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    var showPhotoPickerDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.uiEffect.collectLatest { effect ->
@@ -62,7 +69,7 @@ fun EditProfileScreen(
                 }
 
                 is EditProfileUiEffect.ShowPhotoPickerDialog -> {
-                    // TODO: Show photo picker dialog
+                    showPhotoPickerDialog = true
                 }
 
                 is EditProfileUiEffect.ShowSuccess -> {
@@ -79,6 +86,8 @@ fun EditProfileScreen(
     EditProfileContent(
         uiState = uiState,
         onEvent = viewModel::onEvent,
+        showPhotoPickerDialog = showPhotoPickerDialog,
+        onDismissPhotoDialog = { showPhotoPickerDialog = false },
         snackbarHostState = snackbarHostState,
         modifier = modifier
     )
@@ -89,6 +98,8 @@ fun EditProfileScreen(
 private fun EditProfileContent(
     uiState: EditProfileUiState,
     onEvent: (EditProfileUiEvent) -> Unit,
+    showPhotoPickerDialog: Boolean,
+    onDismissPhotoDialog: () -> Unit,
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier
 ) {
@@ -270,6 +281,66 @@ private fun EditProfileContent(
             }
         }
     }
+
+    // Photo Picker Dialog
+    if (showPhotoPickerDialog) {
+        AlertDialog(
+            onDismissRequest = onDismissPhotoDialog,
+            title = { Text("Change Profile Photo") },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Camera option
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                onDismissPhotoDialog()
+                                // Note: Actual camera implementation requires Android runtime permissions
+                            }
+                            .padding(vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CameraAlt,
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Text("Take Photo", style = MaterialTheme.typography.bodyLarge)
+                    }
+
+                    // Gallery option
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                onDismissPhotoDialog()
+                                // Note: Actual gallery implementation requires Android runtime permissions
+                            }
+                            .padding(vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PhotoLibrary,
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Text("Choose from Gallery", style = MaterialTheme.typography.bodyLarge)
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = onDismissPhotoDialog) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 }
 
 @Preview(showBackground = true)
@@ -284,6 +355,8 @@ private fun EditProfileScreenPreview() {
                 bio = "Cat lover and photographer"
             ),
             onEvent = {},
+            showPhotoPickerDialog = false,
+            onDismissPhotoDialog = {},
             snackbarHostState = remember { SnackbarHostState() }
         )
     }

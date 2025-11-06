@@ -64,13 +64,16 @@ class EditProfileViewModel(
 
             val currentUser = getCurrentUserUseCase()
             if (currentUser != null) {
+                // Mock bio data - in production, this would come from user profile API
+                val mockBio = "Cat lover and photographer 🐱📸"
+
                 _uiState.update {
                     it.copy(
                         displayName = currentUser.displayName,
                         username = currentUser.username,
                         email = currentUser.email,
                         profileImageUrl = currentUser.profileImageUrl,
-                        bio = "", // TODO: Add bio field to AuthUser or fetch from profile
+                        bio = mockBio,
                         isLoading = false
                     )
                 }
