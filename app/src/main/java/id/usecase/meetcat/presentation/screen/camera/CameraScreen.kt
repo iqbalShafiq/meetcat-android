@@ -492,27 +492,20 @@ private fun CameraContent(
         ) {
             // Zoom slider above shutter button
             if (sliderMaxZoom > sliderMinZoom) {
-                Row(
-                    modifier = Modifier
-                        .padding(horizontal = 48.dp)
-                        .background(
-                            Color.Black.copy(alpha = 0.6f),
-                            MaterialTheme.shapes.medium
-                        )
-                        .padding(horizontal = 16.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
+                Column(
+                    modifier = Modifier.padding(horizontal = 48.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Zoom value display - only show current value, no confusing labels
+                    // Zoom value display - centered above slider
                     Text(
                         text = "${zoomRatio.format(1)}x",
                         color = Color.White,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(end = 12.dp)
+                        fontWeight = FontWeight.Bold
                     )
+                    Spacer(modifier = Modifier.size(4.dp))
 
-                    // Simple slider without labels
+                    // Clean slider without background
                     Slider(
                         value = zoomRatio.coerceIn(sliderMinZoom, sliderMaxZoom),
                         onValueChange = { newZoom ->
