@@ -51,6 +51,7 @@ import id.usecase.meetcat.presentation.screen.settings.privacy.PrivacySettingsSc
 import id.usecase.meetcat.presentation.screen.settings.privacy.PrivacySettingsViewModel
 import id.usecase.meetcat.presentation.screen.userprofile.UserProfileScreen
 import id.usecase.meetcat.presentation.screen.createpost.CreatePostScreen
+import id.usecase.meetcat.presentation.screen.createpost.CreatePostUiEvent
 import id.usecase.meetcat.presentation.screen.createpost.CreatePostViewModel
 import id.usecase.meetcat.presentation.screen.createreply.CreateReplyScreen
 import id.usecase.meetcat.presentation.screen.createreply.CreateReplyViewModel
