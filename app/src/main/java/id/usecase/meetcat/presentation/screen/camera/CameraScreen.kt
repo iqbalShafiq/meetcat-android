@@ -343,6 +343,7 @@ private fun CameraContent(
     modifier: Modifier = Modifier
 ) {
     var camera by remember { mutableStateOf<Camera?>(null) }
+    var previewView by remember { mutableStateOf<PreviewView?>(null) }
     var minZoom by remember { mutableFloatStateOf(1f) }
     var maxZoom by remember { mutableFloatStateOf(1f) }
 
@@ -350,13 +351,14 @@ private fun CameraContent(
         // Camera preview
         AndroidView(
             factory = { ctx ->
-                val previewView = PreviewView(ctx)
+                val preview = PreviewView(ctx)
+                previewView = preview
                 val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
 
                 cameraProviderFuture.addListener({
                     try {
                         val provider = cameraProviderFuture.get()
-                        val preview = Preview.Builder().build()
+                        val previewUseCase = Preview.Builder().build()
                         val imageCapture = ImageCapture.Builder()
                             .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
                             .build()
@@ -369,11 +371,11 @@ private fun CameraContent(
                         val cam = provider.bindToLifecycle(
                             lifecycleOwner,
                             cameraSelector,
-                            preview,
+                            previewUseCase,
                             imageCapture
                         )
 
-                        preview.surfaceProvider = previewView.surfaceProvider
+                        previewUseCase.surfaceProvider = preview.surfaceProvider
 
                         // Get zoom range
                         val zoomState = cam.cameraInfo.zoomState.value
@@ -387,7 +389,7 @@ private fun CameraContent(
                     }
                 }, ContextCompat.getMainExecutor(ctx))
 
-                previewView
+                preview
             },
             modifier = Modifier
                 .fillMaxSize()
@@ -404,21 +406,24 @@ private fun CameraContent(
                         }
                     }
                 }
-                .pointerInput(camera) {
+                .pointerInput(camera, previewView) {
                     // Tap to focus
                     detectTapGestures { offset ->
                         camera?.let { cam ->
-                            val factory = previewView.meteringPointFactory
-                            val point = factory.createPoint(offset.x, offset.y)
-                            val action = FocusMeteringAction
-                                .Builder(point)
-                                .build()
-                            cam.cameraControl.startFocusAndMetering(action)
+                            previewView?.let { preview ->
+                                val factory = preview.meteringPointFactory
+                                val point = factory.createPoint(offset.x, offset.y)
+                                val action = FocusMeteringAction
+                                    .Builder(point)
+                                    .build()
+                                cam.cameraControl.startFocusAndMetering(action)
+                            }
                         }
                     }
                 },
-            update = { previewView ->
+            update = { preview ->
                 // Update when lens changes
+                previewView = preview
             }
         )
 
