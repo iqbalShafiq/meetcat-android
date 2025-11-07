@@ -255,10 +255,6 @@ private fun MainContent(
                     }
                 )
             }
-
-            else -> {
-                PlaceholderScreen("Unknown")
-            }
         }
 
         // Navbar overlay at bottom (outside Scaffold to avoid padding issues)
