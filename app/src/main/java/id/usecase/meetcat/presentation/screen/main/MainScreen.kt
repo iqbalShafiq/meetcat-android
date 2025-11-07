@@ -19,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,8 +51,10 @@ import id.usecase.meetcat.presentation.screen.settings.privacy.PrivacySettingsSc
 import id.usecase.meetcat.presentation.screen.settings.privacy.PrivacySettingsViewModel
 import id.usecase.meetcat.presentation.screen.userprofile.UserProfileScreen
 import id.usecase.meetcat.presentation.screen.createpost.CreatePostScreen
+import id.usecase.meetcat.presentation.screen.createpost.CreatePostUiEvent
 import id.usecase.meetcat.presentation.screen.createpost.CreatePostViewModel
 import id.usecase.meetcat.presentation.screen.createreply.CreateReplyScreen
+import id.usecase.meetcat.presentation.screen.createreply.CreateReplyUiEvent
 import id.usecase.meetcat.presentation.screen.createreply.CreateReplyViewModel
 import id.usecase.meetcat.presentation.screen.editpost.EditPostScreen
 import id.usecase.meetcat.presentation.screen.editpost.EditPostViewModel
@@ -291,6 +294,15 @@ private fun MainContent(
 
             mainUiState.currentRoute == "create_post" -> {
                 val createPostViewModel: CreatePostViewModel = koinViewModel()
+
+                // Handle selected image from camera/gallery
+                LaunchedEffect(mainUiState.selectedImageUri) {
+                    mainUiState.selectedImageUri?.let { uri ->
+                        createPostViewModel.onEvent(CreatePostUiEvent.MediaSelected(uri))
+                        onEvent(MainUiEvent.ClearSelectedImage)
+                    }
+                }
+
                 CreatePostScreen(
                     viewModel = createPostViewModel,
                     onNavigateBack = {
@@ -316,6 +328,15 @@ private fun MainContent(
             mainUiState.currentRoute.startsWith("create_reply/") -> {
                 val postId = mainUiState.currentRoute.substringAfter("create_reply/")
                 val createReplyViewModel: CreateReplyViewModel = koinViewModel { parametersOf(postId) }
+
+                // Handle selected image from camera/gallery
+                LaunchedEffect(mainUiState.selectedImageUri) {
+                    mainUiState.selectedImageUri?.let { uri ->
+                        createReplyViewModel.onEvent(CreateReplyUiEvent.MediaSelected(uri))
+                        onEvent(MainUiEvent.ClearSelectedImage)
+                    }
+                }
+
                 CreateReplyScreen(
                     viewModel = createReplyViewModel,
                     onNavigateBack = {
@@ -371,9 +392,8 @@ private fun MainContent(
                         onEvent(MainUiEvent.NavigateBack)
                     },
                     onImageCaptured = { uri ->
-                        // Store the captured image URI in the back stack or shared state
-                        // For now, just navigate back with the URI stored somewhere accessible
-                        // The calling screen (CreatePost/CreateReply) will pick it up
+                        // Store the captured image URI and navigate back
+                        onEvent(MainUiEvent.ImageSelected(uri))
                         onEvent(MainUiEvent.NavigateBack)
                     }
                 )

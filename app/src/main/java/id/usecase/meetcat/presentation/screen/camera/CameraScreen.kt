@@ -49,6 +49,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -58,7 +59,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -90,6 +93,11 @@ fun CameraScreen(
     var imageCapture by remember { mutableStateOf<ImageCapture?>(null) }
     var cameraProvider by remember { mutableStateOf<ProcessCameraProvider?>(null) }
 
+    // Reset zoom when switching cameras
+    LaunchedEffect(lensFacing) {
+        zoomRatio = 1f
+    }
+
     // Permission launcher
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -101,7 +109,8 @@ fun CameraScreen(
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
-        uri?.let { onImageCaptured(it) }
+        // Set the captured image URI to show preview, just like camera
+        uri?.let { capturedImageUri = it }
     }
 
     // Check permission on launch
@@ -153,8 +162,9 @@ fun CameraScreen(
                         imageUri = capturedImageUri!!,
                         onRetake = { capturedImageUri = null },
                         onConfirm = {
+                            // Only trigger onImageCaptured callback
+                            // Don't call onNavigateBack here - it will be handled by the parent
                             onImageCaptured(capturedImageUri!!)
-                            onNavigateBack()
                         }
                     )
                 }
@@ -167,12 +177,13 @@ fun CameraScreen(
                         zoomRatio = zoomRatio,
                         onZoomChange = { newZoom ->
                             zoomRatio = newZoom
-                            camera?.cameraControl?.setLinearZoom(newZoom)
                         },
                         onCameraReady = { newCamera, newImageCapture, provider ->
                             camera = newCamera
                             imageCapture = newImageCapture
                             cameraProvider = provider
+                            // Set initial zoom to 1x
+                            newCamera.cameraControl.setZoomRatio(1f)
                         },
                         onNavigateBack = onNavigateBack,
                         onFlipCamera = {
@@ -181,6 +192,9 @@ fun CameraScreen(
                             } else {
                                 CameraSelector.LENS_FACING_BACK
                             }
+                            // Reset camera state to force reinitialization
+                            camera = null
+                            imageCapture = null
                         },
                         onOpenGallery = {
                             galleryLauncher.launch("image/*")
@@ -339,12 +353,26 @@ private fun CameraContent(
     var minZoom by remember { mutableFloatStateOf(1f) }
     var maxZoom by remember { mutableFloatStateOf(1f) }
 
+    // Practical zoom range for slider (better UX)
+    // Limit to reasonable range so 1x is better positioned
+    val sliderMinZoom = remember(minZoom) {
+        if (minZoom < 1f) minZoom else 1f  // Use ultrawide if available
+    }
+    val sliderMaxZoom = remember(maxZoom) {
+        minOf(maxZoom, 5f)  // Cap at 5x for practical use (higher is usually digital zoom)
+    }
+
     Box(modifier = modifier.fillMaxSize()) {
-        // Camera preview
-        AndroidView(
-            factory = { ctx ->
-                val preview = PreviewView(ctx)
-                previewView = preview
+        // Camera preview - use key() to force recreation when lens facing changes
+        key(lensFacing) {
+            AndroidView(
+                factory = { ctx ->
+                    val preview = PreviewView(ctx)
+                    previewView = preview
+                    preview
+                },
+                update = { preview ->
+                val ctx = preview.context
                 val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
 
                 cameraProviderFuture.addListener({
@@ -381,7 +409,7 @@ private fun CameraContent(
                     }
                 }, ContextCompat.getMainExecutor(ctx))
 
-                preview
+                previewView = preview
             },
             modifier = Modifier
                 .fillMaxSize()
@@ -392,9 +420,7 @@ private fun CameraContent(
                             val currentZoom = cam.cameraInfo.zoomState.value?.zoomRatio ?: 1f
                             val newZoom = (currentZoom * zoom).coerceIn(minZoom, maxZoom)
                             cam.cameraControl.setZoomRatio(newZoom)
-                            // Normalize zoom for slider (0-1 range)
-                            val normalizedZoom = (newZoom - minZoom) / (maxZoom - minZoom)
-                            onZoomChange(normalizedZoom)
+                            onZoomChange(newZoom)
                         }
                     }
                 }
@@ -412,139 +438,139 @@ private fun CameraContent(
                             }
                         }
                     }
-                },
-            update = { preview ->
-                // Update when lens changes
-                previewView = preview
-            }
-        )
+                }
+            )
+        }
 
-        // Top controls
-        Row(
+        // Top controls - only close button
+        IconButton(
+            onClick = onNavigateBack,
             modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.TopCenter)
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .align(Alignment.TopStart)
+                .padding(16.dp)
+                .background(
+                    Color.Black.copy(alpha = 0.5f),
+                    CircleShape
+                )
         ) {
-            IconButton(
-                onClick = onNavigateBack,
-                modifier = Modifier
-                    .background(
-                        Color.Black.copy(alpha = 0.5f),
-                        CircleShape
-                    )
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "Close",
-                    tint = Color.White
-                )
-            }
-
-            IconButton(
-                onClick = onFlipCamera,
-                modifier = Modifier
-                    .background(
-                        Color.Black.copy(alpha = 0.5f),
-                        CircleShape
-                    )
-            ) {
-                Icon(
-                    imageVector = Icons.Default.FlipCameraAndroid,
-                    contentDescription = "Flip camera",
-                    tint = Color.White
-                )
-            }
+            Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = "Close",
+                tint = Color.White
+            )
         }
 
-        // Zoom slider
-        if (maxZoom > minZoom) {
-            Column(
-                modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .padding(end = 16.dp)
-                    .background(
-                        Color.Black.copy(alpha = 0.5f),
-                        MaterialTheme.shapes.medium
-                    )
-                    .padding(8.dp)
-            ) {
-                Text(
-                    text = "${(minZoom + zoomRatio * (maxZoom - minZoom)).format(1)}x",
-                    color = Color.White,
-                    style = MaterialTheme.typography.labelSmall
-                )
-                Slider(
-                    value = zoomRatio,
-                    onValueChange = { newZoom ->
-                        onZoomChange(newZoom)
-                        camera?.let { cam ->
-                            val actualZoom = minZoom + newZoom * (maxZoom - minZoom)
-                            cam.cameraControl.setZoomRatio(actualZoom)
-                        }
-                    },
-                    modifier = Modifier
-                        .width(150.dp)
-                        .padding(vertical = 8.dp),
-                    valueRange = 0f..1f
-                )
-            }
-        }
-
-        // Bottom controls
-        Row(
+        // Bottom section with zoom slider and controls
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.BottomCenter)
-                .padding(32.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically
+                .padding(bottom = 32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Gallery button
-            FloatingActionButton(
-                onClick = onOpenGallery,
-                modifier = Modifier.size(56.dp),
-                containerColor = MaterialTheme.colorScheme.surface
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Image,
-                    contentDescription = "Open gallery",
-                    tint = MaterialTheme.colorScheme.onSurface
-                )
+            // Zoom slider above shutter button
+            if (sliderMaxZoom > sliderMinZoom) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 48.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // Zoom value display with circular background
+                    Box(
+                        modifier = Modifier
+                            .background(
+                                Color.Black.copy(alpha = 0.5f),
+                                CircleShape
+                            )
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "${zoomRatio.format(1)}x",
+                            color = Color.White,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Spacer(modifier = Modifier.size(8.dp))
+
+                    // Clean slider without background
+                    Slider(
+                        value = zoomRatio.coerceIn(sliderMinZoom, sliderMaxZoom),
+                        onValueChange = { newZoom ->
+                            onZoomChange(newZoom)
+                            camera?.let { cam ->
+                                cam.cameraControl.setZoomRatio(newZoom)
+                            }
+                        },
+                        modifier = Modifier.width(200.dp),
+                        valueRange = sliderMinZoom..sliderMaxZoom
+                    )
+                }
+                Spacer(modifier = Modifier.size(16.dp))
             }
 
-            // Shutter button
-            Surface(
-                onClick = onCaptureImage,
-                enabled = !isCapturing,
-                modifier = Modifier.size(80.dp),
-                shape = CircleShape,
-                color = if (isCapturing) Color.Gray else Color.White
+            // Bottom controls
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 32.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+                // Gallery button
+                FloatingActionButton(
+                    onClick = onOpenGallery,
+                    modifier = Modifier.size(56.dp),
+                    containerColor = MaterialTheme.colorScheme.surface
                 ) {
-                    if (isCapturing) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(40.dp),
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    } else {
-                        Surface(
-                            modifier = Modifier.size(70.dp),
-                            shape = CircleShape,
-                            color = Color.White,
-                            tonalElevation = 4.dp
-                        ) {}
+                    Icon(
+                        imageVector = Icons.Default.Image,
+                        contentDescription = "Open gallery",
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                // Shutter button
+                Surface(
+                    onClick = onCaptureImage,
+                    enabled = !isCapturing,
+                    modifier = Modifier.size(80.dp),
+                    shape = CircleShape,
+                    color = if (isCapturing) Color.Gray else Color.White
+                ) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (isCapturing) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(40.dp),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        } else {
+                            Surface(
+                                modifier = Modifier.size(70.dp),
+                                shape = CircleShape,
+                                color = Color.White,
+                                tonalElevation = 4.dp
+                            ) {}
+                        }
                     }
                 }
-            }
 
-            // Placeholder for symmetry
-            Spacer(modifier = Modifier.size(56.dp))
+                // Flip camera button (symmetrical with gallery)
+                FloatingActionButton(
+                    onClick = onFlipCamera,
+                    modifier = Modifier.size(56.dp),
+                    containerColor = MaterialTheme.colorScheme.surface
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.FlipCameraAndroid,
+                        contentDescription = "Flip camera",
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
         }
     }
 }

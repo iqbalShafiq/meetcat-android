@@ -34,6 +34,12 @@ class MainViewModel : ViewModel() {
             is MainUiEvent.NavigateBack -> navigateBack()
             is MainUiEvent.ShowBottomNav -> showBottomNav()
             is MainUiEvent.HideBottomNav -> hideBottomNav()
+            is MainUiEvent.ImageSelected -> {
+                _uiState.update { it.copy(selectedImageUri = event.uri) }
+            }
+            is MainUiEvent.ClearSelectedImage -> {
+                _uiState.update { it.copy(selectedImageUri = null) }
+            }
         }
     }
 
