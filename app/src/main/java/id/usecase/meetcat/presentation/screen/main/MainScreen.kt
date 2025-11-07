@@ -135,7 +135,8 @@ private fun MainContent(
                     },
                     onNavigateToEditPost = { postId ->
                         onEvent(MainUiEvent.NavigateTo("edit_post/$postId"))
-                    }
+                    },
+                    isBottomNavVisible = isBottomNavVisible
                 )
             }
 
@@ -311,6 +312,7 @@ private fun ExploreScreenWithScrollDetection(
     onNavigateToProfile: (String) -> Unit,
     onNavigateToCreatePost: () -> Unit,
     onNavigateToEditPost: (String) -> Unit,
+    isBottomNavVisible: Boolean,
     modifier: Modifier = Modifier
 ) {
     ExploreScreen(
@@ -322,7 +324,8 @@ private fun ExploreScreenWithScrollDetection(
         onNavigateToReply = onNavigateToReply,
         onNavigateToProfile = onNavigateToProfile,
         onNavigateToCreatePost = onNavigateToCreatePost,
-        onNavigateToEditPost = onNavigateToEditPost
+        onNavigateToEditPost = onNavigateToEditPost,
+        isBottomNavVisible = isBottomNavVisible
     )
 }
 

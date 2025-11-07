@@ -1,5 +1,8 @@
 package id.usecase.meetcat.presentation.screen.explore
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -61,7 +64,8 @@ fun ExploreScreen(
     onNavigateToReply: (String) -> Unit = {},
     onNavigateToProfile: (String) -> Unit = {},
     onNavigateToCreatePost: () -> Unit = {},
-    onNavigateToEditPost: (String) -> Unit = {}
+    onNavigateToEditPost: (String) -> Unit = {},
+    isBottomNavVisible: Boolean = true
 ) {
     val feedItems = viewModel.feedItems.collectAsLazyPagingItems()
     val currentUserId by viewModel.currentUserId.collectAsStateWithLifecycle()
@@ -107,7 +111,8 @@ fun ExploreScreen(
         onHideBottomNav = onHideBottomNav,
         onNavigateToReply = onNavigateToReply,
         onNavigateToCreatePost = onNavigateToCreatePost,
-        currentUserId = currentUserId
+        currentUserId = currentUserId,
+        isBottomNavVisible = isBottomNavVisible
     )
 }
 
@@ -123,7 +128,8 @@ private fun ExploreContent(
     onHideBottomNav: () -> Unit = {},
     onNavigateToReply: (String) -> Unit = {},
     onNavigateToCreatePost: () -> Unit = {},
-    currentUserId: String? = null
+    currentUserId: String? = null,
+    isBottomNavVisible: Boolean = true
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -144,15 +150,22 @@ private fun ExploreContent(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = onNavigateToCreatePost,
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
+            AnimatedVisibility(
+                visible = isBottomNavVisible,
+                enter = slideInVertically(initialOffsetY = { it }),
+                exit = slideOutVertically(targetOffsetY = { it })
             ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Create Post"
-                )
+                FloatingActionButton(
+                    onClick = onNavigateToCreatePost,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.padding(bottom = 80.dp) // Position above navbar
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Create Post"
+                    )
+                }
             }
         }
     ) { paddingValues ->
