@@ -22,13 +22,14 @@ import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.FabPosition
+import androidx.compose.material3.FloatingToolbarDefaults
 import androidx.compose.material3.FloatingToolbarDefaults.floatingToolbarVerticalNestedScroll
+import androidx.compose.material3.FloatingToolbarExitDirection
 import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -40,8 +41,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -52,10 +51,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import id.usecase.meetcat.ui.theme.MeetCatTheme
 import kotlinx.coroutines.flow.collectLatest
@@ -64,8 +64,8 @@ import kotlinx.coroutines.flow.collectLatest
 fun CreatePostScreen(
     viewModel: CreatePostViewModel,
     onNavigateBack: () -> Unit,
-    onNavigateToCamera: (() -> Unit)? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onNavigateToCamera: (() -> Unit)? = null
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -117,38 +117,78 @@ private fun CreatePostContent(
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier
 ) {
-    val scrollState = rememberScrollState()
-    var toolbarExpanded by rememberSaveable { mutableStateOf(true) }
+    val scrollBehavior = FloatingToolbarDefaults.exitAlwaysScrollBehavior(
+        exitDirection = FloatingToolbarExitDirection.Bottom
+    )
+
+    var expanded by rememberSaveable { mutableStateOf(true) }
+    val vibrantColors = FloatingToolbarDefaults.vibrantFloatingToolbarColors()
 
     Scaffold(
-        modifier = modifier.fillMaxSize(),
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = "Create Post",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                navigationIcon = {
-                    IconButton(
-                        onClick = { onEvent(CreatePostUiEvent.NavigateBack) },
-                        enabled = !uiState.isUploading
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        floatingActionButton = {
+            HorizontalFloatingToolbar(
+                expanded = expanded,
+                floatingActionButton = {
+                    FloatingToolbarDefaults.VibrantFloatingActionButton(
+                        onClick = { expanded = !expanded }
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Cancel"
-                        )
+                        if (uiState.isUploading) {
+                            CircularProgressIndicator(
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                strokeWidth = 2.dp,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.Send,
+                                contentDescription = "Post"
+                            )
+                        }
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
-                )
+                scrollBehavior = scrollBehavior,
+                colors = vibrantColors,
+                modifier = Modifier
+                    .offset(y = -FloatingToolbarDefaults.ScreenOffset)
+                    .zIndex(1f),
+                content = {
+                    IconButton(
+                        onClick = { onEvent(CreatePostUiEvent.SelectMedia) },
+                        enabled = !uiState.isUploading && uiState.mediaUri == null,
+                        modifier = Modifier.focusProperties { canFocus = expanded }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Image,
+                            contentDescription = "Add Photo"
+                        )
+                    }
+
+                    IconButton(
+                        onClick = { onEvent(CreatePostUiEvent.SelectLocation) },
+                        enabled = !uiState.isUploading,
+                        modifier = Modifier.focusProperties { canFocus = expanded }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.LocationOn,
+                            contentDescription = "Add Location"
+                        )
+                    }
+
+                    IconButton(
+                        onClick = { /*TODO*/ },
+                        enabled = !uiState.isUploading,
+                        modifier = Modifier.focusProperties { canFocus = expanded }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = "More Options"
+                        )
+                    }
+                }
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        floatingActionButtonPosition = FabPosition.Center
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -169,14 +209,13 @@ private fun CreatePostContent(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .floatingToolbarVerticalNestedScroll(
-                            expanded = toolbarExpanded,
-                            onExpand = { toolbarExpanded = true },
-                            onCollapse = { toolbarExpanded = false }
-                        )
-                        .verticalScroll(scrollState)
                         .padding(16.dp)
-                        .padding(bottom = 80.dp), // Space for floating toolbar
+                        .floatingToolbarVerticalNestedScroll(
+                            expanded = expanded,
+                            onExpand = { expanded = true },
+                            onCollapse = { expanded = false }
+                        )
+                        .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     // Caption TextField
@@ -278,66 +317,10 @@ private fun CreatePostContent(
                     }
                 }
             }
-
-            // Floating Toolbar
-            HorizontalFloatingToolbar(
-                expanded = toolbarExpanded,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .offset(y = (-16).dp)
-            ) {
-                // Add Photo Button
-                FilledTonalIconButton(
-                    onClick = { onEvent(CreatePostUiEvent.SelectMedia) },
-                    enabled = !uiState.isUploading && uiState.mediaUri == null,
-                    modifier = Modifier.size(56.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Image,
-                        contentDescription = "Add Photo"
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                // Add Location Button
-                FilledTonalIconButton(
-                    onClick = { onEvent(CreatePostUiEvent.SelectLocation) },
-                    enabled = !uiState.isUploading && uiState.locationAddress == null,
-                    modifier = Modifier.size(56.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.LocationOn,
-                        contentDescription = "Add Location"
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(16.dp))
-
-                // Post Button (Primary)
-                FilledIconButton(
-                    onClick = { onEvent(CreatePostUiEvent.CreatePost) },
-                    enabled = !uiState.isUploading,
-                    modifier = Modifier.size(64.dp)
-                ) {
-                    if (uiState.isUploading) {
-                        CircularProgressIndicator(
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(24.dp),
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Send,
-                            contentDescription = "Post",
-                            modifier = Modifier.size(28.dp)
-                        )
-                    }
-                }
-            }
         }
     }
 }
+
 
 @Preview(showBackground = true)
 @Composable
