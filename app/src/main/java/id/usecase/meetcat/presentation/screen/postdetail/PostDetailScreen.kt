@@ -56,6 +56,7 @@ fun PostDetailScreen(
     postId: String,
     onNavigateBack: () -> Unit,
     onNavigateToProfile: (String) -> Unit,
+    onNavigateToCreateReply: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier,
     viewModel: PostDetailViewModel = koinViewModel { parametersOf(postId) }
 ) {
@@ -78,7 +79,12 @@ fun PostDetailScreen(
                     showCommentDialog = true
                 }
                 is PostDetailUiEffect.ShowReplyDialog -> {
-                    showReplyDialog = true
+                    // Navigate to CreateReplyScreen if callback is provided, otherwise show dialog
+                    if (onNavigateToCreateReply != null) {
+                        onNavigateToCreateReply(postId)
+                    } else {
+                        showReplyDialog = true
+                    }
                 }
                 is PostDetailUiEffect.ShowShareDialog -> {
                     uiState.post?.let { sharePost(context, it) }
@@ -114,8 +120,8 @@ fun PostDetailScreen(
         )
     }
 
-    // Reply Dialog
-    if (showReplyDialog) {
+    // Reply Dialog (only shown if onNavigateToCreateReply is not provided)
+    if (showReplyDialog && onNavigateToCreateReply == null) {
         uiState.post?.let { post ->
             ReplyDialog(
                 post = post,

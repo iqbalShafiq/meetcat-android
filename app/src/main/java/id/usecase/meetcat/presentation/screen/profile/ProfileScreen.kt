@@ -70,6 +70,9 @@ fun ProfileScreen(
     onHideBottomNav: () -> Unit = {},
     onNavigateToPost: (String) -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
+    onNavigateToEditProfile: () -> Unit = {},
+    onNavigateToFollowers: (String) -> Unit = {},
+    onNavigateToFollowing: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -106,6 +109,9 @@ fun ProfileScreen(
         snackbarHostState = snackbarHostState,
         onShowBottomNav = onShowBottomNav,
         onHideBottomNav = onHideBottomNav,
+        onNavigateToEditProfile = onNavigateToEditProfile,
+        onNavigateToFollowers = onNavigateToFollowers,
+        onNavigateToFollowing = onNavigateToFollowing,
         modifier = modifier
     )
 }
@@ -122,6 +128,9 @@ private fun ProfileContent(
     snackbarHostState: SnackbarHostState,
     onShowBottomNav: () -> Unit = {},
     onHideBottomNav: () -> Unit = {},
+    onNavigateToEditProfile: () -> Unit = {},
+    onNavigateToFollowers: (String) -> Unit = {},
+    onNavigateToFollowing: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -182,7 +191,10 @@ private fun ProfileContent(
                         .fillMaxSize()
                         .padding(paddingValues),
                     onShowBottomNav = onShowBottomNav,
-                    onHideBottomNav = onHideBottomNav
+                    onHideBottomNav = onHideBottomNav,
+                    onNavigateToEditProfile = onNavigateToEditProfile,
+                    onNavigateToFollowers = onNavigateToFollowers,
+                    onNavigateToFollowing = onNavigateToFollowing
                 )
             }
         }
@@ -199,7 +211,10 @@ private fun ProfileScrollableContent(
     onEvent: (ProfileUiEvent) -> Unit,
     modifier: Modifier = Modifier,
     onShowBottomNav: () -> Unit = {},
-    onHideBottomNav: () -> Unit = {}
+    onHideBottomNav: () -> Unit = {},
+    onNavigateToEditProfile: () -> Unit = {},
+    onNavigateToFollowers: (String) -> Unit = {},
+    onNavigateToFollowing: (String) -> Unit = {}
 ) {
     val lazyListState = rememberLazyListState()
 
@@ -250,26 +265,42 @@ private fun ProfileScrollableContent(
     ) {
         // Profile Header - will collapse when scrolling
         item {
-            UserProfileHeader(
-                user = uiState.user!!,
-                stats = listOf(
-                    ProfileStat(
-                        count = uiState.user.postsCount,
-                        label = "Posts"
-                    ),
-                    ProfileStat(
-                        count = uiState.user.followingCount,
-                        label = "Following Cats"
-                    ),
-                    ProfileStat(
-                        count = calculateTotalLoves(uiState.user),
-                        label = "Loves"
-                    )
-                ),
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(MaterialTheme.colorScheme.surface)
-            )
+            ) {
+                UserProfileHeader(
+                    user = uiState.user!!,
+                    stats = listOf(
+                        ProfileStat(
+                            count = uiState.user.postsCount,
+                            label = "Posts"
+                        ),
+                        ProfileStat(
+                            count = uiState.user.followersCount,
+                            label = "Followers",
+                            onClick = { onNavigateToFollowers(uiState.user.id) }
+                        ),
+                        ProfileStat(
+                            count = uiState.user.followingCount,
+                            label = "Following",
+                            onClick = { onNavigateToFollowing(uiState.user.id) }
+                        )
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                // Edit Profile Button
+                androidx.compose.material3.Button(
+                    onClick = onNavigateToEditProfile,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    Text("Edit Profile")
+                }
+            }
         }
 
         // Sticky Tab Row

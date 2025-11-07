@@ -56,6 +56,7 @@ import kotlinx.coroutines.flow.collectLatest
 fun CreatePostScreen(
     viewModel: CreatePostViewModel,
     onNavigateBack: () -> Unit,
+    onNavigateToCamera: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -69,13 +70,8 @@ fun CreatePostScreen(
                 }
 
                 is CreatePostUiEffect.ShowMediaPicker -> {
-                    // Mock: In production, this would navigate to MediaPickerScreen or launch
-                    // Android's photo picker using ActivityResultContracts.PickVisualMedia
-                    // Example:
-                    // val photoPickerLauncher = rememberLauncherForActivityResult(
-                    //     contract = ActivityResultContracts.PickVisualMedia()
-                    // ) { uri -> if (uri != null) viewModel.onMediaSelected(uri) }
-                    // photoPickerLauncher.launch(PickVisualMediaRequest(PickVisualMedia.ImageAndVideo))
+                    // Navigate to camera screen
+                    onNavigateToCamera?.invoke()
                 }
 
                 is CreatePostUiEffect.ShowLocationPicker -> {
