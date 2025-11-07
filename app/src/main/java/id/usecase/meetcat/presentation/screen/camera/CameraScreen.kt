@@ -492,63 +492,38 @@ private fun CameraContent(
         ) {
             // Zoom slider above shutter button
             if (sliderMaxZoom > sliderMinZoom) {
-                Column(
+                Row(
                     modifier = Modifier
-                        .padding(horizontal = 32.dp)
+                        .padding(horizontal = 48.dp)
                         .background(
                             Color.Black.copy(alpha = 0.6f),
                             MaterialTheme.shapes.medium
                         )
-                        .padding(horizontal = 20.dp, vertical = 12.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
                 ) {
-                    // Zoom value display
+                    // Zoom value display - only show current value, no confusing labels
                     Text(
                         text = "${zoomRatio.format(1)}x",
                         color = Color.White,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(end = 12.dp)
                     )
-                    Spacer(modifier = Modifier.size(8.dp))
 
-                    // Slider with markers
-                    Box {
-                        Slider(
-                            value = zoomRatio.coerceIn(sliderMinZoom, sliderMaxZoom),
-                            onValueChange = { newZoom ->
-                                onZoomChange(newZoom)
-                                camera?.let { cam ->
-                                    cam.cameraControl.setZoomRatio(newZoom)
-                                }
-                            },
-                            modifier = Modifier.width(240.dp),
-                            valueRange = sliderMinZoom..sliderMaxZoom
-                        )
-                    }
-
-                    // Lens type indicators
-                    Row(
-                        modifier = Modifier.width(240.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        // Show markers for common zoom levels within slider range
-                        val markers = buildList {
-                            if (sliderMinZoom <= 0.6f && sliderMaxZoom >= 0.6f) add("0.6x" to 0.6f)
-                            if (sliderMinZoom <= 1f && sliderMaxZoom >= 1f) add("1x" to 1f)
-                            if (sliderMinZoom <= 2f && sliderMaxZoom >= 2f) add("2x" to 2f)
-                            if (sliderMinZoom <= 3f && sliderMaxZoom >= 3f) add("3x" to 3f)
-                            if (sliderMinZoom <= 5f && sliderMaxZoom >= 5f) add("5x" to 5f)
-                        }
-
-                        markers.forEach { (label, _) ->
-                            Text(
-                                text = label,
-                                color = Color.White.copy(alpha = 0.7f),
-                                style = MaterialTheme.typography.labelSmall,
-                                fontSize = 10.sp
-                            )
-                        }
-                    }
+                    // Simple slider without labels
+                    Slider(
+                        value = zoomRatio.coerceIn(sliderMinZoom, sliderMaxZoom),
+                        onValueChange = { newZoom ->
+                            onZoomChange(newZoom)
+                            camera?.let { cam ->
+                                cam.cameraControl.setZoomRatio(newZoom)
+                            }
+                        },
+                        modifier = Modifier.width(200.dp),
+                        valueRange = sliderMinZoom..sliderMaxZoom
+                    )
                 }
                 Spacer(modifier = Modifier.size(16.dp))
             }
