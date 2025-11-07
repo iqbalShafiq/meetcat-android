@@ -193,7 +193,8 @@ private fun ExploreContent(
                         onEvent = onEvent,
                         onShowBottomNav = onShowBottomNav,
                         onHideBottomNav = onHideBottomNav,
-                        onNavigateToReply = onNavigateToReply
+                        onNavigateToReply = onNavigateToReply,
+                        currentUserId = currentUserId
                     )
                 }
             }
@@ -209,7 +210,8 @@ private fun FeedList(
     onShowBottomNav: () -> Unit = {},
     onHideBottomNav: () -> Unit = {},
     onNavigateToReply: (String) -> Unit = {},
-    viewModel: ExploreViewModel
+    viewModel: ExploreViewModel,
+    currentUserId: String? = null
 ) {
     // Use scroll position from ViewModel to preserve across navigation
     val lazyListState = rememberLazyListState(

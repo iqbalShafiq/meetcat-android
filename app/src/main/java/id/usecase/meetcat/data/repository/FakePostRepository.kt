@@ -13,6 +13,19 @@ import kotlinx.coroutines.delay
 class FakePostRepository : PostRepository {
 
     private val mockUsers = listOf(
+        // Dev user for bypass login - matches FakeAuthRepository dev user ID
+        User(
+            id = "dev_user_123",
+            username = "devuser",
+            displayName = "Dev User",
+            bio = "Development user for testing",
+            profileImageUrl = "https://picsum.photos/200?random=999",
+            followersCount = 100,
+            followingCount = 50,
+            postsCount = 10,
+            isFollowing = false,
+            createdAt = System.currentTimeMillis() - 86400000
+        ),
         User(
             id = "1",
             username = "cat_lover_123",
@@ -52,10 +65,56 @@ class FakePostRepository : PostRepository {
     )
 
     private val mockPosts = listOf(
+        // Dev user posts - these will show edit button when logged in as dev user
+        Post(
+            id = "post_dev_1",
+            userId = "dev_user_123",
+            user = mockUsers[0], // dev user
+            caption = "Testing my new post feature! This is my adorable cat 🐱✨",
+            mediaItems = listOf(
+                MediaItem.Image(
+                    url = "https://picsum.photos/800/600?random=100",
+                    thumbnailUrl = "https://picsum.photos/200/150?random=100",
+                    width = 800,
+                    height = 600
+                )
+            ),
+            location = Location(
+                latitude = -6.2088,
+                longitude = 106.8456,
+                address = "Jakarta, Indonesia",
+                name = "Jakarta"
+            ),
+            lovesCount = 42,
+            commentsCount = 8,
+            repliesCount = 3,
+            isLoved = false,
+            createdAt = System.currentTimeMillis() - 1800000
+        ),
+        Post(
+            id = "post_dev_2",
+            userId = "dev_user_123",
+            user = mockUsers[0], // dev user
+            caption = "Another post from dev user! Check out this cute moment 😺💕",
+            mediaItems = listOf(
+                MediaItem.Image(
+                    url = "https://picsum.photos/800/600?random=101",
+                    thumbnailUrl = "https://picsum.photos/200/150?random=101",
+                    width = 800,
+                    height = 600
+                )
+            ),
+            location = null,
+            lovesCount = 15,
+            commentsCount = 4,
+            repliesCount = 1,
+            isLoved = true,
+            createdAt = System.currentTimeMillis() - 5400000
+        ),
         Post(
             id = "post1",
             userId = "1",
-            user = mockUsers[0],
+            user = mockUsers[1],
             caption = "Found this adorable cat sleeping in the sun! 🐱☀️",
             mediaItems = listOf(
                 MediaItem.Image(
@@ -80,7 +139,7 @@ class FakePostRepository : PostRepository {
         Post(
             id = "post2",
             userId = "2",
-            user = mockUsers[1],
+            user = mockUsers[2],
             caption = "My cat just learned a new trick! Watch this amazing jump! 🎪",
             mediaItems = listOf(
                 MediaItem.Video(
@@ -101,7 +160,7 @@ class FakePostRepository : PostRepository {
         Post(
             id = "post3",
             userId = "3",
-            user = mockUsers[2],
+            user = mockUsers[3],
             caption = "Rescued this beautiful kitten today. Looking for a forever home! 💕",
             mediaItems = listOf(
                 MediaItem.Image(
@@ -135,9 +194,9 @@ class FakePostRepository : PostRepository {
         Reply(
             id = "reply1",
             originalPostId = "post1",
-            originalPost = mockPosts[0],
+            originalPost = mockPosts[2],
             userId = "2",
-            user = mockUsers[1],
+            user = mockUsers[2],
             text = "This is so cute! I also saw a cat like this yesterday 😍",
             mediaItems = listOf(
                 MediaItem.Image(
@@ -161,9 +220,9 @@ class FakePostRepository : PostRepository {
         Reply(
             id = "reply2",
             originalPostId = "post2",
-            originalPost = mockPosts[1],
+            originalPost = mockPosts[3],
             userId = "3",
-            user = mockUsers[2],
+            user = mockUsers[3],
             text = "Wow! That's incredible! How did you train your cat to do that?",
             mediaItems = null,
             location = null,
@@ -179,7 +238,7 @@ class FakePostRepository : PostRepository {
             id = "comment1",
             postId = "post1",
             userId = "2",
-            user = mockUsers[1],
+            user = mockUsers[2],
             text = "This is such a great photo! 😍",
             lovesCount = 12,
             isLoved = false,
@@ -189,7 +248,7 @@ class FakePostRepository : PostRepository {
             id = "comment2",
             postId = "post1",
             userId = "3",
-            user = mockUsers[2],
+            user = mockUsers[3],
             text = "Absolutely adorable! Where did you take this?",
             lovesCount = 25,
             isLoved = true,
@@ -199,7 +258,7 @@ class FakePostRepository : PostRepository {
             id = "comment3",
             postId = "post2",
             userId = "1",
-            user = mockUsers[0],
+            user = mockUsers[1],
             text = "Amazing! My cat can't do that yet 😂",
             lovesCount = 8,
             isLoved = false,
@@ -209,7 +268,7 @@ class FakePostRepository : PostRepository {
             id = "comment4",
             postId = "reply1",
             userId = "1",
-            user = mockUsers[0],
+            user = mockUsers[1],
             text = "Thanks for your comment! 💕",
             lovesCount = 5,
             isLoved = false,
