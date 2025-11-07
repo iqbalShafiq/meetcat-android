@@ -442,44 +442,22 @@ private fun CameraContent(
             )
         }
 
-        // Top controls
-        Row(
+        // Top controls - only close button
+        IconButton(
+            onClick = onNavigateBack,
             modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.TopCenter)
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .align(Alignment.TopStart)
+                .padding(16.dp)
+                .background(
+                    Color.Black.copy(alpha = 0.5f),
+                    CircleShape
+                )
         ) {
-            IconButton(
-                onClick = onNavigateBack,
-                modifier = Modifier
-                    .background(
-                        Color.Black.copy(alpha = 0.5f),
-                        CircleShape
-                    )
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "Close",
-                    tint = Color.White
-                )
-            }
-
-            IconButton(
-                onClick = onFlipCamera,
-                modifier = Modifier
-                    .background(
-                        Color.Black.copy(alpha = 0.5f),
-                        CircleShape
-                    )
-            ) {
-                Icon(
-                    imageVector = Icons.Default.FlipCameraAndroid,
-                    contentDescription = "Flip camera",
-                    tint = Color.White
-                )
-            }
+            Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = "Close",
+                tint = Color.White
+            )
         }
 
         // Bottom section with zoom slider and controls
@@ -580,8 +558,18 @@ private fun CameraContent(
                     }
                 }
 
-                // Placeholder for symmetry
-                Spacer(modifier = Modifier.size(56.dp))
+                // Flip camera button (symmetrical with gallery)
+                FloatingActionButton(
+                    onClick = onFlipCamera,
+                    modifier = Modifier.size(56.dp),
+                    containerColor = MaterialTheme.colorScheme.surface
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.FlipCameraAndroid,
+                        contentDescription = "Flip camera",
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
             }
         }
     }
