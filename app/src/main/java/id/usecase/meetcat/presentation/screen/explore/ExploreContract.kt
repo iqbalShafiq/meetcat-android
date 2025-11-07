@@ -23,6 +23,7 @@ sealed class ExploreUiEvent {
     data class NavigateToProfile(val userId: String) : ExploreUiEvent()
     data class NavigateToComments(val postId: String) : ExploreUiEvent()
     data class NavigateToReply(val postId: String) : ExploreUiEvent()
+    data class NavigateToEditPost(val postId: String) : ExploreUiEvent()
 }
 
 sealed class ExploreUiEffect {
@@ -30,5 +31,6 @@ sealed class ExploreUiEffect {
     data class NavigateToProfile(val userId: String) : ExploreUiEffect()
     data class NavigateToComments(val postId: String) : ExploreUiEffect()
     data class NavigateToReply(val postId: String) : ExploreUiEffect()
+    data class NavigateToEditPost(val postId: String) : ExploreUiEffect()
     data class ShowError(val message: String) : ExploreUiEffect()
 }

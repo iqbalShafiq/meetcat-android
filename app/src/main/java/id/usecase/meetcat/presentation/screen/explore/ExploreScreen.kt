@@ -9,8 +9,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -55,9 +59,12 @@ fun ExploreScreen(
     onHideBottomNav: () -> Unit = {},
     onNavigateToPost: (String) -> Unit = {},
     onNavigateToReply: (String) -> Unit = {},
-    onNavigateToProfile: (String) -> Unit = {}
+    onNavigateToProfile: (String) -> Unit = {},
+    onNavigateToCreatePost: () -> Unit = {},
+    onNavigateToEditPost: (String) -> Unit = {}
 ) {
     val feedItems = viewModel.feedItems.collectAsLazyPagingItems()
+    val currentUserId by viewModel.currentUserId.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
@@ -79,6 +86,10 @@ fun ExploreScreen(
                     onNavigateToPost(effect.postId)
                 }
 
+                is ExploreUiEffect.NavigateToEditPost -> {
+                    onNavigateToEditPost(effect.postId)
+                }
+
                 is ExploreUiEffect.ShowError -> {
                     snackbarHostState.showSnackbar(effect.message)
                 }
@@ -94,7 +105,9 @@ fun ExploreScreen(
         modifier = modifier,
         onShowBottomNav = onShowBottomNav,
         onHideBottomNav = onHideBottomNav,
-        onNavigateToReply = onNavigateToReply
+        onNavigateToReply = onNavigateToReply,
+        onNavigateToCreatePost = onNavigateToCreatePost,
+        currentUserId = currentUserId
     )
 }
 
@@ -108,7 +121,9 @@ private fun ExploreContent(
     modifier: Modifier = Modifier,
     onShowBottomNav: () -> Unit = {},
     onHideBottomNav: () -> Unit = {},
-    onNavigateToReply: (String) -> Unit = {}
+    onNavigateToReply: (String) -> Unit = {},
+    onNavigateToCreatePost: () -> Unit = {},
+    currentUserId: String? = null
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -127,7 +142,19 @@ private fun ExploreContent(
                 )
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = onNavigateToCreatePost,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Create Post"
+                )
+            }
+        }
     ) { paddingValues ->
         val loadState = feedItems.loadState
 
@@ -261,6 +288,10 @@ private fun FeedList(
                             },
                             onShareClick = {
                                 // Share action
+                            },
+                            currentUserId = currentUserId,
+                            onEditClick = {
+                                onEvent(ExploreUiEvent.NavigateToEditPost(item.post.id))
                             },
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                         )
