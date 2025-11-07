@@ -4,7 +4,6 @@ import android.Manifest
 import android.content.Context
 import android.net.Uri
 import android.util.Log
-import android.view.ScaleGestureDetector
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.Camera
@@ -59,22 +58,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import coil3.compose.AsyncImage
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.Executors
-import kotlin.math.max
-import kotlin.math.min
 
 private const val TAG = "CameraScreen"
 private val cameraExecutor = Executors.newSingleThreadExecutor()
 
-@androidx.compose.ui.UiComposable
 @Composable
 fun CameraScreen(
     onNavigateBack: () -> Unit,
@@ -166,7 +162,6 @@ fun CameraScreen(
                 else -> {
                     // Camera screen
                     CameraContent(
-                        context = context,
                         lifecycleOwner = lifecycleOwner,
                         lensFacing = lensFacing,
                         zoomRatio = zoomRatio,
@@ -324,9 +319,9 @@ private fun ImagePreviewContent(
     }
 }
 
+@Suppress("COMPOSE_APPLIER_CALL_MISMATCH")
 @Composable
 private fun CameraContent(
-    context: Context,
     lifecycleOwner: androidx.lifecycle.LifecycleOwner,
     lensFacing: Int,
     zoomRatio: Float,
