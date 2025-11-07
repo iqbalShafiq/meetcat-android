@@ -1,7 +1,5 @@
 package id.usecase.meetcat.presentation.component.util
 
-import androidx.compose.foundation.gestures.ScrollableState
-import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -26,7 +24,7 @@ class BottomNavBarNestedScrollConnection(
         return androidx.compose.ui.geometry.Offset.Zero
     }
 
-    override suspend fun onPreFling(velocity: Velocity): Velocity {
+    override suspend fun onPreFling(available: Velocity): Velocity {
         return Velocity.Zero
     }
 }
