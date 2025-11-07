@@ -252,7 +252,7 @@ private fun FeedList(
     var previousOffset by remember { mutableIntStateOf(lazyListState.firstVisibleItemScrollOffset) }
 
     // Save scroll position to ViewModel
-    LaunchedEffect(lazyListState.isScrollInProgress) {
+    LaunchedEffect(Unit) {
         snapshotFlow {
             lazyListState.firstVisibleItemIndex to lazyListState.firstVisibleItemScrollOffset
         }.collect { (index, offset) ->
@@ -262,10 +262,17 @@ private fun FeedList(
     }
 
     // Detect scroll direction and show/hide navbar accordingly
-    LaunchedEffect(lazyListState.isScrollInProgress) {
+    LaunchedEffect(Unit) {
         snapshotFlow {
-            lazyListState.firstVisibleItemIndex to lazyListState.firstVisibleItemScrollOffset
-        }.collect { (currentIndex, currentOffset) ->
+            Triple(
+                lazyListState.firstVisibleItemIndex,
+                lazyListState.firstVisibleItemScrollOffset,
+                lazyListState.isScrollInProgress
+            )
+        }.collect { (currentIndex, currentOffset, isScrolling) ->
+            // Only detect scroll direction when user is actively scrolling
+            if (!isScrolling) return@collect
+
             // Determine scroll direction
             val isScrollingDown = if (currentIndex != previousIndex) {
                 currentIndex > previousIndex

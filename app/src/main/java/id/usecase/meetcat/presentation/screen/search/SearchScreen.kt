@@ -283,7 +283,7 @@ private fun RandomPostsGrid(
     var previousOffset by remember { mutableIntStateOf(lazyGridState.firstVisibleItemScrollOffset) }
 
     // Save scroll position to ViewModel
-    LaunchedEffect(lazyGridState.isScrollInProgress) {
+    LaunchedEffect(Unit) {
         snapshotFlow {
             lazyGridState.firstVisibleItemIndex to lazyGridState.firstVisibleItemScrollOffset
         }.collect { (index, offset) ->
@@ -292,10 +292,17 @@ private fun RandomPostsGrid(
     }
 
     // Detect scroll direction and show/hide navbar accordingly
-    LaunchedEffect(lazyGridState.isScrollInProgress) {
+    LaunchedEffect(Unit) {
         snapshotFlow {
-            lazyGridState.firstVisibleItemIndex to lazyGridState.firstVisibleItemScrollOffset
-        }.collect { (currentIndex, currentOffset) ->
+            Triple(
+                lazyGridState.firstVisibleItemIndex,
+                lazyGridState.firstVisibleItemScrollOffset,
+                lazyGridState.isScrollInProgress
+            )
+        }.collect { (currentIndex, currentOffset, isScrolling) ->
+            // Only detect scroll direction when user is actively scrolling
+            if (!isScrolling) return@collect
+
             // Determine scroll direction
             val isScrollingDown = if (currentIndex != previousIndex) {
                 currentIndex > previousIndex
@@ -360,7 +367,7 @@ private fun SearchResultsGrid(
     var previousOffset by remember { mutableIntStateOf(lazyGridState.firstVisibleItemScrollOffset) }
 
     // Save scroll position to ViewModel
-    LaunchedEffect(lazyGridState.isScrollInProgress) {
+    LaunchedEffect(Unit) {
         snapshotFlow {
             lazyGridState.firstVisibleItemIndex to lazyGridState.firstVisibleItemScrollOffset
         }.collect { (index, offset) ->
@@ -369,10 +376,17 @@ private fun SearchResultsGrid(
     }
 
     // Detect scroll direction and show/hide navbar accordingly
-    LaunchedEffect(lazyGridState.isScrollInProgress) {
+    LaunchedEffect(Unit) {
         snapshotFlow {
-            lazyGridState.firstVisibleItemIndex to lazyGridState.firstVisibleItemScrollOffset
-        }.collect { (currentIndex, currentOffset) ->
+            Triple(
+                lazyGridState.firstVisibleItemIndex,
+                lazyGridState.firstVisibleItemScrollOffset,
+                lazyGridState.isScrollInProgress
+            )
+        }.collect { (currentIndex, currentOffset, isScrolling) ->
+            // Only detect scroll direction when user is actively scrolling
+            if (!isScrolling) return@collect
+
             // Determine scroll direction
             val isScrollingDown = if (currentIndex != previousIndex) {
                 currentIndex > previousIndex
