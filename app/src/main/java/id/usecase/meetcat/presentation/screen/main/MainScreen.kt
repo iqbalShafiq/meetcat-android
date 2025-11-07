@@ -61,6 +61,7 @@ import id.usecase.meetcat.presentation.screen.followerslist.FollowersListScreen
 import id.usecase.meetcat.presentation.screen.followerslist.FollowersListViewModel
 import id.usecase.meetcat.presentation.screen.followinglist.FollowingListScreen
 import id.usecase.meetcat.presentation.screen.followinglist.FollowingListViewModel
+import id.usecase.meetcat.presentation.screen.camera.CameraScreen
 import id.usecase.meetcat.ui.theme.MeetCatTheme
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -294,6 +295,9 @@ private fun MainContent(
                     viewModel = createPostViewModel,
                     onNavigateBack = {
                         onEvent(MainUiEvent.NavigateBack)
+                    },
+                    onNavigateToCamera = {
+                        onEvent(MainUiEvent.NavigateTo("camera"))
                     }
                 )
             }
@@ -316,6 +320,9 @@ private fun MainContent(
                     viewModel = createReplyViewModel,
                     onNavigateBack = {
                         onEvent(MainUiEvent.NavigateBack)
+                    },
+                    onNavigateToCamera = {
+                        onEvent(MainUiEvent.NavigateTo("camera"))
                     }
                 )
             }
@@ -354,6 +361,20 @@ private fun MainContent(
                     },
                     onNavigateToProfile = { profileUserId ->
                         onEvent(MainUiEvent.NavigateTo("user_profile/$profileUserId"))
+                    }
+                )
+            }
+
+            mainUiState.currentRoute == "camera" -> {
+                CameraScreen(
+                    onNavigateBack = {
+                        onEvent(MainUiEvent.NavigateBack)
+                    },
+                    onImageCaptured = { uri ->
+                        // Store the captured image URI in the back stack or shared state
+                        // For now, just navigate back with the URI stored somewhere accessible
+                        // The calling screen (CreatePost/CreateReply) will pick it up
+                        onEvent(MainUiEvent.NavigateBack)
                     }
                 )
             }

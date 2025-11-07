@@ -58,6 +58,7 @@ import kotlinx.coroutines.flow.collectLatest
 fun CreateReplyScreen(
     viewModel: CreateReplyViewModel,
     onNavigateBack: () -> Unit,
+    onNavigateToCamera: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -71,8 +72,8 @@ fun CreateReplyScreen(
                 }
 
                 is CreateReplyUiEffect.ShowMediaPicker -> {
-                    // Mock: In production, would launch Android's photo picker or navigate to MediaPickerScreen
-                    // See CreatePostScreen for detailed implementation example
+                    // Navigate to camera screen
+                    onNavigateToCamera?.invoke()
                 }
 
                 is CreateReplyUiEffect.ShowSuccess -> {
