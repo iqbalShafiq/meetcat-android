@@ -51,8 +51,16 @@ import id.usecase.meetcat.presentation.screen.settings.privacy.PrivacySettingsVi
 import id.usecase.meetcat.presentation.screen.userprofile.UserProfileScreen
 import id.usecase.meetcat.presentation.screen.createpost.CreatePostScreen
 import id.usecase.meetcat.presentation.screen.createpost.CreatePostViewModel
+import id.usecase.meetcat.presentation.screen.createreply.CreateReplyScreen
+import id.usecase.meetcat.presentation.screen.createreply.CreateReplyViewModel
 import id.usecase.meetcat.presentation.screen.editpost.EditPostScreen
 import id.usecase.meetcat.presentation.screen.editpost.EditPostViewModel
+import id.usecase.meetcat.presentation.screen.editprofile.EditProfileScreen
+import id.usecase.meetcat.presentation.screen.editprofile.EditProfileViewModel
+import id.usecase.meetcat.presentation.screen.followerslist.FollowersListScreen
+import id.usecase.meetcat.presentation.screen.followerslist.FollowersListViewModel
+import id.usecase.meetcat.presentation.screen.followinglist.FollowingListScreen
+import id.usecase.meetcat.presentation.screen.followinglist.FollowingListViewModel
 import id.usecase.meetcat.ui.theme.MeetCatTheme
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -180,6 +188,15 @@ private fun MainContent(
                     },
                     onNavigateToSettings = {
                         onEvent(MainUiEvent.NavigateTo("settings"))
+                    },
+                    onNavigateToEditProfile = {
+                        onEvent(MainUiEvent.NavigateTo("edit_profile"))
+                    },
+                    onNavigateToFollowers = { userId ->
+                        onEvent(MainUiEvent.NavigateTo("followers_list/$userId"))
+                    },
+                    onNavigateToFollowing = { userId ->
+                        onEvent(MainUiEvent.NavigateTo("following_list/$userId"))
                     }
                 )
             }
@@ -235,6 +252,9 @@ private fun MainContent(
                     },
                     onNavigateToProfile = { userId ->
                         onEvent(MainUiEvent.NavigateTo("user_profile/$userId"))
+                    },
+                    onNavigateToCreateReply = { replyPostId ->
+                        onEvent(MainUiEvent.NavigateTo("create_reply/$replyPostId"))
                     }
                 )
             }
@@ -285,6 +305,55 @@ private fun MainContent(
                     viewModel = editPostViewModel,
                     onNavigateBack = {
                         onEvent(MainUiEvent.NavigateBack)
+                    }
+                )
+            }
+
+            mainUiState.currentRoute.startsWith("create_reply/") -> {
+                val postId = mainUiState.currentRoute.substringAfter("create_reply/")
+                val createReplyViewModel: CreateReplyViewModel = koinViewModel { parametersOf(postId) }
+                CreateReplyScreen(
+                    viewModel = createReplyViewModel,
+                    onNavigateBack = {
+                        onEvent(MainUiEvent.NavigateBack)
+                    }
+                )
+            }
+
+            mainUiState.currentRoute == "edit_profile" -> {
+                val editProfileViewModel: EditProfileViewModel = koinViewModel()
+                EditProfileScreen(
+                    viewModel = editProfileViewModel,
+                    onNavigateBack = {
+                        onEvent(MainUiEvent.NavigateBack)
+                    }
+                )
+            }
+
+            mainUiState.currentRoute.startsWith("followers_list/") -> {
+                val userId = mainUiState.currentRoute.substringAfter("followers_list/")
+                val followersListViewModel: FollowersListViewModel = koinViewModel { parametersOf(userId) }
+                FollowersListScreen(
+                    viewModel = followersListViewModel,
+                    onNavigateBack = {
+                        onEvent(MainUiEvent.NavigateBack)
+                    },
+                    onNavigateToProfile = { profileUserId ->
+                        onEvent(MainUiEvent.NavigateTo("user_profile/$profileUserId"))
+                    }
+                )
+            }
+
+            mainUiState.currentRoute.startsWith("following_list/") -> {
+                val userId = mainUiState.currentRoute.substringAfter("following_list/")
+                val followingListViewModel: FollowingListViewModel = koinViewModel { parametersOf(userId) }
+                FollowingListScreen(
+                    viewModel = followingListViewModel,
+                    onNavigateBack = {
+                        onEvent(MainUiEvent.NavigateBack)
+                    },
+                    onNavigateToProfile = { profileUserId ->
+                        onEvent(MainUiEvent.NavigateTo("user_profile/$profileUserId"))
                     }
                 )
             }
