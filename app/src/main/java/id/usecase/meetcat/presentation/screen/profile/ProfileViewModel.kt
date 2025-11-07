@@ -51,9 +51,9 @@ class ProfileViewModel(
     val uiEffect: Flow<ProfileUiEffect> = _uiEffect.receiveAsFlow()
 
     // Preserve scroll positions across navigation for each tab
-    var postsScrollIndex: Int = 0
-    var repliesScrollIndex: Int = 0
-    var lovedScrollIndex: Int = 0
+    override var postsScrollIndex: Int = 0
+    override var repliesScrollIndex: Int = 0
+    override var lovedScrollIndex: Int = 0
 
     // Track love/unlove toggles for optimistic UI updates across all tabs
     private val _toggledLoves = MutableStateFlow<Map<String, Boolean>>(emptyMap())
