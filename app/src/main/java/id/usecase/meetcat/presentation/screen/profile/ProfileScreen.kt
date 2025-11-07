@@ -438,13 +438,15 @@ internal fun PostsGrid(
     onShowBottomNav: () -> Unit = {},
     onHideBottomNav: () -> Unit = {}
 ) {
-    // Use scroll position from ViewModel to preserve across navigation
-    val lazyGridState = rememberLazyStaggeredGridState(
-        initialFirstVisibleItemIndex = viewModel.postsScrollIndex
-    )
+    // Use remember with viewModel as key to preserve state across navigation
+    val lazyGridState = remember(viewModel) {
+        androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState(
+            initialFirstVisibleItemIndex = viewModel.postsScrollIndex
+        )
+    }
     var previousIndex by remember { mutableIntStateOf(0) }
 
-    // Save scroll position to ViewModel
+    // Save scroll position to ViewModel continuously
     LaunchedEffect(Unit) {
         snapshotFlow { lazyGridState.firstVisibleItemIndex }
             .collect { index ->
@@ -541,12 +543,14 @@ internal fun RepliesList(
     onShowBottomNav: () -> Unit = {},
     onHideBottomNav: () -> Unit = {}
 ) {
-    // Use scroll position from ViewModel to preserve across navigation
-    val lazyListState = rememberLazyListState(
-        initialFirstVisibleItemIndex = viewModel.repliesScrollIndex
-    )
+    // Use remember with viewModel as key to preserve state across navigation
+    val lazyListState = remember(viewModel) {
+        androidx.compose.foundation.lazy.LazyListState(
+            firstVisibleItemIndex = viewModel.repliesScrollIndex
+        )
+    }
 
-    // Save scroll position to ViewModel
+    // Save scroll position to ViewModel continuously
     LaunchedEffect(Unit) {
         snapshotFlow { lazyListState.firstVisibleItemIndex }
             .collect { index ->
@@ -648,12 +652,14 @@ internal fun LovedList(
     onShowBottomNav: () -> Unit = {},
     onHideBottomNav: () -> Unit = {}
 ) {
-    // Use scroll position from ViewModel to preserve across navigation
-    val lazyListState = rememberLazyListState(
-        initialFirstVisibleItemIndex = viewModel.lovedScrollIndex
-    )
+    // Use remember with viewModel as key to preserve state across navigation
+    val lazyListState = remember(viewModel) {
+        androidx.compose.foundation.lazy.LazyListState(
+            firstVisibleItemIndex = viewModel.lovedScrollIndex
+        )
+    }
 
-    // Save scroll position to ViewModel
+    // Save scroll position to ViewModel continuously
     LaunchedEffect(Unit) {
         snapshotFlow { lazyListState.firstVisibleItemIndex }
             .collect { index ->

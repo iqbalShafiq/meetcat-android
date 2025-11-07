@@ -227,7 +227,8 @@ private fun SearchContent(
 
             // Main content - Random grid or search results
             when {
-                uiState.isLoading -> {
+                // Show loading only if we don't have random posts yet AND we're loading
+                uiState.isLoading && uiState.randomPosts.isEmpty() && uiState.error == null -> {
                     LoadingView()
                 }
                 uiState.error != null && uiState.randomPosts.isEmpty() -> {
@@ -273,13 +274,15 @@ private fun RandomPostsGrid(
     onShowBottomNav: () -> Unit = {},
     onHideBottomNav: () -> Unit = {}
 ) {
-    // Use scroll position from ViewModel to preserve across navigation
-    val lazyGridState = rememberLazyStaggeredGridState(
-        initialFirstVisibleItemIndex = viewModel.randomPostsScrollIndex
-    )
+    // Use remember with viewModel as key to preserve state across navigation
+    val lazyGridState = remember(viewModel) {
+        androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState(
+            initialFirstVisibleItemIndex = viewModel.randomPostsScrollIndex
+        )
+    }
     var previousIndex by remember { mutableIntStateOf(0) }
 
-    // Save scroll position to ViewModel
+    // Save scroll position to ViewModel continuously
     LaunchedEffect(Unit) {
         snapshotFlow { lazyGridState.firstVisibleItemIndex }
             .collect { index ->
@@ -331,13 +334,15 @@ private fun SearchResultsGrid(
     onShowBottomNav: () -> Unit = {},
     onHideBottomNav: () -> Unit = {}
 ) {
-    // Use scroll position from ViewModel to preserve across navigation
-    val lazyGridState = rememberLazyStaggeredGridState(
-        initialFirstVisibleItemIndex = viewModel.searchResultsScrollIndex
-    )
+    // Use remember with viewModel as key to preserve state across navigation
+    val lazyGridState = remember(viewModel) {
+        androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState(
+            initialFirstVisibleItemIndex = viewModel.searchResultsScrollIndex
+        )
+    }
     var previousIndex by remember { mutableIntStateOf(0) }
 
-    // Save scroll position to ViewModel
+    // Save scroll position to ViewModel continuously
     LaunchedEffect(Unit) {
         snapshotFlow { lazyGridState.firstVisibleItemIndex }
             .collect { index ->

@@ -184,14 +184,16 @@ private fun FeedList(
     onNavigateToReply: (String) -> Unit = {},
     viewModel: ExploreViewModel
 ) {
-    // Use scroll position from ViewModel to preserve across navigation
-    val lazyListState = rememberLazyListState(
-        initialFirstVisibleItemIndex = viewModel.scrollIndex,
-        initialFirstVisibleItemScrollOffset = viewModel.scrollOffset
-    )
+    // Use remember with viewModel as key to preserve state across navigation
+    val lazyListState = remember(viewModel) {
+        androidx.compose.foundation.lazy.LazyListState(
+            firstVisibleItemIndex = viewModel.scrollIndex,
+            firstVisibleItemScrollOffset = viewModel.scrollOffset
+        )
+    }
 
-    // Save scroll position to ViewModel
-    LaunchedEffect(lazyListState.isScrollInProgress) {
+    // Save scroll position to ViewModel continuously
+    LaunchedEffect(Unit) {
         snapshotFlow {
             lazyListState.firstVisibleItemIndex to lazyListState.firstVisibleItemScrollOffset
         }.collect { (index, offset) ->
