@@ -85,7 +85,6 @@ fun CameraScreen(
     val snackbarHostState = remember { SnackbarHostState() }
 
     var hasCameraPermission by remember { mutableStateOf(false) }
-    var shouldShowPermissionRationale by remember { mutableStateOf(false) }
     var isCapturing by remember { mutableStateOf(false) }
     var capturedImageUri by remember { mutableStateOf<Uri?>(null) }
     var lensFacing by remember { mutableStateOf(CameraSelector.LENS_FACING_BACK) }
@@ -99,9 +98,6 @@ fun CameraScreen(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         hasCameraPermission = isGranted
-        if (!isGranted) {
-            shouldShowPermissionRationale = true
-        }
     }
 
     // Gallery launcher
