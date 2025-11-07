@@ -54,6 +54,7 @@ import id.usecase.meetcat.presentation.screen.createpost.CreatePostScreen
 import id.usecase.meetcat.presentation.screen.createpost.CreatePostUiEvent
 import id.usecase.meetcat.presentation.screen.createpost.CreatePostViewModel
 import id.usecase.meetcat.presentation.screen.createreply.CreateReplyScreen
+import id.usecase.meetcat.presentation.screen.createreply.CreateReplyUiEvent
 import id.usecase.meetcat.presentation.screen.createreply.CreateReplyViewModel
 import id.usecase.meetcat.presentation.screen.editpost.EditPostScreen
 import id.usecase.meetcat.presentation.screen.editpost.EditPostViewModel
@@ -331,9 +332,7 @@ private fun MainContent(
                 // Handle selected image from camera/gallery
                 LaunchedEffect(mainUiState.selectedImageUri) {
                     mainUiState.selectedImageUri?.let { uri ->
-                        // CreateReply might also need MediaSelected event
-                        // If CreateReplyViewModel has similar event, uncomment:
-                        // createReplyViewModel.onEvent(CreateReplyUiEvent.MediaSelected(uri))
+                        createReplyViewModel.onEvent(CreateReplyUiEvent.MediaSelected(uri))
                         onEvent(MainUiEvent.ClearSelectedImage)
                     }
                 }
