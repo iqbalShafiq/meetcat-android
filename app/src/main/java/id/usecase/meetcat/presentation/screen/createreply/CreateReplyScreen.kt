@@ -268,29 +268,33 @@ private fun CreateReplyContent(
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(150.dp)
+                                    .height(200.dp)
                                     .clip(RoundedCornerShape(12.dp))
                                     .background(MaterialTheme.colorScheme.surfaceVariant)
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.Image,
-                                    contentDescription = "Selected image",
-                                    modifier = Modifier
-                                        .align(Alignment.Center)
-                                        .size(48.dp),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                coil3.compose.AsyncImage(
+                                    model = uiState.mediaUri,
+                                    contentDescription = "Selected media",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
                                 )
 
+                                // Remove button
                                 IconButton(
                                     onClick = { onEvent(CreateReplyUiEvent.RemoveMedia) },
                                     enabled = !uiState.isPosting,
                                     modifier = Modifier
                                         .align(Alignment.TopEnd)
                                         .padding(8.dp)
+                                        .background(
+                                            Color.Black.copy(alpha = 0.5f),
+                                            CircleShape
+                                        )
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Close,
-                                        contentDescription = "Remove media"
+                                        contentDescription = "Remove media",
+                                        tint = Color.White
                                     )
                                 }
                             }
