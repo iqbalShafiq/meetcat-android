@@ -38,6 +38,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -71,12 +72,7 @@ fun SearchScreen(
     val searchResults = viewModel.searchResults.collectAsLazyPagingItems()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Load random posts when screen is first composed
-    LaunchedEffect(Unit) {
-        // Trigger load - ViewModel will handle deduplication
-        viewModel.onEvent(SearchUiEvent.LoadRandomPosts)
-    }
-
+    // Collect effects
     LaunchedEffect(Unit) {
         viewModel.uiEffect.collect { effect ->
             when (effect) {
@@ -92,6 +88,7 @@ fun SearchScreen(
     SearchContent(
         uiState = uiState,
         searchResults = searchResults,
+        viewModel = viewModel,
         onEvent = viewModel::onEvent,
         onNavigateBack = onNavigateBack,
         snackbarHostState = snackbarHostState,
@@ -105,6 +102,7 @@ fun SearchScreen(
 private fun SearchContent(
     uiState: SearchUiState,
     searchResults: LazyPagingItems<Post>,
+    viewModel: SearchViewModel,
     onEvent: (SearchUiEvent) -> Unit,
     onNavigateBack: () -> Unit,
     snackbarHostState: SnackbarHostState,
@@ -242,6 +240,7 @@ private fun SearchContent(
                 searchResults.itemCount > 0 || searchResults.loadState.refresh is LoadState.Loading -> {
                     SearchResultsGrid(
                         searchResults = searchResults,
+                        viewModel = viewModel,
                         onPostClick = { onEvent(SearchUiEvent.NavigateToPost(it)) },
                         onShowBottomNav = onShowBottomNav,
                         onHideBottomNav = onHideBottomNav
@@ -254,6 +253,7 @@ private fun SearchContent(
                 else -> {
                     RandomPostsGrid(
                         posts = uiState.randomPosts,
+                        viewModel = viewModel,
                         onPostClick = { onEvent(SearchUiEvent.NavigateToPost(it)) },
                         onShowBottomNav = onShowBottomNav,
                         onHideBottomNav = onHideBottomNav
@@ -267,13 +267,25 @@ private fun SearchContent(
 @Composable
 private fun RandomPostsGrid(
     posts: ImmutableList<Post>,
+    viewModel: SearchViewModel,
     onPostClick: (String) -> Unit,
     modifier: Modifier = Modifier,
     onShowBottomNav: () -> Unit = {},
     onHideBottomNav: () -> Unit = {}
 ) {
-    val lazyGridState = rememberLazyStaggeredGridState()
+    // Use scroll position from ViewModel to preserve across navigation
+    val lazyGridState = rememberLazyStaggeredGridState(
+        initialFirstVisibleItemIndex = viewModel.randomPostsScrollIndex
+    )
     var previousIndex by remember { mutableIntStateOf(0) }
+
+    // Save scroll position to ViewModel
+    LaunchedEffect(Unit) {
+        snapshotFlow { lazyGridState.firstVisibleItemIndex }
+            .collect { index ->
+                viewModel.randomPostsScrollIndex = index
+            }
+    }
 
     // Scroll detection: show when scrolling up, hide when scrolling down
     LaunchedEffect(Unit) {
@@ -313,13 +325,25 @@ private fun RandomPostsGrid(
 @Composable
 private fun SearchResultsGrid(
     searchResults: LazyPagingItems<Post>,
+    viewModel: SearchViewModel,
     onPostClick: (String) -> Unit,
     modifier: Modifier = Modifier,
     onShowBottomNav: () -> Unit = {},
     onHideBottomNav: () -> Unit = {}
 ) {
-    val lazyGridState = rememberLazyStaggeredGridState()
+    // Use scroll position from ViewModel to preserve across navigation
+    val lazyGridState = rememberLazyStaggeredGridState(
+        initialFirstVisibleItemIndex = viewModel.searchResultsScrollIndex
+    )
     var previousIndex by remember { mutableIntStateOf(0) }
+
+    // Save scroll position to ViewModel
+    LaunchedEffect(Unit) {
+        snapshotFlow { lazyGridState.firstVisibleItemIndex }
+            .collect { index ->
+                viewModel.searchResultsScrollIndex = index
+            }
+    }
 
     // Scroll detection: show when scrolling up, hide when scrolling down
     LaunchedEffect(Unit) {

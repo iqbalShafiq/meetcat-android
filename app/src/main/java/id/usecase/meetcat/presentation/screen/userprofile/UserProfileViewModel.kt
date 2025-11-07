@@ -18,6 +18,7 @@ import id.usecase.meetcat.domain.repository.UserRepository
 import id.usecase.meetcat.domain.usecase.user.GetUserLovedItemsUseCase
 import id.usecase.meetcat.domain.usecase.user.GetUserPostsUseCase
 import id.usecase.meetcat.domain.usecase.user.GetUserRepliesUseCase
+import id.usecase.meetcat.presentation.screen.profile.ScrollableViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -46,13 +47,18 @@ class UserProfileViewModel(
     private val getUserLovedItemsUseCase: GetUserLovedItemsUseCase,
     private val postRepository: PostRepository,
     private val userRepository: UserRepository
-) : ViewModel() {
+) : ViewModel(), ScrollableViewModel {
 
     private val _uiState = MutableStateFlow(UserProfileUiState())
     val uiState: StateFlow<UserProfileUiState> = _uiState.asStateFlow()
 
     private val _uiEffect = Channel<UserProfileUiEffect>()
     val uiEffect: Flow<UserProfileUiEffect> = _uiEffect.receiveAsFlow()
+
+    // Preserve scroll positions across navigation for each tab
+    override var postsScrollIndex: Int = 0
+    override var repliesScrollIndex: Int = 0
+    override var lovedScrollIndex: Int = 0
 
     // Track love/unlove toggles for optimistic UI updates across all tabs
     private val _toggledLoves = MutableStateFlow<Map<String, Boolean>>(emptyMap())

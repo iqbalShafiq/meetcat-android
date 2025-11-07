@@ -60,10 +60,12 @@ class MainViewModel : ViewModel() {
             }
         }
 
-        // Auto-show bottom nav when navigating to detail screens
-        // (screens that don't have scroll detection)
-        if (route !in bottomNavRoutes) {
+        // Auto-hide bottom nav when navigating to detail screens
+        // Show when navigating to main bottom nav screens
+        if (route in bottomNavRoutes) {
             showBottomNav()
+        } else {
+            hideBottomNav()
         }
     }
 

@@ -42,13 +42,18 @@ class ProfileViewModel(
     private val getUserRepliesUseCase: GetUserRepliesUseCase,
     private val getUserLovedItemsUseCase: GetUserLovedItemsUseCase,
     private val postRepository: PostRepository
-) : ViewModel() {
+) : ViewModel(), ScrollableViewModel {
 
     private val _uiState = MutableStateFlow(ProfileUiState())
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
 
     private val _uiEffect = Channel<ProfileUiEffect>()
     val uiEffect: Flow<ProfileUiEffect> = _uiEffect.receiveAsFlow()
+
+    // Preserve scroll positions across navigation for each tab
+    override var postsScrollIndex: Int = 0
+    override var repliesScrollIndex: Int = 0
+    override var lovedScrollIndex: Int = 0
 
     // Track love/unlove toggles for optimistic UI updates across all tabs
     private val _toggledLoves = MutableStateFlow<Map<String, Boolean>>(emptyMap())

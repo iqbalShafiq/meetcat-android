@@ -29,7 +29,8 @@ sealed class AppRoute {
 fun AppRouter(
     modifier: Modifier = Modifier
 ) {
-    var currentRoute by remember { mutableStateOf<AppRoute>(AppRoute.Splash) }
+    // Skip login for development - go directly to Main
+    var currentRoute by remember { mutableStateOf<AppRoute>(AppRoute.Main) }
 
     when (currentRoute) {
         is AppRoute.Splash -> {

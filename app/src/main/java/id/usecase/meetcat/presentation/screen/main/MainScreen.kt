@@ -3,17 +3,28 @@ package id.usecase.meetcat.presentation.screen.main
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -31,6 +42,12 @@ import id.usecase.meetcat.presentation.screen.search.SearchScreen
 import id.usecase.meetcat.presentation.screen.search.SearchViewModel
 import id.usecase.meetcat.presentation.screen.settings.SettingsScreen
 import id.usecase.meetcat.presentation.screen.settings.SettingsViewModel
+import id.usecase.meetcat.presentation.screen.settings.about.AboutScreen
+import id.usecase.meetcat.presentation.screen.settings.about.AboutViewModel
+import id.usecase.meetcat.presentation.screen.settings.account.AccountSettingsScreen
+import id.usecase.meetcat.presentation.screen.settings.account.AccountSettingsViewModel
+import id.usecase.meetcat.presentation.screen.settings.privacy.PrivacySettingsScreen
+import id.usecase.meetcat.presentation.screen.settings.privacy.PrivacySettingsViewModel
 import id.usecase.meetcat.presentation.screen.userprofile.UserProfileScreen
 import id.usecase.meetcat.ui.theme.MeetCatTheme
 import org.koin.androidx.compose.koinViewModel
@@ -43,6 +60,9 @@ fun MainScreen(
     mapsViewModel: MapsViewModel = koinViewModel(),
     profileViewModel: ProfileViewModel = koinViewModel(),
     settingsViewModel: SettingsViewModel = koinViewModel(),
+    aboutViewModel: AboutViewModel = koinViewModel(),
+    accountSettingsViewModel: AccountSettingsViewModel = koinViewModel(),
+    privacySettingsViewModel: PrivacySettingsViewModel = koinViewModel(),
     modifier: Modifier = Modifier
 ) {
     val mainUiState by mainViewModel.uiState.collectAsStateWithLifecycle()
@@ -57,6 +77,9 @@ fun MainScreen(
         mapsViewModel = mapsViewModel,
         profileViewModel = profileViewModel,
         settingsViewModel = settingsViewModel,
+        aboutViewModel = aboutViewModel,
+        accountSettingsViewModel = accountSettingsViewModel,
+        privacySettingsViewModel = privacySettingsViewModel,
         modifier = modifier
     )
 }
@@ -71,6 +94,9 @@ private fun MainContent(
     mapsViewModel: MapsViewModel,
     profileViewModel: ProfileViewModel,
     settingsViewModel: SettingsViewModel,
+    aboutViewModel: AboutViewModel,
+    accountSettingsViewModel: AccountSettingsViewModel,
+    privacySettingsViewModel: PrivacySettingsViewModel,
     modifier: Modifier = Modifier
 ) {
     // Handle system back button
@@ -153,17 +179,38 @@ private fun MainContent(
                         onEvent(MainUiEvent.NavigateBack)
                     },
                     onNavigateToAccountSettings = {
-                        // TODO: Implement account settings screen
+                        onEvent(MainUiEvent.NavigateTo("account_settings"))
                     },
                     onNavigateToPrivacySettings = {
-                        // TODO: Implement privacy settings screen
+                        onEvent(MainUiEvent.NavigateTo("privacy_settings"))
                     },
                     onNavigateToAbout = {
-                        // TODO: Implement about screen
+                        onEvent(MainUiEvent.NavigateTo("about"))
                     },
                     onNavigateToLogin = {
                         // TODO: Handle logout and navigate to login
                     }
+                )
+            }
+
+            mainUiState.currentRoute == "account_settings" -> {
+                AccountSettingsScreen(
+                    viewModel = accountSettingsViewModel,
+                    onNavigateBack = { onEvent(MainUiEvent.NavigateBack) }
+                )
+            }
+
+            mainUiState.currentRoute == "privacy_settings" -> {
+                PrivacySettingsScreen(
+                    viewModel = privacySettingsViewModel,
+                    onNavigateBack = { onEvent(MainUiEvent.NavigateBack) }
+                )
+            }
+
+            mainUiState.currentRoute == "about" -> {
+                AboutScreen(
+                    viewModel = aboutViewModel,
+                    onNavigateBack = { onEvent(MainUiEvent.NavigateBack) }
                 )
             }
 
@@ -208,10 +255,6 @@ private fun MainContent(
                     }
                 )
             }
-
-            else -> {
-                PlaceholderScreen("Unknown")
-            }
         }
 
         // Navbar overlay at bottom (outside Scaffold to avoid padding issues)
@@ -247,22 +290,6 @@ private fun ExploreScreenWithScrollDetection(
     )
 }
 
-@Composable
-private fun PlaceholderScreen(
-    screenName: String,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = "$screenName Screen\n(Coming soon)",
-            style = MaterialTheme.typography.headlineSmall
-        )
-    }
-}
-
 @Preview(showBackground = true)
 @Composable
 private fun MainScreenPreview() {
@@ -277,7 +304,10 @@ private fun MainScreenPreview() {
             searchViewModel = koinViewModel(),
             mapsViewModel = koinViewModel(),
             profileViewModel = koinViewModel(),
-            settingsViewModel = koinViewModel()
+            settingsViewModel = koinViewModel(),
+            aboutViewModel = koinViewModel(),
+            accountSettingsViewModel = koinViewModel(),
+            privacySettingsViewModel = koinViewModel()
         )
     }
 }

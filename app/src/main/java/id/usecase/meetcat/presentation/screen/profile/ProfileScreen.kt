@@ -39,9 +39,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -99,6 +101,7 @@ fun ProfileScreen(
         posts = posts,
         replies = replies,
         lovedItems = lovedItems,
+        viewModel = viewModel,
         onEvent = viewModel::onEvent,
         snackbarHostState = snackbarHostState,
         onShowBottomNav = onShowBottomNav,
@@ -114,21 +117,28 @@ private fun ProfileContent(
     posts: LazyPagingItems<Post>,
     replies: LazyPagingItems<FeedItem.ReplyItem>,
     lovedItems: LazyPagingItems<FeedItem>,
+    viewModel: ProfileViewModel,
     onEvent: (ProfileUiEvent) -> Unit,
     snackbarHostState: SnackbarHostState,
     onShowBottomNav: () -> Unit = {},
     onHideBottomNav: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+
     Scaffold(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier
+            .fillMaxSize()
+            .nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             TopAppBar(
                 title = {
+                    // Show title only when collapsed
                     Text(
                         text = "Profile",
                         style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1
                     )
                 },
                 actions = {
@@ -139,9 +149,10 @@ private fun ProfileContent(
                         )
                     }
                 },
+                scrollBehavior = scrollBehavior,
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
+                    scrolledContainerColor = MaterialTheme.colorScheme.surface
                 )
             )
         },
@@ -160,75 +171,220 @@ private fun ProfileContent(
             }
 
             else -> {
-                PullToRefreshBox(
-                    isRefreshing = uiState.isRefreshing,
-                    onRefresh = { onEvent(ProfileUiEvent.Refresh) },
+                ProfileScrollableContent(
+                    uiState = uiState,
+                    posts = posts,
+                    replies = replies,
+                    lovedItems = lovedItems,
+                    viewModel = viewModel,
+                    onEvent = onEvent,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues)
-                ) {
-                    Column(
-                        modifier = Modifier.fillMaxSize()
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProfileScrollableContent(
+    uiState: ProfileUiState,
+    posts: LazyPagingItems<Post>,
+    replies: LazyPagingItems<FeedItem.ReplyItem>,
+    lovedItems: LazyPagingItems<FeedItem>,
+    viewModel: ProfileViewModel,
+    onEvent: (ProfileUiEvent) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    androidx.compose.foundation.lazy.LazyColumn(
+        modifier = modifier
+    ) {
+        // Profile Header - will collapse when scrolling
+        item {
+            UserProfileHeader(
+                user = uiState.user!!,
+                stats = listOf(
+                    ProfileStat(
+                        count = uiState.user.postsCount,
+                        label = "Posts"
+                    ),
+                    ProfileStat(
+                        count = uiState.user.followingCount,
+                        label = "Following Cats"
+                    ),
+                    ProfileStat(
+                        count = calculateTotalLoves(uiState.user),
+                        label = "Loves"
+                    )
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surface)
+            )
+        }
+
+        // Sticky Tab Row
+        stickyHeader {
+            ProfileTabRow(
+                selectedTab = uiState.selectedTab,
+                onTabSelected = { onEvent(ProfileUiEvent.TabSelected(it)) },
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+
+        // Tab Content
+        when (uiState.selectedTab) {
+            ProfileTab.POSTS -> {
+                // Posts grid content (3 columns)
+                val postsList = (0 until posts.itemCount).mapNotNull { posts[it] }
+                val chunkedPosts = postsList.chunked(3)
+
+                items(
+                    count = chunkedPosts.size,
+                    key = { index -> "row_$index" }
+                ) { rowIndex ->
+                    androidx.compose.foundation.layout.Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.Start
                     ) {
-                        // Profile Header
-                        UserProfileHeader(
-                            user = uiState.user,
-                            stats = listOf(
-                                ProfileStat(
-                                    count = uiState.user.postsCount,
-                                    label = "Posts"
-                                ),
-                                ProfileStat(
-                                    count = uiState.user.followingCount,
-                                    label = "Following Cats"
-                                ),
-                                ProfileStat(
-                                    count = calculateTotalLoves(uiState.user),
-                                    label = "Loves"
-                                )
-                            ),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(MaterialTheme.colorScheme.surface)
-                        )
-
-                        // Tab Row
-                        ProfileTabRow(
-                            selectedTab = uiState.selectedTab,
-                            onTabSelected = { onEvent(ProfileUiEvent.TabSelected(it)) },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        // Tab Content
-                        when (uiState.selectedTab) {
-                            ProfileTab.POSTS -> {
-                                PostsGrid(
-                                    posts = posts,
-                                    onPostClick = { onEvent(ProfileUiEvent.NavigateToPost(it)) },
-                                    onShowBottomNav = onShowBottomNav,
-                                    onHideBottomNav = onHideBottomNav
-                                )
-                            }
-                            ProfileTab.REPLIES -> {
-                                RepliesList(
-                                    replies = replies,
-                                    onReplyClick = { onEvent(ProfileUiEvent.NavigateToPost(it)) },
-                                    onLoveClick = { onEvent(ProfileUiEvent.LoveReply(it)) },
-                                    onShowBottomNav = onShowBottomNav,
-                                    onHideBottomNav = onHideBottomNav
-                                )
-                            }
-                            ProfileTab.LOVED -> {
-                                LovedList(
-                                    items = lovedItems,
-                                    onPostClick = { onEvent(ProfileUiEvent.NavigateToPost(it)) },
-                                    onLovePostClick = { onEvent(ProfileUiEvent.LovePost(it)) },
-                                    onLoveReplyClick = { onEvent(ProfileUiEvent.LoveReply(it)) },
-                                    onShowBottomNav = onShowBottomNav,
-                                    onHideBottomNav = onHideBottomNav
+                        chunkedPosts[rowIndex].forEach { post ->
+                            androidx.compose.foundation.layout.Box(
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                id.usecase.meetcat.presentation.screen.search.component.SearchPostGridItem(
+                                    post = post,
+                                    onClick = { onEvent(ProfileUiEvent.NavigateToPost(post.id)) }
                                 )
                             }
                         }
+                        // Fill remaining cells if row is not full
+                        repeat(3 - chunkedPosts[rowIndex].size) {
+                            androidx.compose.foundation.layout.Spacer(modifier = Modifier.weight(1f))
+                        }
+                    }
+                }
+
+                // Loading state for posts
+                posts.loadState.append.let { appendState ->
+                    when (appendState) {
+                        is androidx.paging.LoadState.Loading -> {
+                            item {
+                                androidx.compose.foundation.layout.Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    contentAlignment = androidx.compose.ui.Alignment.Center
+                                ) {
+                                    androidx.compose.material3.CircularProgressIndicator()
+                                }
+                            }
+                        }
+                        else -> {}
+                    }
+                }
+            }
+
+            ProfileTab.REPLIES -> {
+                // Replies list content
+                items(
+                    count = replies.itemCount,
+                    key = { index -> replies[index]?.reply?.id ?: "reply_$index" }
+                ) { index ->
+                    replies[index]?.let { replyItem ->
+                        id.usecase.meetcat.presentation.component.card.ReplyCard(
+                            reply = replyItem.reply,
+                            onReplyClick = { onEvent(ProfileUiEvent.NavigateToPost(replyItem.reply.id)) },
+                            onProfileClick = { },
+                            onOriginalPostClick = { onEvent(ProfileUiEvent.NavigateToPost(replyItem.reply.originalPostId)) },
+                            onOriginalProfileClick = { },
+                            onLoveClick = { onEvent(ProfileUiEvent.LoveReply(replyItem.reply.id)) },
+                            onCommentClick = { },
+                            onShareClick = { },
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        )
+                    }
+                }
+
+                // Loading state for replies
+                replies.loadState.append.let { appendState ->
+                    when (appendState) {
+                        is androidx.paging.LoadState.Loading -> {
+                            item {
+                                androidx.compose.foundation.layout.Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    contentAlignment = androidx.compose.ui.Alignment.Center
+                                ) {
+                                    androidx.compose.material3.CircularProgressIndicator()
+                                }
+                            }
+                        }
+                        else -> {}
+                    }
+                }
+            }
+
+            ProfileTab.LOVED -> {
+                // Loved items content
+                items(
+                    count = lovedItems.itemCount,
+                    key = { index ->
+                        when (val item = lovedItems[index]) {
+                            is FeedItem.PostItem -> "post_${item.post.id}"
+                            is FeedItem.ReplyItem -> "reply_${item.reply.id}"
+                            null -> "loved_$index"
+                        }
+                    }
+                ) { index ->
+                    lovedItems[index]?.let { item ->
+                        when (item) {
+                            is FeedItem.PostItem -> {
+                                id.usecase.meetcat.presentation.component.card.PostCard(
+                                    post = item.post,
+                                    onPostClick = { onEvent(ProfileUiEvent.NavigateToPost(item.post.id)) },
+                                    onProfileClick = { },
+                                    onLoveClick = { onEvent(ProfileUiEvent.LovePost(item.post.id)) },
+                                    onCommentClick = { },
+                                    onReplyClick = { },
+                                    onShareClick = { },
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                                )
+                            }
+                            is FeedItem.ReplyItem -> {
+                                id.usecase.meetcat.presentation.component.card.ReplyCard(
+                                    reply = item.reply,
+                                    onReplyClick = { onEvent(ProfileUiEvent.NavigateToPost(item.reply.id)) },
+                                    onProfileClick = { },
+                                    onOriginalPostClick = { onEvent(ProfileUiEvent.NavigateToPost(item.reply.originalPostId)) },
+                                    onOriginalProfileClick = { },
+                                    onLoveClick = { onEvent(ProfileUiEvent.LoveReply(item.reply.id)) },
+                                    onCommentClick = { },
+                                    onShareClick = { },
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Loading state for loved items
+                lovedItems.loadState.append.let { appendState ->
+                    when (appendState) {
+                        is androidx.paging.LoadState.Loading -> {
+                            item {
+                                androidx.compose.foundation.layout.Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    contentAlignment = androidx.compose.ui.Alignment.Center
+                                ) {
+                                    androidx.compose.material3.CircularProgressIndicator()
+                                }
+                            }
+                        }
+                        else -> {}
                     }
                 }
             }
@@ -266,16 +422,35 @@ private fun ProfileTabRow(
     }
 }
 
+// Interface for ViewModels that support scroll position tracking
+interface ScrollableViewModel {
+    var postsScrollIndex: Int
+    var repliesScrollIndex: Int
+    var lovedScrollIndex: Int
+}
+
 @Composable
 internal fun PostsGrid(
     posts: LazyPagingItems<Post>,
+    viewModel: ScrollableViewModel,
     onPostClick: (String) -> Unit,
     modifier: Modifier = Modifier,
     onShowBottomNav: () -> Unit = {},
     onHideBottomNav: () -> Unit = {}
 ) {
-    val lazyGridState = rememberLazyStaggeredGridState()
+    // Use scroll position from ViewModel to preserve across navigation
+    val lazyGridState = rememberLazyStaggeredGridState(
+        initialFirstVisibleItemIndex = viewModel.postsScrollIndex
+    )
     var previousIndex by remember { mutableIntStateOf(0) }
+
+    // Save scroll position to ViewModel
+    LaunchedEffect(Unit) {
+        snapshotFlow { lazyGridState.firstVisibleItemIndex }
+            .collect { index ->
+                viewModel.postsScrollIndex = index
+            }
+    }
 
     // Scroll detection
     LaunchedEffect(Unit) {
@@ -359,13 +534,25 @@ internal fun PostsGrid(
 @Composable
 internal fun RepliesList(
     replies: LazyPagingItems<FeedItem.ReplyItem>,
+    viewModel: ScrollableViewModel,
     onReplyClick: (String) -> Unit,
     onLoveClick: (String) -> Unit,
     modifier: Modifier = Modifier,
     onShowBottomNav: () -> Unit = {},
     onHideBottomNav: () -> Unit = {}
 ) {
-    val lazyListState = rememberLazyListState()
+    // Use scroll position from ViewModel to preserve across navigation
+    val lazyListState = rememberLazyListState(
+        initialFirstVisibleItemIndex = viewModel.repliesScrollIndex
+    )
+
+    // Save scroll position to ViewModel
+    LaunchedEffect(Unit) {
+        snapshotFlow { lazyListState.firstVisibleItemIndex }
+            .collect { index ->
+                viewModel.repliesScrollIndex = index
+            }
+    }
 
     // Scroll detection
     LaunchedEffect(lazyListState.isScrollInProgress) {
@@ -453,6 +640,7 @@ internal fun RepliesList(
 @Composable
 internal fun LovedList(
     items: LazyPagingItems<FeedItem>,
+    viewModel: ScrollableViewModel,
     onPostClick: (String) -> Unit,
     onLovePostClick: (String) -> Unit,
     onLoveReplyClick: (String) -> Unit,
@@ -460,7 +648,18 @@ internal fun LovedList(
     onShowBottomNav: () -> Unit = {},
     onHideBottomNav: () -> Unit = {}
 ) {
-    val lazyListState = rememberLazyListState()
+    // Use scroll position from ViewModel to preserve across navigation
+    val lazyListState = rememberLazyListState(
+        initialFirstVisibleItemIndex = viewModel.lovedScrollIndex
+    )
+
+    // Save scroll position to ViewModel
+    LaunchedEffect(Unit) {
+        snapshotFlow { lazyListState.firstVisibleItemIndex }
+            .collect { index ->
+                viewModel.lovedScrollIndex = index
+            }
+    }
 
     // Scroll detection
     LaunchedEffect(lazyListState.isScrollInProgress) {

@@ -41,6 +41,10 @@ class SearchViewModel(
     private val _uiEffect = Channel<SearchUiEffect>()
     val uiEffect: Flow<SearchUiEffect> = _uiEffect.receiveAsFlow()
 
+    // Preserve scroll positions across navigation
+    var randomPostsScrollIndex: Int = 0
+    var searchResultsScrollIndex: Int = 0
+
     // Track the submitted query for Paging3
     private val _searchQuery = MutableStateFlow<String?>(null)
 
@@ -65,8 +69,8 @@ class SearchViewModel(
         .cachedIn(viewModelScope)
 
     init {
-        // Don't load random posts here - let the screen trigger it when composed
-        // This prevents loading before the screen is ever navigated to
+        // Load random posts immediately when ViewModel is created
+        loadRandomPosts()
         loadSearchHistory()
     }
 
@@ -157,13 +161,9 @@ class SearchViewModel(
     }
 
     private fun loadRandomPosts() {
-        // Don't reload if we already have posts or currently loading
-        if (_uiState.value.randomPosts.isNotEmpty() || _uiState.value.isLoading) {
-            return
-        }
-
+        // Allow reload even if we have posts
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
+            _uiState.update { it.copy(isLoading = true, error = null) }
 
             val result = getRandomPostsUseCase()
 

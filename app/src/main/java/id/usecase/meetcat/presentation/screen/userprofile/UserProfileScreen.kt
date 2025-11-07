@@ -33,6 +33,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -89,6 +90,7 @@ fun UserProfileScreen(
         posts = posts,
         replies = replies,
         lovedItems = lovedItems,
+        viewModel = viewModel,
         onEvent = viewModel::onEvent,
         snackbarHostState = snackbarHostState,
         modifier = modifier
@@ -102,18 +104,25 @@ private fun UserProfileContent(
     posts: LazyPagingItems<Post>,
     replies: LazyPagingItems<FeedItem.ReplyItem>,
     lovedItems: LazyPagingItems<FeedItem>,
+    viewModel: UserProfileViewModel,
     onEvent: (UserProfileUiEvent) -> Unit,
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier
 ) {
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+
     Scaffold(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier
+            .fillMaxSize()
+            .nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             TopAppBar(
                 title = {
+                    // Show title only when collapsed
                     Text(
                         text = uiState.user?.displayName ?: "Profile",
-                        style = MaterialTheme.typography.titleLarge
+                        style = MaterialTheme.typography.titleLarge,
+                        maxLines = 1
                     )
                 },
                 navigationIcon = {
@@ -124,9 +133,10 @@ private fun UserProfileContent(
                         )
                     }
                 },
+                scrollBehavior = scrollBehavior,
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
+                    scrolledContainerColor = MaterialTheme.colorScheme.surface
                 )
             )
         },
@@ -151,59 +161,204 @@ private fun UserProfileContent(
             }
 
             else -> {
-                PullToRefreshBox(
-                    isRefreshing = uiState.isRefreshing,
-                    onRefresh = { onEvent(UserProfileUiEvent.Refresh) },
+                UserProfileScrollableContent(
+                    uiState = uiState,
+                    posts = posts,
+                    replies = replies,
+                    lovedItems = lovedItems,
+                    viewModel = viewModel,
+                    onEvent = onEvent,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues)
-                ) {
-                    Column(
-                        modifier = Modifier.fillMaxSize()
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun UserProfileScrollableContent(
+    uiState: UserProfileUiState,
+    posts: LazyPagingItems<Post>,
+    replies: LazyPagingItems<FeedItem.ReplyItem>,
+    lovedItems: LazyPagingItems<FeedItem>,
+    viewModel: UserProfileViewModel,
+    onEvent: (UserProfileUiEvent) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    androidx.compose.foundation.lazy.LazyColumn(
+        modifier = modifier
+    ) {
+        // Profile Header - will collapse when scrolling
+        item {
+            UserProfileHeaderSection(
+                uiState = uiState,
+                onFollowClick = { onEvent(UserProfileUiEvent.ToggleFollow) }
+            )
+        }
+
+        // Sticky Tab Row
+        stickyHeader {
+            ProfileTabRow(
+                selectedTab = uiState.selectedTab,
+                onTabSelected = { onEvent(UserProfileUiEvent.TabSelected(it)) },
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+
+        // Tab Content
+        when (uiState.selectedTab) {
+            UserProfileTab.POSTS -> {
+                // Posts grid content (3 columns)
+                val postsList = (0 until posts.itemCount).mapNotNull { posts[it] }
+                val chunkedPosts = postsList.chunked(3)
+
+                items(
+                    count = chunkedPosts.size,
+                    key = { index -> "row_$index" }
+                ) { rowIndex ->
+                    androidx.compose.foundation.layout.Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.Start
                     ) {
-                        // Profile Header with Follow Button
-                        UserProfileHeaderSection(
-                            uiState = uiState,
-                            onFollowClick = { onEvent(UserProfileUiEvent.ToggleFollow) }
-                        )
-
-                        // Tab Row
-                        ProfileTabRow(
-                            selectedTab = uiState.selectedTab,
-                            onTabSelected = { onEvent(UserProfileUiEvent.TabSelected(it)) },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        // Tab Content
-                        when (uiState.selectedTab) {
-                            UserProfileTab.POSTS -> {
-                                PostsGrid(
-                                    posts = posts,
-                                    onPostClick = { onEvent(UserProfileUiEvent.NavigateToPost(it)) },
-                                    onShowBottomNav = {},
-                                    onHideBottomNav = {}
-                                )
-                            }
-                            UserProfileTab.REPLIES -> {
-                                RepliesList(
-                                    replies = replies,
-                                    onReplyClick = { onEvent(UserProfileUiEvent.NavigateToPost(it)) },
-                                    onLoveClick = { onEvent(UserProfileUiEvent.LoveReply(it)) },
-                                    onShowBottomNav = {},
-                                    onHideBottomNav = {}
-                                )
-                            }
-                            UserProfileTab.LOVED -> {
-                                LovedList(
-                                    items = lovedItems,
-                                    onPostClick = { onEvent(UserProfileUiEvent.NavigateToPost(it)) },
-                                    onLovePostClick = { onEvent(UserProfileUiEvent.LovePost(it)) },
-                                    onLoveReplyClick = { onEvent(UserProfileUiEvent.LoveReply(it)) },
-                                    onShowBottomNav = {},
-                                    onHideBottomNav = {}
+                        chunkedPosts[rowIndex].forEach { post ->
+                            androidx.compose.foundation.layout.Box(
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                id.usecase.meetcat.presentation.screen.search.component.SearchPostGridItem(
+                                    post = post,
+                                    onClick = { onEvent(UserProfileUiEvent.NavigateToPost(post.id)) }
                                 )
                             }
                         }
+                        // Fill remaining cells if row is not full
+                        repeat(3 - chunkedPosts[rowIndex].size) {
+                            androidx.compose.foundation.layout.Spacer(modifier = Modifier.weight(1f))
+                        }
+                    }
+                }
+
+                // Loading state for posts
+                posts.loadState.append.let { appendState ->
+                    when (appendState) {
+                        is androidx.paging.LoadState.Loading -> {
+                            item {
+                                androidx.compose.foundation.layout.Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    contentAlignment = androidx.compose.ui.Alignment.Center
+                                ) {
+                                    androidx.compose.material3.CircularProgressIndicator()
+                                }
+                            }
+                        }
+                        else -> {}
+                    }
+                }
+            }
+
+            UserProfileTab.REPLIES -> {
+                // Replies list content
+                items(
+                    count = replies.itemCount,
+                    key = { index -> replies[index]?.reply?.id ?: "reply_$index" }
+                ) { index ->
+                    replies[index]?.let { replyItem ->
+                        id.usecase.meetcat.presentation.component.card.ReplyCard(
+                            reply = replyItem.reply,
+                            onReplyClick = { onEvent(UserProfileUiEvent.NavigateToPost(replyItem.reply.id)) },
+                            onProfileClick = { },
+                            onOriginalPostClick = { onEvent(UserProfileUiEvent.NavigateToPost(replyItem.reply.originalPostId)) },
+                            onOriginalProfileClick = { },
+                            onLoveClick = { onEvent(UserProfileUiEvent.LoveReply(replyItem.reply.id)) },
+                            onCommentClick = { },
+                            onShareClick = { },
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        )
+                    }
+                }
+
+                // Loading state for replies
+                replies.loadState.append.let { appendState ->
+                    when (appendState) {
+                        is androidx.paging.LoadState.Loading -> {
+                            item {
+                                androidx.compose.foundation.layout.Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    contentAlignment = androidx.compose.ui.Alignment.Center
+                                ) {
+                                    androidx.compose.material3.CircularProgressIndicator()
+                                }
+                            }
+                        }
+                        else -> {}
+                    }
+                }
+            }
+
+            UserProfileTab.LOVED -> {
+                // Loved items content
+                items(
+                    count = lovedItems.itemCount,
+                    key = { index ->
+                        when (val item = lovedItems[index]) {
+                            is FeedItem.PostItem -> "post_${item.post.id}"
+                            is FeedItem.ReplyItem -> "reply_${item.reply.id}"
+                            null -> "loved_$index"
+                        }
+                    }
+                ) { index ->
+                    lovedItems[index]?.let { item ->
+                        when (item) {
+                            is FeedItem.PostItem -> {
+                                id.usecase.meetcat.presentation.component.card.PostCard(
+                                    post = item.post,
+                                    onPostClick = { onEvent(UserProfileUiEvent.NavigateToPost(item.post.id)) },
+                                    onProfileClick = { },
+                                    onLoveClick = { onEvent(UserProfileUiEvent.LovePost(item.post.id)) },
+                                    onCommentClick = { },
+                                    onReplyClick = { },
+                                    onShareClick = { },
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                                )
+                            }
+                            is FeedItem.ReplyItem -> {
+                                id.usecase.meetcat.presentation.component.card.ReplyCard(
+                                    reply = item.reply,
+                                    onReplyClick = { onEvent(UserProfileUiEvent.NavigateToPost(item.reply.id)) },
+                                    onProfileClick = { },
+                                    onOriginalPostClick = { onEvent(UserProfileUiEvent.NavigateToPost(item.reply.originalPostId)) },
+                                    onOriginalProfileClick = { },
+                                    onLoveClick = { onEvent(UserProfileUiEvent.LoveReply(item.reply.id)) },
+                                    onCommentClick = { },
+                                    onShareClick = { },
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Loading state for loved items
+                lovedItems.loadState.append.let { appendState ->
+                    when (appendState) {
+                        is androidx.paging.LoadState.Loading -> {
+                            item {
+                                androidx.compose.foundation.layout.Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    contentAlignment = androidx.compose.ui.Alignment.Center
+                                ) {
+                                    androidx.compose.material3.CircularProgressIndicator()
+                                }
+                            }
+                        }
+                        else -> {}
                     }
                 }
             }

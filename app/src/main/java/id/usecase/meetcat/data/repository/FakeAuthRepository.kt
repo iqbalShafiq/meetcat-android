@@ -96,7 +96,16 @@ class FakeAuthRepository : AuthRepository {
     }
 
     override suspend fun getCurrentUser(): AuthUser? {
-        return if (isUserLoggedIn) currentUser else null
+        // For development bypass login: always return a mock current user
+        // even when not logged in to prevent "not found" errors
+        return currentUser ?: AuthUser(
+            id = "dev_user_123",
+            email = "dev@meetcat.com",
+            username = "devuser",
+            displayName = "Dev User",
+            profileImageUrl = "https://picsum.photos/200?random=999",
+            token = "dev_token"
+        )
     }
 
     override suspend fun logout(): Result<Unit> {
