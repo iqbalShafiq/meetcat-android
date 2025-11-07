@@ -18,11 +18,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -41,6 +41,8 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -53,6 +55,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -125,13 +128,33 @@ private fun CreatePostContent(
     val vibrantColors = FloatingToolbarDefaults.vibrantFloatingToolbarColors()
 
     Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = "Create Post",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
+                )
+            )
+        },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             HorizontalFloatingToolbar(
                 expanded = expanded,
                 floatingActionButton = {
                     FloatingToolbarDefaults.VibrantFloatingActionButton(
-                        onClick = { expanded = !expanded }
+                        onClick = {
+                            if (!uiState.isUploading) {
+                                onEvent(CreatePostUiEvent.CreatePost)
+                            }
+                        },
+                        enabled = !uiState.isUploading
                     ) {
                         if (uiState.isUploading) {
                             CircularProgressIndicator(
@@ -153,6 +176,18 @@ private fun CreatePostContent(
                     .offset(y = -FloatingToolbarDefaults.ScreenOffset)
                     .zIndex(1f),
                 content = {
+                    // Back button
+                    IconButton(
+                        onClick = { onEvent(CreatePostUiEvent.NavigateBack) },
+                        enabled = !uiState.isUploading,
+                        modifier = Modifier.focusProperties { canFocus = expanded }
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back"
+                        )
+                    }
+
                     IconButton(
                         onClick = { onEvent(CreatePostUiEvent.SelectMedia) },
                         enabled = !uiState.isUploading && uiState.mediaUri == null,
@@ -172,17 +207,6 @@ private fun CreatePostContent(
                         Icon(
                             imageVector = Icons.Default.LocationOn,
                             contentDescription = "Add Location"
-                        )
-                    }
-
-                    IconButton(
-                        onClick = { /*TODO*/ },
-                        enabled = !uiState.isUploading,
-                        modifier = Modifier.focusProperties { canFocus = expanded }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.MoreVert,
-                            contentDescription = "More Options"
                         )
                     }
                 }
