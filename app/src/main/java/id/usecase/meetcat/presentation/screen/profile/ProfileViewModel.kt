@@ -42,7 +42,7 @@ class ProfileViewModel(
     private val getUserRepliesUseCase: GetUserRepliesUseCase,
     private val getUserLovedItemsUseCase: GetUserLovedItemsUseCase,
     private val postRepository: PostRepository
-) : ViewModel() {
+) : ViewModel(), ScrollableViewModel {
 
     private val _uiState = MutableStateFlow(ProfileUiState())
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()

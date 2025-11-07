@@ -89,6 +89,7 @@ fun UserProfileScreen(
         posts = posts,
         replies = replies,
         lovedItems = lovedItems,
+        viewModel = viewModel,
         onEvent = viewModel::onEvent,
         snackbarHostState = snackbarHostState,
         modifier = modifier
@@ -102,6 +103,7 @@ private fun UserProfileContent(
     posts: LazyPagingItems<Post>,
     replies: LazyPagingItems<FeedItem.ReplyItem>,
     lovedItems: LazyPagingItems<FeedItem>,
+    viewModel: UserProfileViewModel,
     onEvent: (UserProfileUiEvent) -> Unit,
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier
@@ -179,6 +181,7 @@ private fun UserProfileContent(
                             UserProfileTab.POSTS -> {
                                 PostsGrid(
                                     posts = posts,
+                                    viewModel = viewModel,
                                     onPostClick = { onEvent(UserProfileUiEvent.NavigateToPost(it)) },
                                     onShowBottomNav = {},
                                     onHideBottomNav = {}
@@ -187,6 +190,7 @@ private fun UserProfileContent(
                             UserProfileTab.REPLIES -> {
                                 RepliesList(
                                     replies = replies,
+                                    viewModel = viewModel,
                                     onReplyClick = { onEvent(UserProfileUiEvent.NavigateToPost(it)) },
                                     onLoveClick = { onEvent(UserProfileUiEvent.LoveReply(it)) },
                                     onShowBottomNav = {},
@@ -196,6 +200,7 @@ private fun UserProfileContent(
                             UserProfileTab.LOVED -> {
                                 LovedList(
                                     items = lovedItems,
+                                    viewModel = viewModel,
                                     onPostClick = { onEvent(UserProfileUiEvent.NavigateToPost(it)) },
                                     onLovePostClick = { onEvent(UserProfileUiEvent.LovePost(it)) },
                                     onLoveReplyClick = { onEvent(UserProfileUiEvent.LoveReply(it)) },

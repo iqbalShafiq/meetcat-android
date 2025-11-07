@@ -100,6 +100,7 @@ fun ProfileScreen(
         posts = posts,
         replies = replies,
         lovedItems = lovedItems,
+        viewModel = viewModel,
         onEvent = viewModel::onEvent,
         snackbarHostState = snackbarHostState,
         onShowBottomNav = onShowBottomNav,
@@ -115,6 +116,7 @@ private fun ProfileContent(
     posts: LazyPagingItems<Post>,
     replies: LazyPagingItems<FeedItem.ReplyItem>,
     lovedItems: LazyPagingItems<FeedItem>,
+    viewModel: ProfileViewModel,
     onEvent: (ProfileUiEvent) -> Unit,
     snackbarHostState: SnackbarHostState,
     onShowBottomNav: () -> Unit = {},
@@ -270,10 +272,17 @@ private fun ProfileTabRow(
     }
 }
 
+// Interface for ViewModels that support scroll position tracking
+interface ScrollableViewModel {
+    var postsScrollIndex: Int
+    var repliesScrollIndex: Int
+    var lovedScrollIndex: Int
+}
+
 @Composable
 internal fun PostsGrid(
     posts: LazyPagingItems<Post>,
-    viewModel: ProfileViewModel,
+    viewModel: ScrollableViewModel,
     onPostClick: (String) -> Unit,
     modifier: Modifier = Modifier,
     onShowBottomNav: () -> Unit = {},
@@ -375,7 +384,7 @@ internal fun PostsGrid(
 @Composable
 internal fun RepliesList(
     replies: LazyPagingItems<FeedItem.ReplyItem>,
-    viewModel: ProfileViewModel,
+    viewModel: ScrollableViewModel,
     onReplyClick: (String) -> Unit,
     onLoveClick: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -481,7 +490,7 @@ internal fun RepliesList(
 @Composable
 internal fun LovedList(
     items: LazyPagingItems<FeedItem>,
-    viewModel: ProfileViewModel,
+    viewModel: ScrollableViewModel,
     onPostClick: (String) -> Unit,
     onLovePostClick: (String) -> Unit,
     onLoveReplyClick: (String) -> Unit,
