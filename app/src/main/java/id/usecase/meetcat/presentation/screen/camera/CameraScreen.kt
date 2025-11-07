@@ -496,14 +496,24 @@ private fun CameraContent(
                     modifier = Modifier.padding(horizontal = 48.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Zoom value display - centered above slider
-                    Text(
-                        text = "${zoomRatio.format(1)}x",
-                        color = Color.White,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.size(4.dp))
+                    // Zoom value display with circular background
+                    Box(
+                        modifier = Modifier
+                            .background(
+                                Color.Black.copy(alpha = 0.5f),
+                                CircleShape
+                            )
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "${zoomRatio.format(1)}x",
+                            color = Color.White,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Spacer(modifier = Modifier.size(8.dp))
 
                     // Clean slider without background
                     Slider(
