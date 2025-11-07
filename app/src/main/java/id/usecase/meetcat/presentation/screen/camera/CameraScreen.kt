@@ -59,7 +59,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -477,34 +479,62 @@ private fun CameraContent(
         ) {
             // Zoom slider above shutter button
             if (maxZoom > minZoom) {
-                Row(
+                Column(
                     modifier = Modifier
-                        .padding(horizontal = 48.dp)
+                        .padding(horizontal = 32.dp)
                         .background(
-                            Color.Black.copy(alpha = 0.5f),
+                            Color.Black.copy(alpha = 0.6f),
                             MaterialTheme.shapes.medium
                         )
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
+                        .padding(horizontal = 20.dp, vertical = 12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    // Zoom value display
                     Text(
                         text = "${zoomRatio.format(1)}x",
                         color = Color.White,
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.width(40.dp)
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
                     )
-                    Slider(
-                        value = zoomRatio,
-                        onValueChange = { newZoom ->
-                            onZoomChange(newZoom)
-                            camera?.let { cam ->
-                                cam.cameraControl.setZoomRatio(newZoom)
-                            }
-                        },
-                        modifier = Modifier.width(200.dp),
-                        valueRange = minZoom..maxZoom
-                    )
+                    Spacer(modifier = Modifier.size(8.dp))
+
+                    // Slider with markers
+                    Box {
+                        Slider(
+                            value = zoomRatio,
+                            onValueChange = { newZoom ->
+                                onZoomChange(newZoom)
+                                camera?.let { cam ->
+                                    cam.cameraControl.setZoomRatio(newZoom)
+                                }
+                            },
+                            modifier = Modifier.width(240.dp),
+                            valueRange = minZoom..maxZoom
+                        )
+                    }
+
+                    // Lens type indicators
+                    Row(
+                        modifier = Modifier.width(240.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        // Show markers for common zoom levels
+                        val markers = buildList {
+                            if (minZoom <= 0.6f && maxZoom >= 0.6f) add("0.6x" to 0.6f)
+                            if (minZoom <= 1f && maxZoom >= 1f) add("1x" to 1f)
+                            if (minZoom <= 2f && maxZoom >= 2f) add("2x" to 2f)
+                            if (minZoom <= 3f && maxZoom >= 3f) add("3x" to 3f)
+                        }
+
+                        markers.forEach { (label, _) ->
+                            Text(
+                                text = label,
+                                color = Color.White.copy(alpha = 0.7f),
+                                style = MaterialTheme.typography.labelSmall,
+                                fontSize = 10.sp
+                            )
+                        }
+                    }
                 }
                 Spacer(modifier = Modifier.size(16.dp))
             }
