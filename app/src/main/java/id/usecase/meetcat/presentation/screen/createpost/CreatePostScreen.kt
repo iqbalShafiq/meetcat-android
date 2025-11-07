@@ -4,12 +4,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -22,14 +22,12 @@ import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Send
+import androidx.compose.material3.BottomAppBarDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.FilledTonalIconButton
-import androidx.compose.material3.FloatingToolbarDefaults.floatingToolbarVerticalNestedScroll
-import androidx.compose.material3.HorizontalFloatingToolbar
+import androidx.compose.material3.FlexibleBottomAppBar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -45,14 +43,12 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -118,10 +114,12 @@ private fun CreatePostContent(
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
-    var toolbarExpanded by rememberSaveable { mutableStateOf(true) }
+    val scrollBehavior = BottomAppBarDefaults.exitAlwaysScrollBehavior()
 
     Scaffold(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier
+            .fillMaxSize()
+            .nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             TopAppBar(
                 title = {
@@ -148,37 +146,77 @@ private fun CreatePostContent(
                 )
             )
         },
+        bottomBar = {
+            FlexibleBottomAppBar(
+                scrollBehavior = scrollBehavior,
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                contentPadding = PaddingValues(horizontal = 0.dp)
+            ) {
+                // Add Photo Button
+                IconButton(
+                    onClick = { onEvent(CreatePostUiEvent.SelectMedia) },
+                    enabled = !uiState.isUploading && uiState.mediaUri == null
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Image,
+                        contentDescription = "Add Photo"
+                    )
+                }
+
+                // Add Location Button
+                IconButton(
+                    onClick = { onEvent(CreatePostUiEvent.SelectLocation) },
+                    enabled = !uiState.isUploading && uiState.locationAddress == null
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.LocationOn,
+                        contentDescription = "Add Location"
+                    )
+                }
+
+                // Post Button (Primary)
+                FilledIconButton(
+                    onClick = { onEvent(CreatePostUiEvent.CreatePost) },
+                    enabled = !uiState.isUploading,
+                    modifier = Modifier.width(56.dp)
+                ) {
+                    if (uiState.isUploading) {
+                        CircularProgressIndicator(
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Send,
+                            contentDescription = "Post"
+                        )
+                    }
+                }
+            }
+        },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            Column(
-                modifier = Modifier.fillMaxSize()
-            ) {
-                // Upload progress
-                if (uiState.isUploading) {
-                    LinearProgressIndicator(
-                        progress = { uiState.uploadProgress },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
+            // Upload progress
+            if (uiState.isUploading) {
+                LinearProgressIndicator(
+                    progress = { uiState.uploadProgress },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
 
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .floatingToolbarVerticalNestedScroll(
-                            expanded = toolbarExpanded,
-                            onExpand = { toolbarExpanded = true },
-                            onCollapse = { toolbarExpanded = false }
-                        )
-                        .verticalScroll(scrollState)
-                        .padding(16.dp)
-                        .padding(bottom = 80.dp), // Space for floating toolbar
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(scrollState)
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
                     // Caption TextField
                     TextField(
                         value = uiState.caption,
@@ -278,66 +316,8 @@ private fun CreatePostContent(
                     }
                 }
             }
-
-            // Floating Toolbar
-            HorizontalFloatingToolbar(
-                expanded = toolbarExpanded,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .offset(y = (-16).dp)
-            ) {
-                // Add Photo Button
-                FilledTonalIconButton(
-                    onClick = { onEvent(CreatePostUiEvent.SelectMedia) },
-                    enabled = !uiState.isUploading && uiState.mediaUri == null,
-                    modifier = Modifier.size(56.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Image,
-                        contentDescription = "Add Photo"
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                // Add Location Button
-                FilledTonalIconButton(
-                    onClick = { onEvent(CreatePostUiEvent.SelectLocation) },
-                    enabled = !uiState.isUploading && uiState.locationAddress == null,
-                    modifier = Modifier.size(56.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.LocationOn,
-                        contentDescription = "Add Location"
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(16.dp))
-
-                // Post Button (Primary)
-                FilledIconButton(
-                    onClick = { onEvent(CreatePostUiEvent.CreatePost) },
-                    enabled = !uiState.isUploading,
-                    modifier = Modifier.size(64.dp)
-                ) {
-                    if (uiState.isUploading) {
-                        CircularProgressIndicator(
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(24.dp),
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Send,
-                            contentDescription = "Post",
-                            modifier = Modifier.size(28.dp)
-                        )
-                    }
-                }
-            }
         }
     }
-}
 
 @Preview(showBackground = true)
 @Composable
