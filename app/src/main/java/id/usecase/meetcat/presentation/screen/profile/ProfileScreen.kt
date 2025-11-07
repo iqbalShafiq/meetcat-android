@@ -180,7 +180,9 @@ private fun ProfileContent(
                     onEvent = onEvent,
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(paddingValues)
+                        .padding(paddingValues),
+                    onShowBottomNav = onShowBottomNav,
+                    onHideBottomNav = onHideBottomNav
                 )
             }
         }
@@ -195,10 +197,49 @@ private fun ProfileScrollableContent(
     lovedItems: LazyPagingItems<FeedItem>,
     viewModel: ProfileViewModel,
     onEvent: (ProfileUiEvent) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onShowBottomNav: () -> Unit = {},
+    onHideBottomNav: () -> Unit = {}
 ) {
+    val lazyListState = rememberLazyListState()
+
+    // Track previous scroll position to detect scroll direction
+    var previousIndex by remember { mutableIntStateOf(lazyListState.firstVisibleItemIndex) }
+    var previousOffset by remember { mutableIntStateOf(lazyListState.firstVisibleItemScrollOffset) }
+
+    // Detect scroll direction and show/hide navbar accordingly
+    LaunchedEffect(lazyListState.isScrollInProgress) {
+        snapshotFlow {
+            lazyListState.firstVisibleItemIndex to lazyListState.firstVisibleItemScrollOffset
+        }.collect { (currentIndex, currentOffset) ->
+            // Determine scroll direction
+            val isScrollingDown = if (currentIndex != previousIndex) {
+                currentIndex > previousIndex
+            } else {
+                currentOffset > previousOffset
+            }
+
+            // Show navbar when scrolling up or at the top, hide when scrolling down
+            if (currentIndex == 0 && currentOffset < 100) {
+                // Always show at the very top
+                onShowBottomNav()
+            } else if (!isScrollingDown) {
+                // Scrolling up - show navbar
+                onShowBottomNav()
+            } else if (isScrollingDown && currentIndex > 0) {
+                // Scrolling down and not at top - hide navbar
+                onHideBottomNav()
+            }
+
+            // Update previous position
+            previousIndex = currentIndex
+            previousOffset = currentOffset
+        }
+    }
+
     androidx.compose.foundation.lazy.LazyColumn(
-        modifier = modifier
+        modifier = modifier,
+        state = lazyListState
     ) {
         // Profile Header - will collapse when scrolling
         item {

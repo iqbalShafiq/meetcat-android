@@ -277,29 +277,48 @@ private fun RandomPostsGrid(
     val lazyGridState = rememberLazyStaggeredGridState(
         initialFirstVisibleItemIndex = viewModel.randomPostsScrollIndex
     )
-    var previousIndex by remember { mutableIntStateOf(0) }
+
+    // Track previous scroll position to detect scroll direction
+    var previousIndex by remember { mutableIntStateOf(lazyGridState.firstVisibleItemIndex) }
+    var previousOffset by remember { mutableIntStateOf(lazyGridState.firstVisibleItemScrollOffset) }
 
     // Save scroll position to ViewModel
-    LaunchedEffect(Unit) {
-        snapshotFlow { lazyGridState.firstVisibleItemIndex }
-            .collect { index ->
-                viewModel.randomPostsScrollIndex = index
-            }
+    LaunchedEffect(lazyGridState.isScrollInProgress) {
+        snapshotFlow {
+            lazyGridState.firstVisibleItemIndex to lazyGridState.firstVisibleItemScrollOffset
+        }.collect { (index, offset) ->
+            viewModel.randomPostsScrollIndex = index
+        }
     }
 
-    // Scroll detection: show when scrolling up, hide when scrolling down
-    LaunchedEffect(Unit) {
-        snapshotFlow { lazyGridState.firstVisibleItemIndex }
-            .collect { currentIndex: Int ->
-                if (currentIndex < previousIndex) {
-                    // Scrolling up
-                    onShowBottomNav()
-                } else if (currentIndex > previousIndex) {
-                    // Scrolling down
-                    onHideBottomNav()
-                }
-                previousIndex = currentIndex
+    // Detect scroll direction and show/hide navbar accordingly
+    LaunchedEffect(lazyGridState.isScrollInProgress) {
+        snapshotFlow {
+            lazyGridState.firstVisibleItemIndex to lazyGridState.firstVisibleItemScrollOffset
+        }.collect { (currentIndex, currentOffset) ->
+            // Determine scroll direction
+            val isScrollingDown = if (currentIndex != previousIndex) {
+                currentIndex > previousIndex
+            } else {
+                currentOffset > previousOffset
             }
+
+            // Show navbar when scrolling up or at the top, hide when scrolling down
+            if (currentIndex == 0 && currentOffset < 100) {
+                // Always show at the very top
+                onShowBottomNav()
+            } else if (!isScrollingDown) {
+                // Scrolling up - show navbar
+                onShowBottomNav()
+            } else if (isScrollingDown && currentIndex > 0) {
+                // Scrolling down and not at top - hide navbar
+                onHideBottomNav()
+            }
+
+            // Update previous position
+            previousIndex = currentIndex
+            previousOffset = currentOffset
+        }
     }
 
     LazyVerticalStaggeredGrid(
@@ -335,29 +354,48 @@ private fun SearchResultsGrid(
     val lazyGridState = rememberLazyStaggeredGridState(
         initialFirstVisibleItemIndex = viewModel.searchResultsScrollIndex
     )
-    var previousIndex by remember { mutableIntStateOf(0) }
+
+    // Track previous scroll position to detect scroll direction
+    var previousIndex by remember { mutableIntStateOf(lazyGridState.firstVisibleItemIndex) }
+    var previousOffset by remember { mutableIntStateOf(lazyGridState.firstVisibleItemScrollOffset) }
 
     // Save scroll position to ViewModel
-    LaunchedEffect(Unit) {
-        snapshotFlow { lazyGridState.firstVisibleItemIndex }
-            .collect { index ->
-                viewModel.searchResultsScrollIndex = index
-            }
+    LaunchedEffect(lazyGridState.isScrollInProgress) {
+        snapshotFlow {
+            lazyGridState.firstVisibleItemIndex to lazyGridState.firstVisibleItemScrollOffset
+        }.collect { (index, offset) ->
+            viewModel.searchResultsScrollIndex = index
+        }
     }
 
-    // Scroll detection: show when scrolling up, hide when scrolling down
-    LaunchedEffect(Unit) {
-        snapshotFlow { lazyGridState.firstVisibleItemIndex }
-            .collect { currentIndex: Int ->
-                if (currentIndex < previousIndex) {
-                    // Scrolling up
-                    onShowBottomNav()
-                } else if (currentIndex > previousIndex) {
-                    // Scrolling down
-                    onHideBottomNav()
-                }
-                previousIndex = currentIndex
+    // Detect scroll direction and show/hide navbar accordingly
+    LaunchedEffect(lazyGridState.isScrollInProgress) {
+        snapshotFlow {
+            lazyGridState.firstVisibleItemIndex to lazyGridState.firstVisibleItemScrollOffset
+        }.collect { (currentIndex, currentOffset) ->
+            // Determine scroll direction
+            val isScrollingDown = if (currentIndex != previousIndex) {
+                currentIndex > previousIndex
+            } else {
+                currentOffset > previousOffset
             }
+
+            // Show navbar when scrolling up or at the top, hide when scrolling down
+            if (currentIndex == 0 && currentOffset < 100) {
+                // Always show at the very top
+                onShowBottomNav()
+            } else if (!isScrollingDown) {
+                // Scrolling up - show navbar
+                onShowBottomNav()
+            } else if (isScrollingDown && currentIndex > 0) {
+                // Scrolling down and not at top - hide navbar
+                onHideBottomNav()
+            }
+
+            // Update previous position
+            previousIndex = currentIndex
+            previousOffset = currentOffset
+        }
     }
 
     LazyVerticalStaggeredGrid(
