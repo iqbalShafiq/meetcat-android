@@ -352,7 +352,7 @@ private fun FeedList(
                             onEditClick = {
                                 onEvent(ExploreUiEvent.NavigateToEditPost(item.post.id))
                             },
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                            modifier = Modifier.padding(vertical = 8.dp)
                         )
                     }
 
@@ -380,7 +380,7 @@ private fun FeedList(
                             onShareClick = {
                                 // Share action
                             },
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                            modifier = Modifier.padding(vertical = 8.dp)
                         )
                     }
                 }
