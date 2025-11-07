@@ -109,7 +109,8 @@ fun CameraScreen(
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
-        uri?.let { onImageCaptured(it) }
+        // Set the captured image URI to show preview, just like camera
+        uri?.let { capturedImageUri = it }
     }
 
     // Check permission on launch
