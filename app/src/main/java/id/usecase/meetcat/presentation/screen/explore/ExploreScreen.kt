@@ -1,5 +1,10 @@
 package id.usecase.meetcat.presentation.screen.explore
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -9,8 +14,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -22,9 +31,12 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,9 +67,13 @@ fun ExploreScreen(
     onHideBottomNav: () -> Unit = {},
     onNavigateToPost: (String) -> Unit = {},
     onNavigateToReply: (String) -> Unit = {},
-    onNavigateToProfile: (String) -> Unit = {}
+    onNavigateToProfile: (String) -> Unit = {},
+    onNavigateToCreatePost: () -> Unit = {},
+    onNavigateToEditPost: (String) -> Unit = {},
+    isBottomNavVisible: Boolean = true
 ) {
     val feedItems = viewModel.feedItems.collectAsLazyPagingItems()
+    val currentUserId by viewModel.currentUserId.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
@@ -79,6 +95,10 @@ fun ExploreScreen(
                     onNavigateToPost(effect.postId)
                 }
 
+                is ExploreUiEffect.NavigateToEditPost -> {
+                    onNavigateToEditPost(effect.postId)
+                }
+
                 is ExploreUiEffect.ShowError -> {
                     snackbarHostState.showSnackbar(effect.message)
                 }
@@ -94,7 +114,10 @@ fun ExploreScreen(
         modifier = modifier,
         onShowBottomNav = onShowBottomNav,
         onHideBottomNav = onHideBottomNav,
-        onNavigateToReply = onNavigateToReply
+        onNavigateToReply = onNavigateToReply,
+        onNavigateToCreatePost = onNavigateToCreatePost,
+        currentUserId = currentUserId,
+        isBottomNavVisible = isBottomNavVisible
     )
 }
 
@@ -108,7 +131,10 @@ private fun ExploreContent(
     modifier: Modifier = Modifier,
     onShowBottomNav: () -> Unit = {},
     onHideBottomNav: () -> Unit = {},
-    onNavigateToReply: (String) -> Unit = {}
+    onNavigateToReply: (String) -> Unit = {},
+    onNavigateToCreatePost: () -> Unit = {},
+    currentUserId: String? = null,
+    isBottomNavVisible: Boolean = true
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -127,7 +153,36 @@ private fun ExploreContent(
                 )
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        floatingActionButton = {
+            AnimatedVisibility(
+                visible = isBottomNavVisible,
+                enter = scaleIn(
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessLow
+                    )
+                ),
+                exit = scaleOut(
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioNoBouncy,
+                        stiffness = Spring.StiffnessMedium
+                    )
+                )
+            ) {
+                FloatingActionButton(
+                    onClick = onNavigateToCreatePost,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.padding(bottom = 80.dp) // Position above navbar
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Create Post"
+                    )
+                }
+            }
+        }
     ) { paddingValues ->
         val loadState = feedItems.loadState
 
@@ -166,7 +221,8 @@ private fun ExploreContent(
                         onEvent = onEvent,
                         onShowBottomNav = onShowBottomNav,
                         onHideBottomNav = onHideBottomNav,
-                        onNavigateToReply = onNavigateToReply
+                        onNavigateToReply = onNavigateToReply,
+                        currentUserId = currentUserId
                     )
                 }
             }
@@ -182,7 +238,8 @@ private fun FeedList(
     onShowBottomNav: () -> Unit = {},
     onHideBottomNav: () -> Unit = {},
     onNavigateToReply: (String) -> Unit = {},
-    viewModel: ExploreViewModel
+    viewModel: ExploreViewModel,
+    currentUserId: String? = null
 ) {
     // Use scroll position from ViewModel to preserve across navigation
     val lazyListState = rememberLazyListState(
@@ -190,8 +247,12 @@ private fun FeedList(
         initialFirstVisibleItemScrollOffset = viewModel.scrollOffset
     )
 
+    // Track previous scroll position to detect scroll direction
+    var previousIndex by remember { mutableIntStateOf(lazyListState.firstVisibleItemIndex) }
+    var previousOffset by remember { mutableIntStateOf(lazyListState.firstVisibleItemScrollOffset) }
+
     // Save scroll position to ViewModel
-    LaunchedEffect(lazyListState.isScrollInProgress) {
+    LaunchedEffect(Unit) {
         snapshotFlow {
             lazyListState.firstVisibleItemIndex to lazyListState.firstVisibleItemScrollOffset
         }.collect { (index, offset) ->
@@ -200,16 +261,41 @@ private fun FeedList(
         }
     }
 
-    // Simple scroll detection: hide when scrolling down, show when at top
-    LaunchedEffect(lazyListState.isScrollInProgress) {
-        snapshotFlow { lazyListState.firstVisibleItemIndex }
-            .collect { index ->
-                if (index == 0) {
-                    onShowBottomNav()
-                } else {
-                    onHideBottomNav()
-                }
+    // Detect scroll direction and show/hide navbar accordingly
+    LaunchedEffect(Unit) {
+        snapshotFlow {
+            Triple(
+                lazyListState.firstVisibleItemIndex,
+                lazyListState.firstVisibleItemScrollOffset,
+                lazyListState.isScrollInProgress
+            )
+        }.collect { (currentIndex, currentOffset, isScrolling) ->
+            // Only detect scroll direction when user is actively scrolling
+            if (!isScrolling) return@collect
+
+            // Determine scroll direction
+            val isScrollingDown = if (currentIndex != previousIndex) {
+                currentIndex > previousIndex
+            } else {
+                currentOffset > previousOffset
             }
+
+            // Show navbar when scrolling up or at the top, hide when scrolling down
+            if (currentIndex == 0 && currentOffset < 100) {
+                // Always show at the very top
+                onShowBottomNav()
+            } else if (!isScrollingDown) {
+                // Scrolling up - show navbar
+                onShowBottomNav()
+            } else if (isScrollingDown && currentIndex > 0) {
+                // Scrolling down and not at top - hide navbar
+                onHideBottomNav()
+            }
+
+            // Update previous position
+            previousIndex = currentIndex
+            previousOffset = currentOffset
+        }
     }
 
     LazyColumn(
@@ -261,6 +347,10 @@ private fun FeedList(
                             },
                             onShareClick = {
                                 // Share action
+                            },
+                            currentUserId = currentUserId,
+                            onEditClick = {
+                                onEvent(ExploreUiEvent.NavigateToEditPost(item.post.id))
                             },
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                         )

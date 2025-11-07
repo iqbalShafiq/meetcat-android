@@ -87,6 +87,12 @@ class MainViewModel : ViewModel() {
                 backStack = newStack
             )
         }
+
+        // Show navbar when navigating back to main bottom nav screens
+        val previousRoute = _uiState.value.currentRoute
+        if (previousRoute in bottomNavRoutes) {
+            showBottomNav()
+        }
     }
 
     fun canNavigateBack(): Boolean {

@@ -49,8 +49,13 @@ import id.usecase.meetcat.presentation.screen.settings.account.AccountSettingsVi
 import id.usecase.meetcat.presentation.screen.settings.privacy.PrivacySettingsScreen
 import id.usecase.meetcat.presentation.screen.settings.privacy.PrivacySettingsViewModel
 import id.usecase.meetcat.presentation.screen.userprofile.UserProfileScreen
+import id.usecase.meetcat.presentation.screen.createpost.CreatePostScreen
+import id.usecase.meetcat.presentation.screen.createpost.CreatePostViewModel
+import id.usecase.meetcat.presentation.screen.editpost.EditPostScreen
+import id.usecase.meetcat.presentation.screen.editpost.EditPostViewModel
 import id.usecase.meetcat.ui.theme.MeetCatTheme
 import org.koin.androidx.compose.koinViewModel
+import org.koin.core.parameter.parametersOf
 
 @Composable
 fun MainScreen(
@@ -124,7 +129,14 @@ private fun MainContent(
                     },
                     onNavigateToProfile = { userId ->
                         onEvent(MainUiEvent.NavigateTo("user_profile/$userId"))
-                    }
+                    },
+                    onNavigateToCreatePost = {
+                        onEvent(MainUiEvent.NavigateTo("create_post"))
+                    },
+                    onNavigateToEditPost = { postId ->
+                        onEvent(MainUiEvent.NavigateTo("edit_post/$postId"))
+                    },
+                    isBottomNavVisible = isBottomNavVisible
                 )
             }
 
@@ -255,6 +267,27 @@ private fun MainContent(
                     }
                 )
             }
+
+            mainUiState.currentRoute == "create_post" -> {
+                val createPostViewModel: CreatePostViewModel = koinViewModel()
+                CreatePostScreen(
+                    viewModel = createPostViewModel,
+                    onNavigateBack = {
+                        onEvent(MainUiEvent.NavigateBack)
+                    }
+                )
+            }
+
+            mainUiState.currentRoute.startsWith("edit_post/") -> {
+                val postId = mainUiState.currentRoute.substringAfter("edit_post/")
+                val editPostViewModel: EditPostViewModel = koinViewModel { parametersOf(postId) }
+                EditPostScreen(
+                    viewModel = editPostViewModel,
+                    onNavigateBack = {
+                        onEvent(MainUiEvent.NavigateBack)
+                    }
+                )
+            }
         }
 
         // Navbar overlay at bottom (outside Scaffold to avoid padding issues)
@@ -277,6 +310,9 @@ private fun ExploreScreenWithScrollDetection(
     onNavigateToPost: (String) -> Unit,
     onNavigateToReply: (String) -> Unit,
     onNavigateToProfile: (String) -> Unit,
+    onNavigateToCreatePost: () -> Unit,
+    onNavigateToEditPost: (String) -> Unit,
+    isBottomNavVisible: Boolean,
     modifier: Modifier = Modifier
 ) {
     ExploreScreen(
@@ -286,7 +322,10 @@ private fun ExploreScreenWithScrollDetection(
         onHideBottomNav = onHideBottomNav,
         onNavigateToPost = onNavigateToPost,
         onNavigateToReply = onNavigateToReply,
-        onNavigateToProfile = onNavigateToProfile
+        onNavigateToProfile = onNavigateToProfile,
+        onNavigateToCreatePost = onNavigateToCreatePost,
+        onNavigateToEditPost = onNavigateToEditPost,
+        isBottomNavVisible = isBottomNavVisible
     )
 }
 

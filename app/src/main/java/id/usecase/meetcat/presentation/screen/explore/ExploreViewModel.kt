@@ -9,6 +9,7 @@ import androidx.paging.cachedIn
 import androidx.paging.map
 import id.usecase.meetcat.domain.model.FeedItem
 import id.usecase.meetcat.domain.paging.ExplorePagingSource
+import id.usecase.meetcat.domain.usecase.auth.GetCurrentUserUseCase
 import id.usecase.meetcat.domain.usecase.post.GetExploreFeedUseCase
 import id.usecase.meetcat.domain.usecase.post.LovePostUseCase
 import id.usecase.meetcat.domain.usecase.post.LoveReplyUseCase
@@ -29,15 +30,31 @@ class ExploreViewModel(
     private val lovePostUseCase: LovePostUseCase,
     private val unlovePostUseCase: UnlovePostUseCase,
     private val loveReplyUseCase: LoveReplyUseCase,
-    private val unloveReplyUseCase: UnloveReplyUseCase
+    private val unloveReplyUseCase: UnloveReplyUseCase,
+    private val getCurrentUserUseCase: GetCurrentUserUseCase
 ) : ViewModel() {
 
     private val _uiEffect = Channel<ExploreUiEffect>()
     val uiEffect: Flow<ExploreUiEffect> = _uiEffect.receiveAsFlow()
 
+    // Current user ID
+    private val _currentUserId = MutableStateFlow<String?>(null)
+    val currentUserId: StateFlow<String?> = _currentUserId.asStateFlow()
+
     // Preserve scroll position across navigation
     var scrollIndex: Int = 0
     var scrollOffset: Int = 0
+
+    init {
+        loadCurrentUser()
+    }
+
+    private fun loadCurrentUser() {
+        viewModelScope.launch {
+            val currentUser = getCurrentUserUseCase()
+            _currentUserId.value = currentUser?.id
+        }
+    }
 
     // Track love toggles for optimistic UI updates
     // Set contains IDs that have been toggled from their original state
@@ -124,6 +141,11 @@ class ExploreViewModel(
             is ExploreUiEvent.NavigateToReply -> {
                 viewModelScope.launch {
                     _uiEffect.send(ExploreUiEffect.NavigateToReply(event.postId))
+                }
+            }
+            is ExploreUiEvent.NavigateToEditPost -> {
+                viewModelScope.launch {
+                    _uiEffect.send(ExploreUiEffect.NavigateToEditPost(event.postId))
                 }
             }
         }
