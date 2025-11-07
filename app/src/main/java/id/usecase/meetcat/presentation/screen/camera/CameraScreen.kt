@@ -49,6 +49,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -347,15 +348,15 @@ private fun CameraContent(
     var maxZoom by remember { mutableFloatStateOf(1f) }
 
     Box(modifier = modifier.fillMaxSize()) {
-        // Camera preview
-        AndroidView(
-            key = lensFacing, // Force recreation when lens facing changes
-            factory = { ctx ->
-                val preview = PreviewView(ctx)
-                previewView = preview
-                preview
-            },
-            update = { preview ->
+        // Camera preview - use key() to force recreation when lens facing changes
+        key(lensFacing) {
+            AndroidView(
+                factory = { ctx ->
+                    val preview = PreviewView(ctx)
+                    previewView = preview
+                    preview
+                },
+                update = { preview ->
                 val ctx = preview.context
                 val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
 
@@ -423,7 +424,8 @@ private fun CameraContent(
                         }
                     }
                 }
-        )
+            )
+        }
 
         // Top controls
         Row(
