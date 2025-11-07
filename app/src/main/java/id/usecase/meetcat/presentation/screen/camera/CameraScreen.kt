@@ -74,6 +74,7 @@ import kotlin.math.min
 private const val TAG = "CameraScreen"
 private val cameraExecutor = Executors.newSingleThreadExecutor()
 
+@androidx.compose.ui.UiComposable
 @Composable
 fun CameraScreen(
     onNavigateBack: () -> Unit,
