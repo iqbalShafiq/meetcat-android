@@ -353,6 +353,15 @@ private fun CameraContent(
     var minZoom by remember { mutableFloatStateOf(1f) }
     var maxZoom by remember { mutableFloatStateOf(1f) }
 
+    // Practical zoom range for slider (better UX)
+    // Limit to reasonable range so 1x is better positioned
+    val sliderMinZoom = remember(minZoom) {
+        if (minZoom < 1f) minZoom else 1f  // Use ultrawide if available
+    }
+    val sliderMaxZoom = remember(maxZoom) {
+        minOf(maxZoom, 5f)  // Cap at 5x for practical use (higher is usually digital zoom)
+    }
+
     Box(modifier = modifier.fillMaxSize()) {
         // Camera preview - use key() to force recreation when lens facing changes
         key(lensFacing) {
@@ -482,7 +491,7 @@ private fun CameraContent(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Zoom slider above shutter button
-            if (maxZoom > minZoom) {
+            if (sliderMaxZoom > sliderMinZoom) {
                 Column(
                     modifier = Modifier
                         .padding(horizontal = 32.dp)
@@ -505,7 +514,7 @@ private fun CameraContent(
                     // Slider with markers
                     Box {
                         Slider(
-                            value = zoomRatio,
+                            value = zoomRatio.coerceIn(sliderMinZoom, sliderMaxZoom),
                             onValueChange = { newZoom ->
                                 onZoomChange(newZoom)
                                 camera?.let { cam ->
@@ -513,7 +522,7 @@ private fun CameraContent(
                                 }
                             },
                             modifier = Modifier.width(240.dp),
-                            valueRange = minZoom..maxZoom
+                            valueRange = sliderMinZoom..sliderMaxZoom
                         )
                     }
 
@@ -522,12 +531,13 @@ private fun CameraContent(
                         modifier = Modifier.width(240.dp),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        // Show markers for common zoom levels
+                        // Show markers for common zoom levels within slider range
                         val markers = buildList {
-                            if (minZoom <= 0.6f && maxZoom >= 0.6f) add("0.6x" to 0.6f)
-                            if (minZoom <= 1f && maxZoom >= 1f) add("1x" to 1f)
-                            if (minZoom <= 2f && maxZoom >= 2f) add("2x" to 2f)
-                            if (minZoom <= 3f && maxZoom >= 3f) add("3x" to 3f)
+                            if (sliderMinZoom <= 0.6f && sliderMaxZoom >= 0.6f) add("0.6x" to 0.6f)
+                            if (sliderMinZoom <= 1f && sliderMaxZoom >= 1f) add("1x" to 1f)
+                            if (sliderMinZoom <= 2f && sliderMaxZoom >= 2f) add("2x" to 2f)
+                            if (sliderMinZoom <= 3f && sliderMaxZoom >= 3f) add("3x" to 3f)
+                            if (sliderMinZoom <= 5f && sliderMaxZoom >= 5f) add("5x" to 5f)
                         }
 
                         markers.forEach { (label, _) ->
