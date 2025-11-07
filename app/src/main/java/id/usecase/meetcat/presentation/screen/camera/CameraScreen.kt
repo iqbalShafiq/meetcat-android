@@ -161,8 +161,9 @@ fun CameraScreen(
                         imageUri = capturedImageUri!!,
                         onRetake = { capturedImageUri = null },
                         onConfirm = {
+                            // Only trigger onImageCaptured callback
+                            // Don't call onNavigateBack here - it will be handled by the parent
                             onImageCaptured(capturedImageUri!!)
-                            onNavigateBack()
                         }
                     )
                 }
@@ -180,6 +181,8 @@ fun CameraScreen(
                             camera = newCamera
                             imageCapture = newImageCapture
                             cameraProvider = provider
+                            // Set initial zoom to 1x
+                            newCamera.cameraControl.setZoomRatio(1f)
                         },
                         onNavigateBack = onNavigateBack,
                         onFlipCamera = {
