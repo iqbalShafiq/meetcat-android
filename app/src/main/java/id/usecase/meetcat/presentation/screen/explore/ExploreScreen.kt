@@ -31,9 +31,12 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -244,6 +247,10 @@ private fun FeedList(
         initialFirstVisibleItemScrollOffset = viewModel.scrollOffset
     )
 
+    // Track previous scroll position to detect scroll direction
+    var previousIndex by remember { mutableIntStateOf(lazyListState.firstVisibleItemIndex) }
+    var previousOffset by remember { mutableIntStateOf(lazyListState.firstVisibleItemScrollOffset) }
+
     // Save scroll position to ViewModel
     LaunchedEffect(lazyListState.isScrollInProgress) {
         snapshotFlow {
@@ -254,16 +261,34 @@ private fun FeedList(
         }
     }
 
-    // Simple scroll detection: hide when scrolling down, show when at top
+    // Detect scroll direction and show/hide navbar accordingly
     LaunchedEffect(lazyListState.isScrollInProgress) {
-        snapshotFlow { lazyListState.firstVisibleItemIndex }
-            .collect { index ->
-                if (index == 0) {
-                    onShowBottomNav()
-                } else {
-                    onHideBottomNav()
-                }
+        snapshotFlow {
+            lazyListState.firstVisibleItemIndex to lazyListState.firstVisibleItemScrollOffset
+        }.collect { (currentIndex, currentOffset) ->
+            // Determine scroll direction
+            val isScrollingDown = if (currentIndex != previousIndex) {
+                currentIndex > previousIndex
+            } else {
+                currentOffset > previousOffset
             }
+
+            // Show navbar when scrolling up or at the top, hide when scrolling down
+            if (currentIndex == 0 && currentOffset < 100) {
+                // Always show at the very top
+                onShowBottomNav()
+            } else if (!isScrollingDown) {
+                // Scrolling up - show navbar
+                onShowBottomNav()
+            } else if (isScrollingDown && currentIndex > 0) {
+                // Scrolling down and not at top - hide navbar
+                onHideBottomNav()
+            }
+
+            // Update previous position
+            previousIndex = currentIndex
+            previousOffset = currentOffset
+        }
     }
 
     LazyColumn(
