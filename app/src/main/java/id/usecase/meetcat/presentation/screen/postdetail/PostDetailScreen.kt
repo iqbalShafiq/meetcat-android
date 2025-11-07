@@ -199,8 +199,7 @@ private fun PostDetailContent(
                                 onLoveClick = { onEvent(PostDetailUiEvent.LovePost) },
                                 onCommentClick = { onEvent(PostDetailUiEvent.CommentClick) },
                                 onReplyClick = { onEvent(PostDetailUiEvent.ReplyClick) },
-                                onShareClick = { onEvent(PostDetailUiEvent.ShareClick) },
-                                modifier = Modifier.padding(horizontal = 8.dp)
+                                onShareClick = { onEvent(PostDetailUiEvent.ShareClick) }
                             )
                         }
 
@@ -241,7 +240,7 @@ private fun PostDetailContent(
                                     onLoveClick = {
                                         onEvent(PostDetailUiEvent.LoveComment(comment.id))
                                     },
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    modifier = Modifier.padding(vertical = 4.dp)
                                 )
                             }
                         } else {
