@@ -238,7 +238,7 @@ private fun ReplyDetailContent(
                                 onExpand = { expanded = true },
                                 onCollapse = { expanded = false }
                             ),
-                        contentPadding = PaddingValues(vertical = 8.dp, bottom = 80.dp)
+                        contentPadding = PaddingValues(top = 8.dp, bottom = 104.dp)
                     ) {
                         // Reply Item
                         item {
@@ -266,12 +266,11 @@ private fun ReplyDetailContent(
                         if (uiState.comments.isNotEmpty()) {
                             item {
                                 Column(modifier = Modifier.fillMaxWidth()) {
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                    HorizontalDivider()
                                     Box(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(horizontal = 16.dp, vertical = 12.dp)
+                                            .padding(horizontal = 16.dp)
+                                            .padding(top = 12.dp, bottom = 8.dp)
                                     ) {
                                         Text(
                                             text = "Comments (${uiState.comments.size})",
@@ -287,20 +286,24 @@ private fun ReplyDetailContent(
                                 items = uiState.comments,
                                 key = { it.id }
                             ) { comment ->
-                                CommentCard(
-                                    comment = comment,
-                                    onCommentClick = {
-                                        // Note: Comment detail/expansion not implemented in current scope
-                                        // Comments are display-only. Future: could expand to show nested replies
-                                    },
-                                    onProfileClick = {
-                                        onEvent(ReplyDetailUiEvent.NavigateToProfile(comment.userId))
-                                    },
-                                    onLoveClick = {
-                                        onEvent(ReplyDetailUiEvent.LoveComment(comment.id))
-                                    },
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                )
+                                Column {
+                                    CommentCard(
+                                        comment = comment,
+                                        onCommentClick = {
+                                            // Note: Comment detail/expansion not implemented in current scope
+                                            // Comments are display-only. Future: could expand to show nested replies
+                                        },
+                                        onProfileClick = {
+                                            onEvent(ReplyDetailUiEvent.NavigateToProfile(comment.userId))
+                                        },
+                                        onLoveClick = {
+                                            onEvent(ReplyDetailUiEvent.LoveComment(comment.id))
+                                        },
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    )
+
+                                    if (comment.id != uiState.comments.last().id) HorizontalDivider()
+                                }
                             }
                         } else {
                             // No Comments Yet
