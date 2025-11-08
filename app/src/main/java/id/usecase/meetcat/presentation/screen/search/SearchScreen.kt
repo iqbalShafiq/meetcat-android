@@ -31,6 +31,7 @@ import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -117,7 +118,13 @@ private fun SearchContent(
                 .fillMaxSize()
                 .padding(bottom = paddingValues.calculateBottomPadding())
         ) {
-            SearchBar(
+            // Wrap SearchBar in Surface for solid background to prevent transparency overlap
+            Surface(
+                shadowElevation = 2.dp,
+                tonalElevation = 3.dp,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                SearchBar(
                 inputField = {
                     SearchBarDefaults.InputField(
                         query = uiState.query,
@@ -174,7 +181,7 @@ private fun SearchContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = if (uiState.isSearchActive) 0.dp else 16.dp)
-                    .padding(top = 8.dp, bottom = 8.dp)
+                    .padding(top = 8.dp, bottom = 16.dp)
             ) {
                 // Search history content
                 if (uiState.searchHistory.isNotEmpty()) {
@@ -224,6 +231,7 @@ private fun SearchContent(
                     }
                 }
             }
+            }
 
             // Main content - Random grid or search results
             when {
@@ -236,8 +244,8 @@ private fun SearchContent(
                         onRetry = { onEvent(SearchUiEvent.LoadRandomPosts) }
                     )
                 }
-                // Show search results if we have paginated data
-                searchResults.itemCount > 0 || searchResults.loadState.refresh is LoadState.Loading -> {
+                // Show search results only if search has been submitted
+                uiState.hasSubmittedSearch && (searchResults.itemCount > 0 || searchResults.loadState.refresh is LoadState.Loading) -> {
                     SearchResultsGrid(
                         searchResults = searchResults,
                         viewModel = viewModel,
@@ -247,7 +255,7 @@ private fun SearchContent(
                     )
                 }
                 // Show empty state if search was performed but no results
-                searchResults.loadState.refresh is LoadState.NotLoading && searchResults.itemCount == 0 && uiState.query.isNotEmpty() -> {
+                uiState.hasSubmittedSearch && searchResults.loadState.refresh is LoadState.NotLoading && searchResults.itemCount == 0 -> {
                     EmptyView(message = "No results found")
                 }
                 else -> {
@@ -331,7 +339,7 @@ private fun RandomPostsGrid(
     LazyVerticalStaggeredGrid(
         columns = StaggeredGridCells.Fixed(3),
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(0.dp),
+        contentPadding = PaddingValues(bottom = 80.dp), // Add bottom padding for navbar clearance
         horizontalArrangement = Arrangement.spacedBy(0.dp),
         verticalItemSpacing = 0.dp,
         state = lazyGridState
@@ -415,7 +423,7 @@ private fun SearchResultsGrid(
     LazyVerticalStaggeredGrid(
         columns = StaggeredGridCells.Fixed(3),
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(0.dp),
+        contentPadding = PaddingValues(bottom = 80.dp), // Add bottom padding for navbar clearance
         horizontalArrangement = Arrangement.spacedBy(0.dp),
         verticalItemSpacing = 0.dp,
         state = lazyGridState

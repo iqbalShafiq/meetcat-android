@@ -14,6 +14,7 @@ data class SearchUiState(
     // Note: searchResults moved to Paging3 Flow in ViewModel (viewModel.searchResults)
     val isLoading: Boolean = false,
     val isSearching: Boolean = false,
+    val hasSubmittedSearch: Boolean = false, // Track if search has been submitted
     val error: String? = null
 )
 
