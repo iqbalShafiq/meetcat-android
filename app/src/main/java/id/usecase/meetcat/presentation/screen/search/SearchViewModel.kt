@@ -15,6 +15,7 @@ import id.usecase.meetcat.domain.usecase.search.DeleteSearchQueryUseCase
 import id.usecase.meetcat.domain.usecase.search.GetSearchHistoryUseCase
 import id.usecase.meetcat.domain.usecase.search.SaveSearchQueryUseCase
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -49,6 +50,7 @@ class SearchViewModel(
     private val _searchQuery = MutableStateFlow<String?>(null)
 
     // Paging3 Flow for search results - recreates when query changes
+    @OptIn(ExperimentalCoroutinesApi::class)
     val searchResults: Flow<PagingData<Post>> = _searchQuery
         .flatMapLatest { query ->
             if (query.isNullOrBlank()) {
