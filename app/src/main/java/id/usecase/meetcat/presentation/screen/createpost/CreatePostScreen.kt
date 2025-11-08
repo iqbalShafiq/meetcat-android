@@ -153,8 +153,7 @@ private fun CreatePostContent(
                             if (!uiState.isUploading) {
                                 onEvent(CreatePostUiEvent.CreatePost)
                             }
-                        },
-                        enabled = !uiState.isUploading
+                        }
                     ) {
                         if (uiState.isUploading) {
                             CircularProgressIndicator(
