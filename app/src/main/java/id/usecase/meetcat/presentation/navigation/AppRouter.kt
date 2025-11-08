@@ -1,5 +1,12 @@
 package id.usecase.meetcat.presentation.navigation
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -32,49 +39,67 @@ fun AppRouter(
     // Skip login for development - go directly to Main
     var currentRoute by remember { mutableStateOf<AppRoute>(AppRoute.Main) }
 
-    when (currentRoute) {
-        is AppRoute.Splash -> {
-            val viewModel: SplashViewModel = koinViewModel()
-            SplashScreen(
-                viewModel = viewModel,
-                onNavigateToMain = { currentRoute = AppRoute.Main },
-                onNavigateToLogin = { currentRoute = AppRoute.Login },
-                modifier = modifier
-            )
-        }
+    AnimatedContent(
+        targetState = currentRoute,
+        transitionSpec = {
+            // Smooth fade + slide transition
+            fadeIn(animationSpec = tween(300)) +
+                slideInHorizontally(
+                    animationSpec = tween(300),
+                    initialOffsetX = { fullWidth -> fullWidth / 10 }
+                ) togetherWith
+                fadeOut(animationSpec = tween(300)) +
+                slideOutHorizontally(
+                    animationSpec = tween(300),
+                    targetOffsetX = { fullWidth -> -fullWidth / 10 }
+                )
+        },
+        label = "AppRouterTransition"
+    ) { route ->
+        when (route) {
+            is AppRoute.Splash -> {
+                val viewModel: SplashViewModel = koinViewModel()
+                SplashScreen(
+                    viewModel = viewModel,
+                    onNavigateToMain = { currentRoute = AppRoute.Main },
+                    onNavigateToLogin = { currentRoute = AppRoute.Login },
+                    modifier = modifier
+                )
+            }
 
-        is AppRoute.Login -> {
-            val viewModel: LoginViewModel = koinViewModel()
-            LoginScreen(
-                viewModel = viewModel,
-                onNavigateToMain = { currentRoute = AppRoute.Main },
-                onNavigateToRegister = { currentRoute = AppRoute.Register },
-                onNavigateToForgotPassword = { currentRoute = AppRoute.ForgotPassword },
-                modifier = modifier
-            )
-        }
+            is AppRoute.Login -> {
+                val viewModel: LoginViewModel = koinViewModel()
+                LoginScreen(
+                    viewModel = viewModel,
+                    onNavigateToMain = { currentRoute = AppRoute.Main },
+                    onNavigateToRegister = { currentRoute = AppRoute.Register },
+                    onNavigateToForgotPassword = { currentRoute = AppRoute.ForgotPassword },
+                    modifier = modifier
+                )
+            }
 
-        is AppRoute.Register -> {
-            val viewModel: RegisterViewModel = koinViewModel()
-            RegisterScreen(
-                viewModel = viewModel,
-                onNavigateToMain = { currentRoute = AppRoute.Main },
-                onNavigateToLogin = { currentRoute = AppRoute.Login },
-                modifier = modifier
-            )
-        }
+            is AppRoute.Register -> {
+                val viewModel: RegisterViewModel = koinViewModel()
+                RegisterScreen(
+                    viewModel = viewModel,
+                    onNavigateToMain = { currentRoute = AppRoute.Main },
+                    onNavigateToLogin = { currentRoute = AppRoute.Login },
+                    modifier = modifier
+                )
+            }
 
-        is AppRoute.ForgotPassword -> {
-            val viewModel: ForgotPasswordViewModel = koinViewModel()
-            ForgotPasswordScreen(
-                viewModel = viewModel,
-                onNavigateBack = { currentRoute = AppRoute.Login },
-                modifier = modifier
-            )
-        }
+            is AppRoute.ForgotPassword -> {
+                val viewModel: ForgotPasswordViewModel = koinViewModel()
+                ForgotPasswordScreen(
+                    viewModel = viewModel,
+                    onNavigateBack = { currentRoute = AppRoute.Login },
+                    modifier = modifier
+                )
+            }
 
-        is AppRoute.Main -> {
-            MainScreen(modifier = modifier)
+            is AppRoute.Main -> {
+                MainScreen(modifier = modifier)
+            }
         }
     }
 }

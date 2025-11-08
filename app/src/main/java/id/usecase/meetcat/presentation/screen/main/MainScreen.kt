@@ -1,6 +1,13 @@
 package id.usecase.meetcat.presentation.screen.main
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -126,9 +133,40 @@ private fun MainContent(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // Main content - full screen, each screen handles its own bottom padding
+        // Main content with smooth transitions
+        val bottomNavRoutes = listOf(
+            BottomNavItem.Explore.route,
+            BottomNavItem.Search.route,
+            BottomNavItem.NearMe.route,
+            BottomNavItem.Profile.route
+        )
+        val isBottomNavRoute = bottomNavRoutes.contains(mainUiState.currentRoute)
+
+        AnimatedContent(
+            targetState = mainUiState.currentRoute,
+            transitionSpec = {
+                if (isBottomNavRoute) {
+                    // Bottom nav tabs: Simple crossfade for minimal transition
+                    fadeIn(animationSpec = tween(300)) togetherWith
+                        fadeOut(animationSpec = tween(300))
+                } else {
+                    // Detail/nested screens: Smooth slide + fade
+                    fadeIn(animationSpec = tween(300)) +
+                        slideInHorizontally(
+                            animationSpec = tween(300),
+                            initialOffsetX = { fullWidth -> fullWidth / 8 }
+                        ) togetherWith
+                        fadeOut(animationSpec = tween(300)) +
+                        slideOutHorizontally(
+                            animationSpec = tween(300),
+                            targetOffsetX = { fullWidth -> -fullWidth / 8 }
+                        )
+                }
+            },
+            label = "MainScreenTransition"
+        ) { currentRoute ->
         when {
-            mainUiState.currentRoute == BottomNavItem.Explore.route -> {
+            currentRoute == BottomNavItem.Explore.route -> {
                 ExploreScreenWithScrollDetection(
                     viewModel = exploreViewModel,
                     onShowBottomNav = { onEvent(MainUiEvent.ShowBottomNav) },
@@ -152,7 +190,7 @@ private fun MainContent(
                 )
             }
 
-            mainUiState.currentRoute == BottomNavItem.Search.route -> {
+            currentRoute == BottomNavItem.Search.route -> {
                 SearchScreen(
                     viewModel = searchViewModel,
                     onNavigateToPost = { postId ->
@@ -169,7 +207,7 @@ private fun MainContent(
                 )
             }
 
-            mainUiState.currentRoute == BottomNavItem.NearMe.route -> {
+            currentRoute == BottomNavItem.NearMe.route -> {
                 MapsScreen(
                     onNavigateToPost = { postId ->
                         onEvent(MainUiEvent.NavigateTo("post_detail/$postId"))
@@ -182,7 +220,7 @@ private fun MainContent(
                 )
             }
 
-            mainUiState.currentRoute == BottomNavItem.Profile.route -> {
+            currentRoute == BottomNavItem.Profile.route -> {
                 ProfileScreen(
                     viewModel = profileViewModel,
                     onShowBottomNav = { onEvent(MainUiEvent.ShowBottomNav) },
@@ -205,7 +243,7 @@ private fun MainContent(
                 )
             }
 
-            mainUiState.currentRoute == "settings" -> {
+            currentRoute == "settings" -> {
                 SettingsScreen(
                     viewModel = settingsViewModel,
                     onNavigateBack = {
@@ -226,29 +264,29 @@ private fun MainContent(
                 )
             }
 
-            mainUiState.currentRoute == "account_settings" -> {
+            currentRoute == "account_settings" -> {
                 AccountSettingsScreen(
                     viewModel = accountSettingsViewModel,
                     onNavigateBack = { onEvent(MainUiEvent.NavigateBack) }
                 )
             }
 
-            mainUiState.currentRoute == "privacy_settings" -> {
+            currentRoute == "privacy_settings" -> {
                 PrivacySettingsScreen(
                     viewModel = privacySettingsViewModel,
                     onNavigateBack = { onEvent(MainUiEvent.NavigateBack) }
                 )
             }
 
-            mainUiState.currentRoute == "about" -> {
+            currentRoute == "about" -> {
                 AboutScreen(
                     viewModel = aboutViewModel,
                     onNavigateBack = { onEvent(MainUiEvent.NavigateBack) }
                 )
             }
 
-            mainUiState.currentRoute.startsWith("post_detail/") -> {
-                val postId = mainUiState.currentRoute.substringAfter("post_detail/")
+            currentRoute.startsWith("post_detail/") -> {
+                val postId = currentRoute.substringAfter("post_detail/")
                 PostDetailScreen(
                     postId = postId,
                     onNavigateBack = {
@@ -263,8 +301,8 @@ private fun MainContent(
                 )
             }
 
-            mainUiState.currentRoute.startsWith("reply_detail/") -> {
-                val replyId = mainUiState.currentRoute.substringAfter("reply_detail/")
+            currentRoute.startsWith("reply_detail/") -> {
+                val replyId = currentRoute.substringAfter("reply_detail/")
                 ReplyDetailScreen(
                     replyId = replyId,
                     onNavigateBack = {
@@ -279,8 +317,8 @@ private fun MainContent(
                 )
             }
 
-            mainUiState.currentRoute.startsWith("user_profile/") -> {
-                val userId = mainUiState.currentRoute.substringAfter("user_profile/")
+            currentRoute.startsWith("user_profile/") -> {
+                val userId = currentRoute.substringAfter("user_profile/")
                 UserProfileScreen(
                     userId = userId,
                     onNavigateBack = {
@@ -292,7 +330,7 @@ private fun MainContent(
                 )
             }
 
-            mainUiState.currentRoute == "create_post" -> {
+            currentRoute == "create_post" -> {
                 val createPostViewModel: CreatePostViewModel = koinViewModel()
 
                 // Handle selected image from camera/gallery
@@ -314,8 +352,8 @@ private fun MainContent(
                 )
             }
 
-            mainUiState.currentRoute.startsWith("edit_post/") -> {
-                val postId = mainUiState.currentRoute.substringAfter("edit_post/")
+            currentRoute.startsWith("edit_post/") -> {
+                val postId = currentRoute.substringAfter("edit_post/")
                 val editPostViewModel: EditPostViewModel = koinViewModel { parametersOf(postId) }
                 EditPostScreen(
                     viewModel = editPostViewModel,
@@ -325,8 +363,8 @@ private fun MainContent(
                 )
             }
 
-            mainUiState.currentRoute.startsWith("create_reply/") -> {
-                val postId = mainUiState.currentRoute.substringAfter("create_reply/")
+            currentRoute.startsWith("create_reply/") -> {
+                val postId = currentRoute.substringAfter("create_reply/")
                 val createReplyViewModel: CreateReplyViewModel = koinViewModel { parametersOf(postId) }
 
                 // Handle selected image from camera/gallery
@@ -348,7 +386,7 @@ private fun MainContent(
                 )
             }
 
-            mainUiState.currentRoute == "edit_profile" -> {
+            currentRoute == "edit_profile" -> {
                 val editProfileViewModel: EditProfileViewModel = koinViewModel()
                 EditProfileScreen(
                     viewModel = editProfileViewModel,
@@ -358,8 +396,8 @@ private fun MainContent(
                 )
             }
 
-            mainUiState.currentRoute.startsWith("followers_list/") -> {
-                val userId = mainUiState.currentRoute.substringAfter("followers_list/")
+            currentRoute.startsWith("followers_list/") -> {
+                val userId = currentRoute.substringAfter("followers_list/")
                 val followersListViewModel: FollowersListViewModel = koinViewModel { parametersOf(userId) }
                 FollowersListScreen(
                     viewModel = followersListViewModel,
@@ -372,8 +410,8 @@ private fun MainContent(
                 )
             }
 
-            mainUiState.currentRoute.startsWith("following_list/") -> {
-                val userId = mainUiState.currentRoute.substringAfter("following_list/")
+            currentRoute.startsWith("following_list/") -> {
+                val userId = currentRoute.substringAfter("following_list/")
                 val followingListViewModel: FollowingListViewModel = koinViewModel { parametersOf(userId) }
                 FollowingListScreen(
                     viewModel = followingListViewModel,
@@ -386,7 +424,7 @@ private fun MainContent(
                 )
             }
 
-            mainUiState.currentRoute == "camera" -> {
+            currentRoute == "camera" -> {
                 CameraScreen(
                     onNavigateBack = {
                         onEvent(MainUiEvent.NavigateBack)
@@ -398,6 +436,7 @@ private fun MainContent(
                     }
                 )
             }
+        }
         }
 
         // Navbar overlay at bottom (outside Scaffold to avoid padding issues)
