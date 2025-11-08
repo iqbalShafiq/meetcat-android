@@ -34,8 +34,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -46,7 +44,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -113,15 +110,17 @@ private fun SearchContent(
     onShowBottomNav: () -> Unit = {},
     onHideBottomNav: () -> Unit = {}
 ) {
-    // Create scroll behavior for search bar with enterAlways behavior
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            // Wrap SearchBar in Surface for solid background
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = paddingValues.calculateBottomPadding())
+        ) {
+            // Wrap SearchBar in Surface for solid background to prevent transparency overlap
             Surface(
-                shadowElevation = if (scrollBehavior.state.collapsedFraction > 0) 3.dp else 0.dp,
+                shadowElevation = 2.dp,
                 tonalElevation = 3.dp,
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -233,15 +232,9 @@ private fun SearchContent(
                 }
             }
             }
-        },
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
-    ) { paddingValues ->
-        // Main content - Random grid or search results
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
+            }
+
+            // Main content - Random grid or search results
             when {
                 uiState.isLoading -> {
                     LoadingView()
@@ -259,8 +252,7 @@ private fun SearchContent(
                         viewModel = viewModel,
                         onPostClick = { onEvent(SearchUiEvent.NavigateToPost(it)) },
                         onShowBottomNav = onShowBottomNav,
-                        onHideBottomNav = onHideBottomNav,
-                        scrollBehavior = scrollBehavior
+                        onHideBottomNav = onHideBottomNav
                     )
                 }
                 // Show empty state if search was performed but no results
@@ -273,8 +265,7 @@ private fun SearchContent(
                         viewModel = viewModel,
                         onPostClick = { onEvent(SearchUiEvent.NavigateToPost(it)) },
                         onShowBottomNav = onShowBottomNav,
-                        onHideBottomNav = onHideBottomNav,
-                        scrollBehavior = scrollBehavior
+                        onHideBottomNav = onHideBottomNav
                     )
                 }
             }
@@ -282,7 +273,6 @@ private fun SearchContent(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun RandomPostsGrid(
     posts: ImmutableList<Post>,
@@ -290,8 +280,7 @@ private fun RandomPostsGrid(
     onPostClick: (String) -> Unit,
     modifier: Modifier = Modifier,
     onShowBottomNav: () -> Unit = {},
-    onHideBottomNav: () -> Unit = {},
-    scrollBehavior: TopAppBarScrollBehavior
+    onHideBottomNav: () -> Unit = {}
 ) {
     // Use scroll position from ViewModel to preserve across navigation
     val lazyGridState = rememberLazyStaggeredGridState(
@@ -312,7 +301,6 @@ private fun RandomPostsGrid(
     }
 
     // Detect scroll direction and show/hide navbar accordingly
-    // Search bar scroll is handled by TopAppBarScrollBehavior
     LaunchedEffect(Unit) {
         snapshotFlow {
             Triple(
@@ -369,7 +357,6 @@ private fun RandomPostsGrid(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SearchResultsGrid(
     searchResults: LazyPagingItems<Post>,
@@ -377,8 +364,7 @@ private fun SearchResultsGrid(
     onPostClick: (String) -> Unit,
     modifier: Modifier = Modifier,
     onShowBottomNav: () -> Unit = {},
-    onHideBottomNav: () -> Unit = {},
-    scrollBehavior: TopAppBarScrollBehavior
+    onHideBottomNav: () -> Unit = {}
 ) {
     // Use scroll position from ViewModel to preserve across navigation
     val lazyGridState = rememberLazyStaggeredGridState(
@@ -399,7 +385,6 @@ private fun SearchResultsGrid(
     }
 
     // Detect scroll direction and show/hide navbar accordingly
-    // Search bar scroll is handled by TopAppBarScrollBehavior
     LaunchedEffect(Unit) {
         snapshotFlow {
             Triple(
