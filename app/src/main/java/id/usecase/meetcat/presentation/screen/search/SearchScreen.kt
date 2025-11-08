@@ -1,14 +1,12 @@
 package id.usecase.meetcat.presentation.screen.search
 
 import android.content.res.Configuration
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -33,12 +31,14 @@ import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -46,11 +46,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import kotlin.math.roundToInt
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import id.usecase.meetcat.domain.model.MediaItem
 import id.usecase.meetcat.domain.model.Post
@@ -115,34 +113,19 @@ private fun SearchContent(
     onShowBottomNav: () -> Unit = {},
     onHideBottomNav: () -> Unit = {}
 ) {
-    // State for search bar visibility and animation
-    var searchBarOffsetTarget by remember { mutableFloatStateOf(0f) }
-    val searchBarOffset by animateFloatAsState(
-        targetValue = searchBarOffsetTarget,
-        label = "searchBarOffset"
-    )
-
-    // Calculate search bar height in pixels
-    val density = LocalDensity.current
-    val searchBarHeightPx = with(density) {
-        // Search bar height: top padding (8dp) + search bar (~56dp) + bottom padding (16dp) = ~80dp
-        80.dp.toPx()
-    }
-
-    // Callbacks for showing/hiding search bar
-    val onShowSearchBar: () -> Unit = { searchBarOffsetTarget = 0f }
-    val onHideSearchBar: () -> Unit = { searchBarOffsetTarget = -searchBarHeightPx }
+    // Create scroll behavior for search bar with enterAlways behavior
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(bottom = paddingValues.calculateBottomPadding())
-        ) {
-            // Search bar with scroll animation
-            SearchBar(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        topBar = {
+            // Wrap SearchBar in Surface for solid background
+            Surface(
+                shadowElevation = if (scrollBehavior.state.collapsedFraction > 0) 3.dp else 0.dp,
+                tonalElevation = 3.dp,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                SearchBar(
                 inputField = {
                     SearchBarDefaults.InputField(
                         query = uiState.query,
@@ -198,7 +181,6 @@ private fun SearchContent(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .offset { IntOffset(0, searchBarOffset.roundToInt()) }
                     .padding(horizontal = if (uiState.isSearchActive) 0.dp else 16.dp)
                     .padding(top = 8.dp, bottom = 16.dp)
             ) {
@@ -250,56 +232,57 @@ private fun SearchContent(
                     }
                 }
             }
-
-            // Main content - Random grid or search results
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(top = 80.dp) // Add padding for search bar
-            ) {
-                when {
-                    uiState.isLoading -> {
-                        LoadingView()
-                    }
-                    uiState.error != null && uiState.randomPosts.isEmpty() -> {
-                        ErrorView(
-                            message = uiState.error,
-                            onRetry = { onEvent(SearchUiEvent.LoadRandomPosts) }
-                        )
-                    }
-                    // Show search results only if search has been submitted
-                    uiState.hasSubmittedSearch && (searchResults.itemCount > 0 || searchResults.loadState.refresh is LoadState.Loading) -> {
-                        SearchResultsGrid(
-                            searchResults = searchResults,
-                            viewModel = viewModel,
-                            onPostClick = { onEvent(SearchUiEvent.NavigateToPost(it)) },
-                            onShowBottomNav = onShowBottomNav,
-                            onHideBottomNav = onHideBottomNav,
-                            onShowSearchBar = onShowSearchBar,
-                            onHideSearchBar = onHideSearchBar
-                        )
-                    }
-                    // Show empty state if search was performed but no results
-                    uiState.hasSubmittedSearch && searchResults.loadState.refresh is LoadState.NotLoading && searchResults.itemCount == 0 -> {
-                        EmptyView(message = "No results found")
-                    }
-                    else -> {
-                        RandomPostsGrid(
-                            posts = uiState.randomPosts,
-                            viewModel = viewModel,
-                            onPostClick = { onEvent(SearchUiEvent.NavigateToPost(it)) },
-                            onShowBottomNav = onShowBottomNav,
-                            onHideBottomNav = onHideBottomNav,
-                            onShowSearchBar = onShowSearchBar,
-                            onHideSearchBar = onHideSearchBar
-                        )
-                    }
+            }
+        },
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
+    ) { paddingValues ->
+        // Main content - Random grid or search results
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            when {
+                uiState.isLoading -> {
+                    LoadingView()
+                }
+                uiState.error != null && uiState.randomPosts.isEmpty() -> {
+                    ErrorView(
+                        message = uiState.error,
+                        onRetry = { onEvent(SearchUiEvent.LoadRandomPosts) }
+                    )
+                }
+                // Show search results only if search has been submitted
+                uiState.hasSubmittedSearch && (searchResults.itemCount > 0 || searchResults.loadState.refresh is LoadState.Loading) -> {
+                    SearchResultsGrid(
+                        searchResults = searchResults,
+                        viewModel = viewModel,
+                        onPostClick = { onEvent(SearchUiEvent.NavigateToPost(it)) },
+                        onShowBottomNav = onShowBottomNav,
+                        onHideBottomNav = onHideBottomNav,
+                        scrollBehavior = scrollBehavior
+                    )
+                }
+                // Show empty state if search was performed but no results
+                uiState.hasSubmittedSearch && searchResults.loadState.refresh is LoadState.NotLoading && searchResults.itemCount == 0 -> {
+                    EmptyView(message = "No results found")
+                }
+                else -> {
+                    RandomPostsGrid(
+                        posts = uiState.randomPosts,
+                        viewModel = viewModel,
+                        onPostClick = { onEvent(SearchUiEvent.NavigateToPost(it)) },
+                        onShowBottomNav = onShowBottomNav,
+                        onHideBottomNav = onHideBottomNav,
+                        scrollBehavior = scrollBehavior
+                    )
                 }
             }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun RandomPostsGrid(
     posts: ImmutableList<Post>,
@@ -308,8 +291,7 @@ private fun RandomPostsGrid(
     modifier: Modifier = Modifier,
     onShowBottomNav: () -> Unit = {},
     onHideBottomNav: () -> Unit = {},
-    onShowSearchBar: () -> Unit = {},
-    onHideSearchBar: () -> Unit = {}
+    scrollBehavior: TopAppBarScrollBehavior
 ) {
     // Use scroll position from ViewModel to preserve across navigation
     val lazyGridState = rememberLazyStaggeredGridState(
@@ -329,7 +311,8 @@ private fun RandomPostsGrid(
         }
     }
 
-    // Detect scroll direction and show/hide navbar and search bar accordingly
+    // Detect scroll direction and show/hide navbar accordingly
+    // Search bar scroll is handled by TopAppBarScrollBehavior
     LaunchedEffect(Unit) {
         snapshotFlow {
             Triple(
@@ -348,19 +331,16 @@ private fun RandomPostsGrid(
                 currentOffset > previousOffset
             }
 
-            // Show navbar and search bar when scrolling up or at the top, hide when scrolling down
+            // Show navbar when scrolling up or at the top, hide when scrolling down
             if (currentIndex == 0 && currentOffset < 100) {
                 // Always show at the very top
                 onShowBottomNav()
-                onShowSearchBar()
             } else if (!isScrollingDown) {
-                // Scrolling up - show navbar and search bar
+                // Scrolling up - show navbar
                 onShowBottomNav()
-                onShowSearchBar()
             } else if (isScrollingDown && currentIndex > 0) {
-                // Scrolling down and not at top - hide navbar and search bar
+                // Scrolling down and not at top - hide navbar
                 onHideBottomNav()
-                onHideSearchBar()
             }
 
             // Update previous position
@@ -371,7 +351,9 @@ private fun RandomPostsGrid(
 
     LazyVerticalStaggeredGrid(
         columns = StaggeredGridCells.Fixed(3),
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier
+            .fillMaxSize()
+            .nestedScroll(scrollBehavior.nestedScrollConnection),
         contentPadding = PaddingValues(0.dp),
         horizontalArrangement = Arrangement.spacedBy(0.dp),
         verticalItemSpacing = 0.dp,
@@ -389,6 +371,7 @@ private fun RandomPostsGrid(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SearchResultsGrid(
     searchResults: LazyPagingItems<Post>,
@@ -397,8 +380,7 @@ private fun SearchResultsGrid(
     modifier: Modifier = Modifier,
     onShowBottomNav: () -> Unit = {},
     onHideBottomNav: () -> Unit = {},
-    onShowSearchBar: () -> Unit = {},
-    onHideSearchBar: () -> Unit = {}
+    scrollBehavior: TopAppBarScrollBehavior
 ) {
     // Use scroll position from ViewModel to preserve across navigation
     val lazyGridState = rememberLazyStaggeredGridState(
@@ -418,7 +400,8 @@ private fun SearchResultsGrid(
         }
     }
 
-    // Detect scroll direction and show/hide navbar and search bar accordingly
+    // Detect scroll direction and show/hide navbar accordingly
+    // Search bar scroll is handled by TopAppBarScrollBehavior
     LaunchedEffect(Unit) {
         snapshotFlow {
             Triple(
@@ -437,19 +420,16 @@ private fun SearchResultsGrid(
                 currentOffset > previousOffset
             }
 
-            // Show navbar and search bar when scrolling up or at the top, hide when scrolling down
+            // Show navbar when scrolling up or at the top, hide when scrolling down
             if (currentIndex == 0 && currentOffset < 100) {
                 // Always show at the very top
                 onShowBottomNav()
-                onShowSearchBar()
             } else if (!isScrollingDown) {
-                // Scrolling up - show navbar and search bar
+                // Scrolling up - show navbar
                 onShowBottomNav()
-                onShowSearchBar()
             } else if (isScrollingDown && currentIndex > 0) {
-                // Scrolling down and not at top - hide navbar and search bar
+                // Scrolling down and not at top - hide navbar
                 onHideBottomNav()
-                onHideSearchBar()
             }
 
             // Update previous position
@@ -460,7 +440,9 @@ private fun SearchResultsGrid(
 
     LazyVerticalStaggeredGrid(
         columns = StaggeredGridCells.Fixed(3),
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier
+            .fillMaxSize()
+            .nestedScroll(scrollBehavior.nestedScrollConnection),
         contentPadding = PaddingValues(0.dp),
         horizontalArrangement = Arrangement.spacedBy(0.dp),
         verticalItemSpacing = 0.dp,
