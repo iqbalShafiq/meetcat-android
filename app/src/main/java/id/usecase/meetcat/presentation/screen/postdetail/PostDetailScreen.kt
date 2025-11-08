@@ -7,13 +7,23 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.ModeComment
+import androidx.compose.material.icons.outlined.Repeat
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FabPosition
+import androidx.compose.material3.FloatingToolbarDefaults
+import androidx.compose.material3.FloatingToolbarDefaults.floatingToolbarVerticalNestedScroll
+import androidx.compose.material3.FloatingToolbarExitDirection
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -28,14 +38,18 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import id.usecase.meetcat.presentation.component.button.LoveButton
 import id.usecase.meetcat.presentation.component.card.CommentCard
 import id.usecase.meetcat.presentation.component.card.PostCard
 import id.usecase.meetcat.presentation.component.dialog.CommentDialog
@@ -134,7 +148,7 @@ fun PostDetailScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun PostDetailContent(
     uiState: PostDetailUiState,
@@ -142,18 +156,17 @@ private fun PostDetailContent(
     onEvent: (PostDetailUiEvent) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val scrollBehavior = FloatingToolbarDefaults.exitAlwaysScrollBehavior(
+        exitDirection = FloatingToolbarExitDirection.Bottom
+    )
+
+    var expanded by rememberSaveable { mutableStateOf(true) }
+    val vibrantColors = FloatingToolbarDefaults.vibrantFloatingToolbarColors()
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Post Detail") },
-                navigationIcon = {
-                    IconButton(onClick = { onEvent(PostDetailUiEvent.NavigateBack) }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
-                        )
-                    }
-                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                     titleContentColor = MaterialTheme.colorScheme.onSurface
@@ -161,6 +174,71 @@ private fun PostDetailContent(
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
+        floatingActionButton = {
+            if (uiState.post != null) {
+                HorizontalFloatingToolbar(
+                    expanded = expanded,
+                    scrollBehavior = scrollBehavior,
+                    colors = vibrantColors,
+                    modifier = Modifier
+                        .offset(y = -FloatingToolbarDefaults.ScreenOffset)
+                        .zIndex(1f),
+                    content = {
+                        // Back button
+                        IconButton(
+                            onClick = { onEvent(PostDetailUiEvent.NavigateBack) },
+                            modifier = Modifier.focusProperties { canFocus = expanded }
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back"
+                            )
+                        }
+
+                        // Love button
+                        LoveButton(
+                            isLoved = uiState.post.isLoved,
+                            onClick = { onEvent(PostDetailUiEvent.LovePost) },
+                            modifier = Modifier.focusProperties { canFocus = expanded }
+                        )
+
+                        // Comment button
+                        IconButton(
+                            onClick = { onEvent(PostDetailUiEvent.CommentClick) },
+                            modifier = Modifier.focusProperties { canFocus = expanded }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.ModeComment,
+                                contentDescription = "Comments"
+                            )
+                        }
+
+                        // Reply button
+                        IconButton(
+                            onClick = { onEvent(PostDetailUiEvent.ReplyClick) },
+                            modifier = Modifier.focusProperties { canFocus = expanded }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Repeat,
+                                contentDescription = "Reply"
+                            )
+                        }
+
+                        // Share button
+                        IconButton(
+                            onClick = { onEvent(PostDetailUiEvent.ShareClick) },
+                            modifier = Modifier.focusProperties { canFocus = expanded }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Share,
+                                contentDescription = "Share"
+                            )
+                        }
+                    }
+                )
+            }
+        },
+        floatingActionButtonPosition = FabPosition.Center,
         modifier = modifier
     ) { paddingValues ->
         when {
@@ -191,8 +269,14 @@ private fun PostDetailContent(
                         .padding(paddingValues)
                 ) {
                     LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(vertical = 8.dp)
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .floatingToolbarVerticalNestedScroll(
+                                expanded = expanded,
+                                onExpand = { expanded = true },
+                                onCollapse = { expanded = false }
+                            ),
+                        contentPadding = PaddingValues(top = 8.dp, bottom = 104.dp)
                     ) {
                         // Post Item
                         item {
@@ -205,7 +289,8 @@ private fun PostDetailContent(
                                 onLoveClick = { onEvent(PostDetailUiEvent.LovePost) },
                                 onCommentClick = { onEvent(PostDetailUiEvent.CommentClick) },
                                 onReplyClick = { onEvent(PostDetailUiEvent.ReplyClick) },
-                                onShareClick = { onEvent(PostDetailUiEvent.ShareClick) }
+                                onShareClick = { onEvent(PostDetailUiEvent.ShareClick) },
+                                showActions = false
                             )
                         }
 
@@ -213,12 +298,11 @@ private fun PostDetailContent(
                         if (uiState.comments.isNotEmpty()) {
                             item {
                                 Column(modifier = Modifier.fillMaxWidth()) {
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                    HorizontalDivider()
                                     Box(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(horizontal = 16.dp, vertical = 12.dp)
+                                            .padding(horizontal = 16.dp)
+                                            .padding(top = 12.dp, bottom = 8.dp)
                                     ) {
                                         Text(
                                             text = "Comments (${uiState.comments.size})",
@@ -234,20 +318,23 @@ private fun PostDetailContent(
                                 items = uiState.comments,
                                 key = { it.id }
                             ) { comment ->
-                                CommentCard(
-                                    comment = comment,
-                                    onCommentClick = {
-                                        // Note: Comment detail/expansion not implemented in current scope
-                                        // Comments are display-only. Future: could expand to show nested replies
-                                    },
-                                    onProfileClick = {
-                                        onEvent(PostDetailUiEvent.NavigateToProfile(comment.userId))
-                                    },
-                                    onLoveClick = {
-                                        onEvent(PostDetailUiEvent.LoveComment(comment.id))
-                                    },
-                                    modifier = Modifier.padding(vertical = 4.dp)
-                                )
+                                Column {
+                                    CommentCard(
+                                        comment = comment,
+                                        onCommentClick = {
+                                            // Note: Comment detail/expansion not implemented in current scope
+                                            // Comments are display-only. Future: could expand to show nested replies
+                                        },
+                                        onProfileClick = {
+                                            onEvent(PostDetailUiEvent.NavigateToProfile(comment.userId))
+                                        },
+                                        onLoveClick = {
+                                            onEvent(PostDetailUiEvent.LoveComment(comment.id))
+                                        }
+                                    )
+
+                                    if (comment.id != uiState.comments.last().id) HorizontalDivider()
+                                }
                             }
                         } else {
                             // No Comments Yet

@@ -42,7 +42,8 @@ fun ReplyCard(
     onCommentClick: () -> Unit,
     onShareClick: () -> Unit = {},
     modifier: Modifier = Modifier,
-    userLocation: id.usecase.meetcat.domain.model.Location? = null
+    userLocation: id.usecase.meetcat.domain.model.Location? = null,
+    showActions: Boolean = true
 ) {
     var showImageViewer by remember { mutableStateOf(false) }
     var selectedImageIndex by remember { mutableIntStateOf(0) }
@@ -154,19 +155,21 @@ fun ReplyCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            if (showActions) {
+                Spacer(modifier = Modifier.height(12.dp))
 
-            PostActionBar(
-                lovesCount = reply.lovesCount,
-                commentsCount = reply.commentsCount,
-                repliesCount = 0,
-                isLoved = reply.isLoved,
-                onLoveClick = onLoveClick,
-                onCommentClick = onCommentClick,
-                onReplyClick = {},
-                onShareClick = onShareClick,
-                modifier = Modifier.fillMaxWidth()
-            )
+                PostActionBar(
+                    lovesCount = reply.lovesCount,
+                    commentsCount = reply.commentsCount,
+                    repliesCount = 0,
+                    isLoved = reply.isLoved,
+                    onLoveClick = onLoveClick,
+                    onCommentClick = onCommentClick,
+                    onReplyClick = {},
+                    onShareClick = onShareClick,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         }
     }
 
