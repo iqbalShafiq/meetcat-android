@@ -1,6 +1,7 @@
 package id.usecase.meetcat.presentation.screen.createreply
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -16,12 +18,20 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FabPosition
+import androidx.compose.material3.FloatingToolbarDefaults
+import androidx.compose.material3.FloatingToolbarDefaults.floatingToolbarVerticalNestedScroll
+import androidx.compose.material3.FloatingToolbarExitDirection
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -39,15 +49,20 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import id.usecase.meetcat.domain.model.Post
 import id.usecase.meetcat.domain.model.User
@@ -95,7 +110,7 @@ fun CreateReplyScreen(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun CreateReplyContent(
     uiState: CreateReplyUiState,
@@ -103,10 +118,14 @@ private fun CreateReplyContent(
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier
 ) {
-    val scrollState = rememberScrollState()
+    val scrollBehavior = FloatingToolbarDefaults.exitAlwaysScrollBehavior(
+        exitDirection = FloatingToolbarExitDirection.Bottom
+    )
+
+    var expanded by rememberSaveable { mutableStateOf(true) }
+    val vibrantColors = FloatingToolbarDefaults.vibrantFloatingToolbarColors()
 
     Scaffold(
-        modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
                 title = {
@@ -116,39 +135,71 @@ private fun CreateReplyContent(
                         fontWeight = FontWeight.Bold
                     )
                 },
-                navigationIcon = {
-                    IconButton(
-                        onClick = { onEvent(CreateReplyUiEvent.NavigateBack) },
-                        enabled = !uiState.isPosting
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Cancel"
-                        )
-                    }
-                },
-                actions = {
-                    TextButton(
-                        onClick = { onEvent(CreateReplyUiEvent.CreateReply) },
-                        enabled = !uiState.isPosting
-                    ) {
-                        if (uiState.isPosting) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                strokeWidth = 2.dp
-                            )
-                        } else {
-                            Text("Reply")
-                        }
-                    }
-                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                     titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        floatingActionButton = {
+            HorizontalFloatingToolbar(
+                expanded = expanded,
+                floatingActionButton = {
+                    FloatingToolbarDefaults.VibrantFloatingActionButton(
+                        onClick = {
+                            if (!uiState.isPosting) {
+                                onEvent(CreateReplyUiEvent.CreateReply)
+                            }
+                        }
+                    ) {
+                        if (uiState.isPosting) {
+                            CircularProgressIndicator(
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                strokeWidth = 2.dp,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.Send,
+                                contentDescription = "Reply"
+                            )
+                        }
+                    }
+                },
+                scrollBehavior = scrollBehavior,
+                colors = vibrantColors,
+                modifier = Modifier
+                    .offset(y = -FloatingToolbarDefaults.ScreenOffset)
+                    .zIndex(1f),
+                content = {
+                    // Back button
+                    IconButton(
+                        onClick = { onEvent(CreateReplyUiEvent.NavigateBack) },
+                        enabled = !uiState.isPosting,
+                        modifier = Modifier.focusProperties { canFocus = expanded }
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back"
+                        )
+                    }
+
+                    // Add Photo button
+                    IconButton(
+                        onClick = { onEvent(CreateReplyUiEvent.SelectMedia) },
+                        enabled = !uiState.isPosting && uiState.mediaUri == null,
+                        modifier = Modifier.focusProperties { canFocus = expanded }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Image,
+                            contentDescription = "Add Photo"
+                        )
+                    }
+                }
+            )
+        },
+        floatingActionButtonPosition = FabPosition.Center
     ) { paddingValues ->
         if (uiState.isLoading) {
             Box(
@@ -160,23 +211,31 @@ private fun CreateReplyContent(
                 CircularProgressIndicator()
             }
         } else {
-            Column(
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
             ) {
                 Column(
                     modifier = Modifier
-                        .weight(1f)
-                        .verticalScroll(scrollState)
+                        .fillMaxSize()
                 ) {
-                    // Original Post Preview
-                    if (uiState.post != null) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp)
-                        ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp)
+                            .floatingToolbarVerticalNestedScroll(
+                                expanded = expanded,
+                                onExpand = { expanded = true },
+                                onCollapse = { expanded = false }
+                            )
+                            .verticalScroll(rememberScrollState())
+                    ) {
+                        // Original Post Preview
+                        if (uiState.post != null) {
+                            Column(
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
                             Row {
                                 // User Avatar
                                 Surface(
@@ -228,13 +287,10 @@ private fun CreateReplyContent(
                             )
                         }
 
-                        HorizontalDivider()
-                    }
+                            HorizontalDivider()
+                        }
 
-                    // Reply TextField
-                    Column(
-                        modifier = Modifier.padding(16.dp)
-                    ) {
+                        // Reply TextField
                         TextField(
                             value = uiState.replyText,
                             onValueChange = { onEvent(CreateReplyUiEvent.TextChanged(it)) },
@@ -299,45 +355,6 @@ private fun CreateReplyContent(
                                 }
                             }
                         }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        // Add Media Button
-                        OutlinedButton(
-                            onClick = { onEvent(CreateReplyUiEvent.SelectMedia) },
-                            enabled = !uiState.isPosting && uiState.mediaUri == null,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Image,
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Add Photo")
-                        }
-                    }
-                }
-
-                // Reply Button at bottom
-                Button(
-                    onClick = { onEvent(CreateReplyUiEvent.CreateReply) },
-                    enabled = !uiState.isPosting,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                        .height(48.dp)
-                ) {
-                    if (uiState.isPosting) {
-                        CircularProgressIndicator(
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier
-                                .padding(end = 8.dp)
-                                .size(20.dp)
-                        )
-                        Text("Posting...")
-                    } else {
-                        Text("Reply", style = MaterialTheme.typography.labelLarge)
                     }
                 }
             }
