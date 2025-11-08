@@ -352,7 +352,7 @@ private fun RandomPostsGrid(
     LazyVerticalStaggeredGrid(
         columns = StaggeredGridCells.Fixed(3),
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(0.dp),
+        contentPadding = PaddingValues(bottom = 80.dp), // Add bottom padding for navbar clearance
         horizontalArrangement = Arrangement.spacedBy(0.dp),
         verticalItemSpacing = 0.dp,
         state = lazyGridState
@@ -439,7 +439,7 @@ private fun SearchResultsGrid(
     LazyVerticalStaggeredGrid(
         columns = StaggeredGridCells.Fixed(3),
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(0.dp),
+        contentPadding = PaddingValues(bottom = 80.dp), // Add bottom padding for navbar clearance
         horizontalArrangement = Arrangement.spacedBy(0.dp),
         verticalItemSpacing = 0.dp,
         state = lazyGridState
