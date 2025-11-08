@@ -151,16 +151,32 @@ private fun MainContent(
                         fadeOut(animationSpec = tween(300))
                 } else {
                     // Detail/nested screens: Smooth slide + fade
-                    fadeIn(animationSpec = tween(300)) +
-                        slideInHorizontally(
-                            animationSpec = tween(300),
-                            initialOffsetX = { fullWidth -> fullWidth / 8 }
-                        ) togetherWith
-                        fadeOut(animationSpec = tween(300)) +
-                        slideOutHorizontally(
-                            animationSpec = tween(300),
-                            targetOffsetX = { fullWidth -> -fullWidth / 8 }
-                        )
+                    // Reverse direction when navigating back
+                    if (mainUiState.isNavigatingBack) {
+                        // Back: slide from left to right
+                        fadeIn(animationSpec = tween(300)) +
+                            slideInHorizontally(
+                                animationSpec = tween(300),
+                                initialOffsetX = { fullWidth -> -fullWidth / 8 }
+                            ) togetherWith
+                            fadeOut(animationSpec = tween(300)) +
+                            slideOutHorizontally(
+                                animationSpec = tween(300),
+                                targetOffsetX = { fullWidth -> fullWidth / 8 }
+                            )
+                    } else {
+                        // Forward: slide from right to left
+                        fadeIn(animationSpec = tween(300)) +
+                            slideInHorizontally(
+                                animationSpec = tween(300),
+                                initialOffsetX = { fullWidth -> fullWidth / 8 }
+                            ) togetherWith
+                            fadeOut(animationSpec = tween(300)) +
+                            slideOutHorizontally(
+                                animationSpec = tween(300),
+                                targetOffsetX = { fullWidth -> -fullWidth / 8 }
+                            )
+                    }
                 }
             },
             label = "MainScreenTransition"

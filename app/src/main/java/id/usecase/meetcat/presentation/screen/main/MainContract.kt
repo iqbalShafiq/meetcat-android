@@ -9,7 +9,8 @@ import kotlinx.collections.immutable.persistentListOf
 data class MainUiState(
     val currentRoute: String = "explore",
     val backStack: ImmutableList<String> = persistentListOf("explore"),
-    val selectedImageUri: Uri? = null
+    val selectedImageUri: Uri? = null,
+    val isNavigatingBack: Boolean = false
 )
 
 sealed class MainUiEvent {

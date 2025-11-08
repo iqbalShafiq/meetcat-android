@@ -42,17 +42,43 @@ fun AppRouter(
     AnimatedContent(
         targetState = currentRoute,
         transitionSpec = {
-            // Smooth fade + slide transition
-            fadeIn(animationSpec = tween(300)) +
-                slideInHorizontally(
-                    animationSpec = tween(300),
-                    initialOffsetX = { fullWidth -> fullWidth / 10 }
-                ) togetherWith
-                fadeOut(animationSpec = tween(300)) +
-                slideOutHorizontally(
-                    animationSpec = tween(300),
-                    targetOffsetX = { fullWidth -> -fullWidth / 10 }
-                )
+            // Determine navigation direction based on route hierarchy
+            val isBackNavigation = when {
+                // Main -> Login/Register/ForgotPassword is back
+                targetState is AppRoute.Login && initialState is AppRoute.Main -> true
+                targetState is AppRoute.Register && initialState is AppRoute.Main -> true
+                // Register -> Login is back
+                targetState is AppRoute.Login && initialState is AppRoute.Register -> true
+                // ForgotPassword -> Login is back
+                targetState is AppRoute.Login && initialState is AppRoute.ForgotPassword -> true
+                else -> false
+            }
+
+            if (isBackNavigation) {
+                // Back: slide from left to right
+                fadeIn(animationSpec = tween(300)) +
+                    slideInHorizontally(
+                        animationSpec = tween(300),
+                        initialOffsetX = { fullWidth -> -fullWidth / 10 }
+                    ) togetherWith
+                    fadeOut(animationSpec = tween(300)) +
+                    slideOutHorizontally(
+                        animationSpec = tween(300),
+                        targetOffsetX = { fullWidth -> fullWidth / 10 }
+                    )
+            } else {
+                // Forward: slide from right to left
+                fadeIn(animationSpec = tween(300)) +
+                    slideInHorizontally(
+                        animationSpec = tween(300),
+                        initialOffsetX = { fullWidth -> fullWidth / 10 }
+                    ) togetherWith
+                    fadeOut(animationSpec = tween(300)) +
+                    slideOutHorizontally(
+                        animationSpec = tween(300),
+                        targetOffsetX = { fullWidth -> -fullWidth / 10 }
+                    )
+            }
         },
         label = "AppRouterTransition"
     ) { route ->
