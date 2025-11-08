@@ -142,6 +142,15 @@ private fun MainContent(
         )
         val isBottomNavRoute = bottomNavRoutes.contains(mainUiState.currentRoute)
 
+        // Reset isNavigatingBack after route changes
+        LaunchedEffect(mainUiState.currentRoute) {
+            if (mainUiState.isNavigatingBack) {
+                // Give time for transition to start, then reset
+                kotlinx.coroutines.delay(50)
+                onEvent(MainUiEvent.ResetNavigationDirection)
+            }
+        }
+
         AnimatedContent(
             targetState = mainUiState.currentRoute,
             transitionSpec = {

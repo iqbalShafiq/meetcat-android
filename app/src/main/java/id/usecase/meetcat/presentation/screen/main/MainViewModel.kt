@@ -40,6 +40,9 @@ class MainViewModel : ViewModel() {
             is MainUiEvent.ClearSelectedImage -> {
                 _uiState.update { it.copy(selectedImageUri = null) }
             }
+            is MainUiEvent.ResetNavigationDirection -> {
+                _uiState.update { it.copy(isNavigatingBack = false) }
+            }
         }
     }
 

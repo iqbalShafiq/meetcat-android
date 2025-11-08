@@ -20,6 +20,7 @@ sealed class MainUiEvent {
     data object HideBottomNav : MainUiEvent()
     data class ImageSelected(val uri: Uri) : MainUiEvent()
     data object ClearSelectedImage : MainUiEvent()
+    data object ResetNavigationDirection : MainUiEvent()
 }
 
 sealed class MainUiEffect {
