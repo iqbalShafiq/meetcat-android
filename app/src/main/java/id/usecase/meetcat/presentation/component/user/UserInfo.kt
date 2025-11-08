@@ -43,28 +43,28 @@ fun UserInfo(
         Spacer(modifier = Modifier.width(12.dp))
 
         Column {
+            Text(
+                text = user.displayName,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = user.displayName,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    text = "@${user.username}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 if (timestamp != null) {
                     Text(
                         text = " • $timestamp",
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
-            Text(
-                text = "@${user.username}",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
             if (showBio && user.bio != null) {
                 Text(
                     text = user.bio,
