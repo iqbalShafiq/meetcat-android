@@ -351,9 +351,7 @@ private fun RandomPostsGrid(
 
     LazyVerticalStaggeredGrid(
         columns = StaggeredGridCells.Fixed(3),
-        modifier = modifier
-            .fillMaxSize()
-            .nestedScroll(scrollBehavior.nestedScrollConnection),
+        modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(0.dp),
         horizontalArrangement = Arrangement.spacedBy(0.dp),
         verticalItemSpacing = 0.dp,
@@ -440,9 +438,7 @@ private fun SearchResultsGrid(
 
     LazyVerticalStaggeredGrid(
         columns = StaggeredGridCells.Fixed(3),
-        modifier = modifier
-            .fillMaxSize()
-            .nestedScroll(scrollBehavior.nestedScrollConnection),
+        modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(0.dp),
         horizontalArrangement = Arrangement.spacedBy(0.dp),
         verticalItemSpacing = 0.dp,
