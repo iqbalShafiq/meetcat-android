@@ -40,6 +40,9 @@ class MainViewModel : ViewModel() {
             is MainUiEvent.ClearSelectedImage -> {
                 _uiState.update { it.copy(selectedImageUri = null) }
             }
+            is MainUiEvent.ResetNavigationDirection -> {
+                _uiState.update { it.copy(isNavigatingBack = false) }
+            }
         }
     }
 
@@ -49,7 +52,8 @@ class MainViewModel : ViewModel() {
             if (route in bottomNavRoutes) {
                 currentState.copy(
                     currentRoute = route,
-                    backStack = listOf(route).toImmutableList()
+                    backStack = listOf(route).toImmutableList(),
+                    isNavigatingBack = false
                 )
             } else {
                 // For other routes, push to stack
@@ -61,7 +65,8 @@ class MainViewModel : ViewModel() {
                 }
                 currentState.copy(
                     currentRoute = route,
-                    backStack = newStack
+                    backStack = newStack,
+                    isNavigatingBack = false
                 )
             }
         }
@@ -90,7 +95,8 @@ class MainViewModel : ViewModel() {
 
             currentState.copy(
                 currentRoute = previousRoute,
-                backStack = newStack
+                backStack = newStack,
+                isNavigatingBack = true
             )
         }
 

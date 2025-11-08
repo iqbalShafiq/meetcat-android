@@ -9,7 +9,8 @@ import kotlinx.collections.immutable.persistentListOf
 data class MainUiState(
     val currentRoute: String = "explore",
     val backStack: ImmutableList<String> = persistentListOf("explore"),
-    val selectedImageUri: Uri? = null
+    val selectedImageUri: Uri? = null,
+    val isNavigatingBack: Boolean = false
 )
 
 sealed class MainUiEvent {
@@ -19,6 +20,7 @@ sealed class MainUiEvent {
     data object HideBottomNav : MainUiEvent()
     data class ImageSelected(val uri: Uri) : MainUiEvent()
     data object ClearSelectedImage : MainUiEvent()
+    data object ResetNavigationDirection : MainUiEvent()
 }
 
 sealed class MainUiEffect {
