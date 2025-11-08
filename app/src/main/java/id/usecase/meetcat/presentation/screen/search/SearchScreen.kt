@@ -236,8 +236,8 @@ private fun SearchContent(
                         onRetry = { onEvent(SearchUiEvent.LoadRandomPosts) }
                     )
                 }
-                // Show search results if we have paginated data
-                searchResults.itemCount > 0 || searchResults.loadState.refresh is LoadState.Loading -> {
+                // Show search results only if search has been submitted
+                uiState.hasSubmittedSearch && (searchResults.itemCount > 0 || searchResults.loadState.refresh is LoadState.Loading) -> {
                     SearchResultsGrid(
                         searchResults = searchResults,
                         viewModel = viewModel,
@@ -247,7 +247,7 @@ private fun SearchContent(
                     )
                 }
                 // Show empty state if search was performed but no results
-                searchResults.loadState.refresh is LoadState.NotLoading && searchResults.itemCount == 0 && uiState.query.isNotEmpty() -> {
+                uiState.hasSubmittedSearch && searchResults.loadState.refresh is LoadState.NotLoading && searchResults.itemCount == 0 -> {
                     EmptyView(message = "No results found")
                 }
                 else -> {

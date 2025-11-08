@@ -112,7 +112,8 @@ class SearchViewModel(
         _uiState.update {
             it.copy(
                 isSearchActive = false,
-                query = ""
+                query = "",
+                hasSubmittedSearch = false
             )
         }
         // Clear search results when deactivating
@@ -127,7 +128,8 @@ class SearchViewModel(
             _uiState.update {
                 it.copy(
                     isSearchActive = false,
-                    isSearching = true
+                    isSearching = true,
+                    hasSubmittedSearch = true
                 )
             }
 
