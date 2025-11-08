@@ -56,9 +56,7 @@ fun PostCard(
     var selectedImageIndex by remember { mutableStateOf(0) }
 
     Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable(onClick = onPostClick),
+        modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
@@ -95,36 +93,42 @@ fun PostCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            Text(
-                text = post.caption,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            if (post.mediaItems.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(12.dp))
-
-                val distanceInMeters = if (post.location != null && userLocation != null) {
-                    id.usecase.meetcat.presentation.util.calculateDistance(
-                        userLocation,
-                        post.location
-                    )
-                } else null
-
-                MediaCarousel(
-                    mediaItems = post.mediaItems,
-                    location = post.location,
-                    distanceInMeters = distanceInMeters,
-                    onImageClick = { clickedImageUrl ->
-                        // Find index of clicked image
-                        val index = post.mediaItems
-                            .filterIsInstance<id.usecase.meetcat.domain.model.MediaItem.Image>()
-                            .indexOfFirst { it.url == clickedImageUrl }
-
-                        selectedImageIndex = if (index >= 0) index else 0
-                        showImageViewer = true
-                    }
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onPostClick)
+            ) {
+                Text(
+                    text = post.caption,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
+
+                if (post.mediaItems.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    val distanceInMeters = if (post.location != null && userLocation != null) {
+                        id.usecase.meetcat.presentation.util.calculateDistance(
+                            userLocation,
+                            post.location
+                        )
+                    } else null
+
+                    MediaCarousel(
+                        mediaItems = post.mediaItems,
+                        location = post.location,
+                        distanceInMeters = distanceInMeters,
+                        onImageClick = { clickedImageUrl ->
+                            // Find index of clicked image
+                            val index = post.mediaItems
+                                .filterIsInstance<id.usecase.meetcat.domain.model.MediaItem.Image>()
+                                .indexOfFirst { it.url == clickedImageUrl }
+
+                            selectedImageIndex = if (index >= 0) index else 0
+                            showImageViewer = true
+                        }
+                    )
+                }
             }
 
             if (showActions) {

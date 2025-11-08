@@ -30,58 +30,48 @@ fun UserInfo(
     onUserClick: (() -> Unit)? = null
 ) {
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .then(
-                if (onUserClick != null) {
-                    Modifier.clickable(onClick = onUserClick)
-                } else Modifier
-            ),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier.weight(1f, fill = false),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            UserAvatar(
-                imageUrl = user.profileImageUrl,
-                contentDescription = "Profile picture of ${user.displayName}",
-                size = avatarSize,
-                onClick = onUserClick
-            )
+        UserAvatar(
+            imageUrl = user.profileImageUrl,
+            contentDescription = "Profile picture of ${user.displayName}",
+            size = avatarSize,
+            onClick = onUserClick
+        )
 
-            Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(12.dp))
 
-            Column {
+        Column {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Text(
                     text = user.displayName,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                Text(
-                    text = "@${user.username}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                if (showBio && user.bio != null) {
+                if (timestamp != null) {
                     Text(
-                        text = user.bio,
-                        style = MaterialTheme.typography.bodySmall,
+                        text = " • $timestamp",
+                        style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
-        }
-
-        if (timestamp != null) {
             Text(
-                text = timestamp,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 8.dp)
+                text = "@${user.username}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            if (showBio && user.bio != null) {
+                Text(
+                    text = user.bio,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }
