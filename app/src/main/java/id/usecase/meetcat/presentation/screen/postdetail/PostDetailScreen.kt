@@ -7,13 +7,23 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.ModeComment
+import androidx.compose.material.icons.outlined.Repeat
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FabPosition
+import androidx.compose.material3.FloatingToolbarDefaults
+import androidx.compose.material3.FloatingToolbarDefaults.floatingToolbarVerticalNestedScroll
+import androidx.compose.material3.FloatingToolbarExitDirection
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -21,21 +31,23 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import id.usecase.meetcat.presentation.component.button.LoveButton
 import id.usecase.meetcat.presentation.component.card.CommentCard
 import id.usecase.meetcat.presentation.component.card.PostCard
 import id.usecase.meetcat.presentation.component.dialog.CommentDialog
@@ -134,7 +146,7 @@ fun PostDetailScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun PostDetailContent(
     uiState: PostDetailUiState,
@@ -142,25 +154,80 @@ private fun PostDetailContent(
     onEvent: (PostDetailUiEvent) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val scrollBehavior = FloatingToolbarDefaults.exitAlwaysScrollBehavior(
+        exitDirection = FloatingToolbarExitDirection.Bottom
+    )
+
+    var expanded by rememberSaveable { mutableStateOf(true) }
+    val vibrantColors = FloatingToolbarDefaults.vibrantFloatingToolbarColors()
+
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Post Detail") },
-                navigationIcon = {
-                    IconButton(onClick = { onEvent(PostDetailUiEvent.NavigateBack) }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
-                )
-            )
-        },
         snackbarHost = { SnackbarHost(snackbarHostState) },
+        floatingActionButton = {
+            if (uiState.post != null) {
+                HorizontalFloatingToolbar(
+                    expanded = expanded,
+                    scrollBehavior = scrollBehavior,
+                    colors = vibrantColors,
+                    modifier = Modifier
+                        .offset(y = -FloatingToolbarDefaults.ScreenOffset)
+                        .zIndex(1f),
+                    content = {
+                        // Back button
+                        IconButton(
+                            onClick = { onEvent(PostDetailUiEvent.NavigateBack) },
+                            modifier = Modifier.focusProperties { canFocus = expanded }
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back"
+                            )
+                        }
+
+                        // Love button
+                        LoveButton(
+                            isLoved = uiState.post.isLoved,
+                            onClick = { onEvent(PostDetailUiEvent.LovePost) },
+                            modifier = Modifier.focusProperties { canFocus = expanded }
+                        )
+
+                        // Comment button
+                        IconButton(
+                            onClick = { onEvent(PostDetailUiEvent.CommentClick) },
+                            modifier = Modifier.focusProperties { canFocus = expanded }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.ModeComment,
+                                contentDescription = "Comments"
+                            )
+                        }
+
+                        // Reply button
+                        IconButton(
+                            onClick = { onEvent(PostDetailUiEvent.ReplyClick) },
+                            modifier = Modifier.focusProperties { canFocus = expanded }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Repeat,
+                                contentDescription = "Reply"
+                            )
+                        }
+
+                        // Share button
+                        IconButton(
+                            onClick = { onEvent(PostDetailUiEvent.ShareClick) },
+                            modifier = Modifier.focusProperties { canFocus = expanded }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Share,
+                                contentDescription = "Share"
+                            )
+                        }
+                    }
+                )
+            }
+        },
+        floatingActionButtonPosition = FabPosition.Center,
         modifier = modifier
     ) { paddingValues ->
         when {
@@ -191,8 +258,14 @@ private fun PostDetailContent(
                         .padding(paddingValues)
                 ) {
                     LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(vertical = 8.dp)
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .floatingToolbarVerticalNestedScroll(
+                                expanded = expanded,
+                                onExpand = { expanded = true },
+                                onCollapse = { expanded = false }
+                            ),
+                        contentPadding = PaddingValues(vertical = 8.dp, bottom = 80.dp)
                     ) {
                         // Post Item
                         item {
@@ -205,7 +278,8 @@ private fun PostDetailContent(
                                 onLoveClick = { onEvent(PostDetailUiEvent.LovePost) },
                                 onCommentClick = { onEvent(PostDetailUiEvent.CommentClick) },
                                 onReplyClick = { onEvent(PostDetailUiEvent.ReplyClick) },
-                                onShareClick = { onEvent(PostDetailUiEvent.ShareClick) }
+                                onShareClick = { onEvent(PostDetailUiEvent.ShareClick) },
+                                showActions = false
                             )
                         }
 

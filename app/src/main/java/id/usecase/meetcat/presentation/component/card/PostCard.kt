@@ -49,7 +49,8 @@ fun PostCard(
     modifier: Modifier = Modifier,
     userLocation: id.usecase.meetcat.domain.model.Location? = null,
     currentUserId: String? = null,
-    onEditClick: () -> Unit = {}
+    onEditClick: () -> Unit = {},
+    showActions: Boolean = true
 ) {
     var showImageViewer by remember { mutableStateOf(false) }
     var selectedImageIndex by remember { mutableStateOf(0) }
@@ -126,19 +127,21 @@ fun PostCard(
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            if (showActions) {
+                Spacer(modifier = Modifier.height(12.dp))
 
-            PostActionBar(
-                lovesCount = post.lovesCount,
-                commentsCount = post.commentsCount,
-                repliesCount = post.repliesCount,
-                isLoved = post.isLoved,
-                onLoveClick = onLoveClick,
-                onCommentClick = onCommentClick,
-                onReplyClick = onReplyClick,
-                onShareClick = onShareClick,
-                modifier = Modifier.fillMaxWidth()
-            )
+                PostActionBar(
+                    lovesCount = post.lovesCount,
+                    commentsCount = post.commentsCount,
+                    repliesCount = post.repliesCount,
+                    isLoved = post.isLoved,
+                    onLoveClick = onLoveClick,
+                    onCommentClick = onCommentClick,
+                    onReplyClick = onReplyClick,
+                    onShareClick = onShareClick,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         }
     }
 
