@@ -7,19 +7,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.FabPosition
-import androidx.compose.material3.FloatingToolbarDefaults
-import androidx.compose.material3.FloatingToolbarDefaults.floatingToolbarVerticalNestedScroll
-import androidx.compose.material3.FloatingToolbarExitDirection
-import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -38,16 +31,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
@@ -109,7 +97,7 @@ fun UserProfileScreen(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun UserProfileContent(
     uiState: UserProfileUiState,
@@ -121,54 +109,38 @@ private fun UserProfileContent(
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier
 ) {
-    val scrollBehavior = FloatingToolbarDefaults.exitAlwaysScrollBehavior(
-        exitDirection = FloatingToolbarExitDirection.Bottom
-    )
-
-    var expanded by rememberSaveable { mutableStateOf(true) }
-    val vibrantColors = FloatingToolbarDefaults.vibrantFloatingToolbarColors()
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     Scaffold(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier
+            .fillMaxSize()
+            .nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             TopAppBar(
                 title = {
+                    // Show title only when collapsed
                     Text(
                         text = uiState.user?.displayName ?: "Profile",
                         style = MaterialTheme.typography.titleLarge,
                         maxLines = 1
                     )
                 },
+                navigationIcon = {
+                    IconButton(onClick = { onEvent(UserProfileUiEvent.NavigateBack) }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back"
+                        )
+                    }
+                },
+                scrollBehavior = scrollBehavior,
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                     scrolledContainerColor = MaterialTheme.colorScheme.surface
                 )
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        floatingActionButton = {
-            HorizontalFloatingToolbar(
-                expanded = expanded,
-                scrollBehavior = scrollBehavior,
-                colors = vibrantColors,
-                modifier = Modifier
-                    .offset(y = -FloatingToolbarDefaults.ScreenOffset)
-                    .zIndex(1f),
-                content = {
-                    // Back button
-                    IconButton(
-                        onClick = { onEvent(UserProfileUiEvent.NavigateBack) },
-                        modifier = Modifier.focusProperties { canFocus = expanded }
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
-                        )
-                    }
-                }
-            )
-        },
-        floatingActionButtonPosition = FabPosition.Center
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
         when {
             uiState.isLoading && uiState.user == null -> {
@@ -196,9 +168,6 @@ private fun UserProfileContent(
                     lovedItems = lovedItems,
                     viewModel = viewModel,
                     onEvent = onEvent,
-                    expanded = expanded,
-                    onExpand = { expanded = true },
-                    onCollapse = { expanded = false },
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues)
@@ -208,7 +177,6 @@ private fun UserProfileContent(
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun UserProfileScrollableContent(
     uiState: UserProfileUiState,
@@ -217,19 +185,10 @@ private fun UserProfileScrollableContent(
     lovedItems: LazyPagingItems<FeedItem>,
     viewModel: UserProfileViewModel,
     onEvent: (UserProfileUiEvent) -> Unit,
-    expanded: Boolean,
-    onExpand: () -> Unit,
-    onCollapse: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     androidx.compose.foundation.lazy.LazyColumn(
         modifier = modifier
-            .floatingToolbarVerticalNestedScroll(
-                expanded = expanded,
-                onExpand = onExpand,
-                onCollapse = onCollapse
-            ),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 80.dp)
     ) {
         // Profile Header - will collapse when scrolling
         item {
