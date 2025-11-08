@@ -174,7 +174,7 @@ private fun SearchContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = if (uiState.isSearchActive) 0.dp else 16.dp)
-                    .padding(top = 8.dp, bottom = 8.dp)
+                    .padding(top = 8.dp, bottom = 16.dp)
             ) {
                 // Search history content
                 if (uiState.searchHistory.isNotEmpty()) {
