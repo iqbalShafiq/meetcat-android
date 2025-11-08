@@ -232,7 +232,6 @@ private fun SearchContent(
                 }
             }
             }
-            }
 
             // Main content - Random grid or search results
             when {
