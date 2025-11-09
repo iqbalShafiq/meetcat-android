@@ -4,9 +4,11 @@
 
 This document describes the REST API requirements for the MeetCat social media application. The API follows RESTful principles and uses JSON for request/response bodies.
 
-**Total Endpoints**: 34
+**Total Endpoints**: 31
 **Current Status**: Mock implementation only (no real backend yet)
 **Authentication**: Token-based (Bearer token in Authorization header)
+
+**Note**: Location services are handled client-side using Android's FusedLocationProviderClient and do not require API endpoints.
 
 ---
 
@@ -18,9 +20,8 @@ This document describes the REST API requirements for the MeetCat social media a
 4. [Post Endpoints](#post-endpoints)
 5. [Comment Endpoints](#comment-endpoints)
 6. [Search History Endpoints](#search-history-endpoints)
-7. [Location Endpoints](#location-endpoints)
-8. [Data Models](#data-models)
-9. [Error Handling](#error-handling)
+7. [Data Models](#data-models)
+8. [Error Handling](#error-handling)
 
 ---
 
@@ -1182,85 +1183,6 @@ DELETE /search-history/all
 
 ---
 
-## Location Endpoints
-
-### 1. Get Current Location
-```
-GET /location/current
-```
-
-**Headers**: Requires `Authorization: Bearer {token}`
-
-**Response** (200 OK):
-```json
-{
-  "success": true,
-  "data": {
-    "latitude": -6.2088,
-    "longitude": 106.8456,
-    "name": "Jakarta",
-    "address": "Central Jakarta, Indonesia"
-  }
-}
-```
-
-**Notes**:
-- Location should be determined from client device
-- This endpoint may not be needed if location is always sent by client
-- Alternative: Client sends location data in relevant requests
-
----
-
-### 2. Get Location Permission Status
-```
-GET /location/permission-status
-```
-
-**Headers**: Requires `Authorization: Bearer {token}`
-
-**Response** (200 OK):
-```json
-{
-  "success": true,
-  "data": {
-    "granted": true
-  }
-}
-```
-
-**Notes**:
-- This is client-side permission status
-- May not require server-side implementation
-- Can be managed entirely on mobile app
-
----
-
-### 3. Update Location Permission Status
-```
-PUT /location/permission-status
-```
-
-**Headers**: Requires `Authorization: Bearer {token}`
-
-**Request Body**:
-```json
-{
-  "granted": true
-}
-```
-
-**Response** (200 OK):
-```json
-{
-  "success": true,
-  "data": null
-}
-```
-
-**Notes**: Optional endpoint for tracking user permission preferences on server
-
----
-
 ## Data Models
 
 ### AuthUser
@@ -1569,13 +1491,12 @@ PUT /location/permission-status
 | POST | /search-history/save | Yes | No | Save search query |
 | DELETE | /search-history/{query} | Yes | No | Delete search query |
 | DELETE | /search-history/all | Yes | No | Clear search history |
-| GET | /location/current | Yes | No | Get current location |
-| GET | /location/permission-status | Yes | No | Get permission status |
-| PUT | /location/permission-status | Yes | No | Update permission status |
 
-**Total**: 34 endpoints
-**Authenticated**: 31 endpoints
+**Total**: 31 endpoints
+**Authenticated**: 28 endpoints
 **Paginated**: 8 endpoints
+
+**Note**: Location services (get location, permission status) are handled client-side and do not require server endpoints.
 
 ---
 
