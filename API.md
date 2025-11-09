@@ -757,9 +757,9 @@ GET /posts/nearby?latitude={lat}&longitude={lon}&radiusKm={radius}&limit={limit}
         "name": "Jakarta",
         "address": "Central Jakarta"
       },
-      "distance": 1.5,
       "lovesCount": 42,
       "commentsCount": 8,
+      "repliesCount": 3,
       "isLoved": false,
       "createdAt": 1699123456789
     }
@@ -769,8 +769,9 @@ GET /posts/nearby?latitude={lat}&longitude={lon}&radiusKm={radius}&limit={limit}
 
 **Notes**:
 - Results sorted by distance (closest first)
-- `distance` field in kilometers from provided coordinates
-- Use Haversine formula for distance calculation
+- Only posts with location data are included
+- Distance is calculated using Haversine formula but not included in response
+- Posts are filtered to be within the specified radius
 
 ---
 
