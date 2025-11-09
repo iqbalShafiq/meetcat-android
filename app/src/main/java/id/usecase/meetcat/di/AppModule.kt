@@ -2,11 +2,16 @@ package id.usecase.meetcat.di
 
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
-import id.usecase.meetcat.data.repository.FakeAuthRepository
-import id.usecase.meetcat.data.repository.FakePostRepository
+import id.usecase.meetcat.data.local.TokenStorage
+import id.usecase.meetcat.data.network.HttpClientFactory
+import id.usecase.meetcat.data.remote.datasource.AuthRemoteDataSource
+import id.usecase.meetcat.data.remote.datasource.PostRemoteDataSource
+import id.usecase.meetcat.data.remote.datasource.UserRemoteDataSource
+import id.usecase.meetcat.data.repository.AuthRepositoryImpl
 import id.usecase.meetcat.data.repository.FakeSearchHistoryRepository
-import id.usecase.meetcat.data.repository.FakeUserRepository
 import id.usecase.meetcat.data.repository.LocationRepositoryImpl
+import id.usecase.meetcat.data.repository.PostRepositoryImpl
+import id.usecase.meetcat.data.repository.UserRepositoryImpl
 import id.usecase.meetcat.domain.repository.AuthRepository
 import id.usecase.meetcat.domain.repository.LocationRepository
 import id.usecase.meetcat.domain.repository.PostRepository
@@ -188,20 +193,45 @@ val domainModule = module {
 }
 
 val dataModule = module {
-    // Auth Repository - Fully testable with no Android dependencies
-    singleOf(::FakeAuthRepository) bind AuthRepository::class
+    // Token Storage
+    single { TokenStorage(androidContext()) }
 
-    // Post Repository - Fully testable
-    singleOf(::FakePostRepository) bind PostRepository::class
+    // HTTP Client with token provider
+    single {
+        HttpClientFactory.create(
+            tokenProvider = { get<TokenStorage>().getToken() }
+        )
+    }
 
-    // User Repository - Fully testable
-    singleOf(::FakeUserRepository) bind UserRepository::class
+    // Remote Data Sources
+    single { AuthRemoteDataSource(get()) }
+    single { PostRemoteDataSource(get()) }
+    single { UserRemoteDataSource(get()) }
 
-    // Search History Repository - Fully testable
+    // Repositories - Real implementations with API integration
+    single<AuthRepository> {
+        AuthRepositoryImpl(
+            remoteDataSource = get(),
+            tokenStorage = get()
+        )
+    }
+
+    single<PostRepository> {
+        PostRepositoryImpl(
+            remoteDataSource = get()
+        )
+    }
+
+    single<UserRepository> {
+        UserRepositoryImpl(
+            remoteDataSource = get()
+        )
+    }
+
+    // Search History Repository - Local only (no API needed)
     singleOf(::FakeSearchHistoryRepository) bind SearchHistoryRepository::class
 
     // Location Services - Real implementation with Android dependencies
-    // Tests should use FakeLocationRepository instead
     single<FusedLocationProviderClient> {
         LocationServices.getFusedLocationProviderClient(androidContext())
     }
