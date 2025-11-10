@@ -36,8 +36,8 @@ sealed class AppRoute {
 fun AppRouter(
     modifier: Modifier = Modifier
 ) {
-    // Skip login for development - go directly to Main
-    var currentRoute by remember { mutableStateOf<AppRoute>(AppRoute.Main) }
+    // Start with Splash screen to check authentication
+    var currentRoute by remember { mutableStateOf<AppRoute>(AppRoute.Splash) }
 
     AnimatedContent(
         targetState = currentRoute,
