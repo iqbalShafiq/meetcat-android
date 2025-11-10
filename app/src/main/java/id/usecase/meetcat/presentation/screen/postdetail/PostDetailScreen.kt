@@ -172,7 +172,7 @@ private fun PostDetailContent(
                     containerColor = MaterialTheme.colorScheme.surface,
                     titleContentColor = MaterialTheme.colorScheme.onSurface
                 ),
-                windowInsets = WindowInsets(0.dp)
+                windowInsets = WindowInsets()
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },

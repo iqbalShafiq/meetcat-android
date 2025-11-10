@@ -139,7 +139,7 @@ private fun UserProfileContent(
                     containerColor = MaterialTheme.colorScheme.surface,
                     scrolledContainerColor = MaterialTheme.colorScheme.surface
                 ),
-                windowInsets = WindowInsets(0.dp)
+                windowInsets = WindowInsets()
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
