@@ -85,6 +85,7 @@ import org.koin.core.parameter.parametersOf
 
 @Composable
 fun MainScreen(
+    onNavigateToLogin: () -> Unit,
     mainViewModel: MainViewModel = koinViewModel(),
     exploreViewModel: ExploreViewModel = koinViewModel(),
     searchViewModel: SearchViewModel = koinViewModel(),
@@ -333,9 +334,7 @@ private fun MainContent(
                     onNavigateToAbout = {
                         onEvent(MainUiEvent.NavigateTo("about"))
                     },
-                    onNavigateToLogin = {
-                        // TODO: Handle logout and navigate to login
-                    }
+                    onNavigateToLogin = onNavigateToLogin
                 )
             }
 
