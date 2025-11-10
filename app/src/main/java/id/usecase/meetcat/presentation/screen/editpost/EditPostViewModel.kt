@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import id.usecase.meetcat.domain.model.MediaItem
 import id.usecase.meetcat.domain.model.Post
 import id.usecase.meetcat.domain.model.User
+import id.usecase.meetcat.domain.repository.PostRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class EditPostViewModel(
+    private val postRepository: PostRepository,
     private val postId: String
 ) : ViewModel() {
 
@@ -71,51 +73,24 @@ class EditPostViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
 
-            // Simulate loading
-            delay(500)
+            val result = postRepository.getPostById(postId)
 
-            // Mock post data
-            val mockImageUrl = "https://example.com/image.jpg"
-            val mockPost = Post(
-                id = postId,
-                userId = "currentUser",
-                user = User(
-                    id = "currentUser",
-                    username = "myusername",
-                    displayName = "My Name",
-                    bio = null,
-                    profileImageUrl = null,
-                    followersCount = 100,
-                    followingCount = 50,
-                    postsCount = 25,
-                    isFollowing = false,
-                    createdAt = System.currentTimeMillis()
-                ),
-                caption = "My cat is so cute!",
-                mediaItems = listOf(
-                    MediaItem.Image(
-                        url = mockImageUrl,
-                        thumbnailUrl = mockImageUrl,
-                        width = 800,
-                        height = 600
-                    )
-                ),
-                location = null,
-                lovesCount = 42,
-                commentsCount = 0,
-                repliesCount = 10,
-                isLoved = false,
-                createdAt = System.currentTimeMillis()
+            result.fold(
+                onSuccess = { post ->
+                    _uiState.update {
+                        it.copy(
+                            post = post,
+                            caption = post.caption,
+                            originalImageUrl = post.mediaItems.firstOrNull()?.url,
+                            isLoading = false
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    _uiState.update { it.copy(isLoading = false) }
+                    _uiEffect.send(EditPostUiEffect.ShowError(error.message ?: "Failed to load post"))
+                }
             )
-
-            _uiState.update {
-                it.copy(
-                    post = mockPost,
-                    caption = mockPost.caption,
-                    originalImageUrl = mockPost.mediaItems.firstOrNull()?.url,
-                    isLoading = false
-                )
-            }
         }
     }
 
@@ -130,13 +105,37 @@ class EditPostViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true) }
 
-            // Simulate save
-            delay(1500)
+            // Prepare media URIs if changed
+            val mediaUris = if (currentState.hasMediaChanged) {
+                currentState.mediaUri?.let { listOf(it) }
+            } else null
 
-            _uiState.update { it.copy(isSaving = false) }
-            _uiEffect.send(EditPostUiEffect.ShowSuccess("Post updated successfully!"))
-            delay(500)
-            _uiEffect.send(EditPostUiEffect.NavigateBack)
+            // Call repository to update post
+            val result = postRepository.updatePost(
+                postId = postId,
+                caption = currentState.caption,
+                mediaUris = mediaUris,
+                location = currentState.post?.location,
+                keepExistingMedia = !currentState.hasMediaChanged
+            )
+
+            result.fold(
+                onSuccess = { updatedPost ->
+                    _uiState.update { it.copy(isSaving = false) }
+                    _uiEffect.send(EditPostUiEffect.ShowSuccess("Post updated successfully!"))
+                    delay(500)
+                    _uiEffect.send(EditPostUiEffect.NavigateBack)
+                },
+                onFailure = { error ->
+                    _uiState.update {
+                        it.copy(
+                            isSaving = false,
+                            captionError = error.message ?: "Failed to update post"
+                        )
+                    }
+                    _uiEffect.send(EditPostUiEffect.ShowError(error.message ?: "Failed to update post"))
+                }
+            )
         }
     }
 

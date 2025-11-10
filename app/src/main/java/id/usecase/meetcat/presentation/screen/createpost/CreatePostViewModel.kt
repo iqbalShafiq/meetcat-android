@@ -3,6 +3,8 @@ package id.usecase.meetcat.presentation.screen.createpost
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import id.usecase.meetcat.domain.model.Location
+import id.usecase.meetcat.domain.repository.PostRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,7 +14,9 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class CreatePostViewModel : ViewModel() {
+class CreatePostViewModel(
+    private val postRepository: PostRepository
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CreatePostUiState())
     val uiState: StateFlow<CreatePostUiState> = _uiState.asStateFlow()
@@ -89,19 +93,44 @@ class CreatePostViewModel : ViewModel() {
         viewModelScope.launch {
             _uiState.update { it.copy(isUploading = true, uploadProgress = 0f) }
 
-            // Simulate upload with progress
-            for (progress in 0..100 step 10) {
-                delay(200)
-                _uiState.update { it.copy(uploadProgress = progress / 100f) }
-            }
+            // Create location object if available
+            val location = if (currentState.latitude != null && currentState.longitude != null) {
+                Location(
+                    latitude = currentState.latitude,
+                    longitude = currentState.longitude,
+                    address = currentState.locationAddress,
+                    name = null
+                )
+            } else null
 
-            // Simulate successful upload
-            delay(500)
+            // Prepare media URIs list
+            val mediaUris = currentState.mediaUri?.let { listOf(it) }
 
-            _uiState.update { it.copy(isUploading = false, uploadProgress = 0f) }
-            _uiEffect.send(CreatePostUiEffect.ShowSuccess("Post created successfully!"))
-            delay(500)
-            _uiEffect.send(CreatePostUiEffect.NavigateBack)
+            // Call repository to create post
+            val result = postRepository.createPost(
+                caption = currentState.caption,
+                mediaUris = mediaUris,
+                location = location
+            )
+
+            result.fold(
+                onSuccess = { createdPost ->
+                    _uiState.update { it.copy(isUploading = false, uploadProgress = 1f) }
+                    _uiEffect.send(CreatePostUiEffect.ShowSuccess("Post created successfully!"))
+                    delay(500)
+                    _uiEffect.send(CreatePostUiEffect.NavigateBack)
+                },
+                onFailure = { error ->
+                    _uiState.update {
+                        it.copy(
+                            isUploading = false,
+                            uploadProgress = 0f,
+                            captionError = error.message ?: "Failed to create post"
+                        )
+                    }
+                    _uiEffect.send(CreatePostUiEffect.ShowError(error.message ?: "Failed to create post"))
+                }
+            )
         }
     }
 

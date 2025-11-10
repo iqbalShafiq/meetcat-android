@@ -100,7 +100,11 @@ val appModule = module {
     viewModelOf(::EditProfileViewModel)
 
     // Content Creation ViewModels
-    viewModelOf(::CreatePostViewModel)
+    viewModel {
+        CreatePostViewModel(
+            postRepository = get()
+        )
+    }
     viewModelOf(::MediaPickerViewModel)
 
     // Settings ViewModels
@@ -148,11 +152,13 @@ val appModule = module {
     }
     viewModel { (postId: String) ->
         CreateReplyViewModel(
+            postRepository = get(),
             postId = postId
         )
     }
     viewModel { (postId: String) ->
         EditPostViewModel(
+            postRepository = get(),
             postId = postId
         )
     }

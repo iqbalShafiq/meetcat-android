@@ -231,14 +231,23 @@ class PostDetailViewModel(
 
     private fun submitComment(commentText: String) {
         viewModelScope.launch {
-            // Mock comment submission - in production, this would call:
-            // postRepository.createComment(postId, commentText)
+            // Call repository to create comment
+            val result = postRepository.createComment(
+                postId = postId,
+                replyId = null,
+                text = commentText
+            )
 
-            // For now, just send success effect and refresh
-            _uiEffect.send(PostDetailUiEffect.CommentSubmitted)
-
-            // Refresh to show new comment (in mock, comments won't actually change)
-            refresh()
+            result.fold(
+                onSuccess = { createdComment ->
+                    _uiEffect.send(PostDetailUiEffect.CommentSubmitted)
+                    // Refresh to show new comment
+                    refresh()
+                },
+                onFailure = { error ->
+                    _uiEffect.send(PostDetailUiEffect.ShowError(error.message ?: "Failed to post comment"))
+                }
+            )
         }
     }
 

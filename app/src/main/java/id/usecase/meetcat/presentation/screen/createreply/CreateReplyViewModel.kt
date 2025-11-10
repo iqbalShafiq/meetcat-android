@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import id.usecase.meetcat.domain.model.Post
 import id.usecase.meetcat.domain.model.User
+import id.usecase.meetcat.domain.repository.PostRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,6 +16,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class CreateReplyViewModel(
+    private val postRepository: PostRepository,
     private val postId: String
 ) : ViewModel() {
 
@@ -64,36 +66,17 @@ class CreateReplyViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
 
-            // Simulate loading
-            delay(500)
+            val result = postRepository.getPostById(postId)
 
-            // Mock post data
-            val mockPost = Post(
-                id = postId,
-                userId = "user1",
-                user = User(
-                    id = "user1",
-                    username = "catowner",
-                    displayName = "Cat Owner",
-                    bio = null,
-                    profileImageUrl = null,
-                    followersCount = 100,
-                    followingCount = 50,
-                    postsCount = 25,
-                    isFollowing = false,
-                    createdAt = System.currentTimeMillis()
-                ),
-                caption = "My cat is so cute!",
-                mediaItems = emptyList(),
-                location = null,
-                lovesCount = 42,
-                commentsCount = 0,
-                repliesCount = 10,
-                isLoved = false,
-                createdAt = System.currentTimeMillis()
+            result.fold(
+                onSuccess = { post ->
+                    _uiState.update { it.copy(post = post, isLoading = false) }
+                },
+                onFailure = { error ->
+                    _uiState.update { it.copy(isLoading = false) }
+                    _uiEffect.send(CreateReplyUiEffect.ShowError(error.message ?: "Failed to load post"))
+                }
             )
-
-            _uiState.update { it.copy(post = mockPost, isLoading = false) }
         }
     }
 
@@ -108,13 +91,34 @@ class CreateReplyViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isPosting = true) }
 
-            // Simulate posting
-            delay(1500)
+            // Prepare media URIs list
+            val mediaUris = currentState.mediaUri?.let { listOf(it) }
 
-            _uiState.update { it.copy(isPosting = false) }
-            _uiEffect.send(CreateReplyUiEffect.ShowSuccess("Reply posted!"))
-            delay(500)
-            _uiEffect.send(CreateReplyUiEffect.NavigateBack)
+            // Call repository to create reply
+            val result = postRepository.createReply(
+                originalPostId = postId,
+                text = currentState.replyText,
+                mediaUris = mediaUris,
+                location = null
+            )
+
+            result.fold(
+                onSuccess = { createdReply ->
+                    _uiState.update { it.copy(isPosting = false) }
+                    _uiEffect.send(CreateReplyUiEffect.ShowSuccess("Reply posted!"))
+                    delay(500)
+                    _uiEffect.send(CreateReplyUiEffect.NavigateBack)
+                },
+                onFailure = { error ->
+                    _uiState.update {
+                        it.copy(
+                            isPosting = false,
+                            textError = error.message ?: "Failed to post reply"
+                        )
+                    }
+                    _uiEffect.send(CreateReplyUiEffect.ShowError(error.message ?: "Failed to post reply"))
+                }
+            )
         }
     }
 
