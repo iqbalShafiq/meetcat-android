@@ -4,6 +4,7 @@ import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import id.usecase.meetcat.data.local.TokenStorage
 import id.usecase.meetcat.data.network.HttpClientFactory
+import id.usecase.meetcat.data.network.NetworkMonitor
 import id.usecase.meetcat.data.remote.datasource.AuthRemoteDataSource
 import id.usecase.meetcat.data.remote.datasource.PostRemoteDataSource
 import id.usecase.meetcat.data.remote.datasource.SearchHistoryRemoteDataSource
@@ -196,6 +197,9 @@ val domainModule = module {
 val dataModule = module {
     // Token Storage
     single { TokenStorage(androidContext()) }
+
+    // Network Monitor
+    single { NetworkMonitor(androidContext()) }
 
     // HTTP Client with token provider
     single {
