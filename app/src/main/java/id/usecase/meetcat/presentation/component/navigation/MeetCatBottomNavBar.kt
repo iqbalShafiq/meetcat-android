@@ -54,7 +54,8 @@ fun MeetCatBottomNavBar(
                 .fillMaxWidth(),
             containerColor = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.onSurface,
-            tonalElevation = 3.dp
+            tonalElevation = 3.dp,
+            windowInsets = WindowInsets(0.dp)
         ) {
         BottomNavItem.entries.forEach { item ->
             NavigationBarItem(
