@@ -17,7 +17,7 @@ class AuthRemoteDataSource(
 ) {
 
     suspend fun login(email: String, password: String): ApiResponse<AuthUserDto> {
-        return httpClient.post("/auth/login") {
+        return httpClient.post("/v1/auth/login") {
             setBody(LoginRequest(email, password))
         }.body()
     }
@@ -28,22 +28,22 @@ class AuthRemoteDataSource(
         displayName: String,
         password: String
     ): ApiResponse<AuthUserDto> {
-        return httpClient.post("/auth/register") {
+        return httpClient.post("/v1/auth/register") {
             setBody(RegisterRequest(email, username, displayName, password))
         }.body()
     }
 
     suspend fun resetPassword(email: String): ApiResponse<MessageResponse> {
-        return httpClient.post("/auth/reset-password") {
+        return httpClient.post("/v1/auth/reset-password") {
             setBody(ResetPasswordRequest(email))
         }.body()
     }
 
     suspend fun getCurrentUser(): ApiResponse<AuthUserDto> {
-        return httpClient.get("/auth/current-user").body()
+        return httpClient.get("/v1/auth/current-user").body()
     }
 
     suspend fun logout(): ApiResponse<Unit> {
-        return httpClient.post("/auth/logout").body()
+        return httpClient.post("/v1/auth/logout").body()
     }
 }

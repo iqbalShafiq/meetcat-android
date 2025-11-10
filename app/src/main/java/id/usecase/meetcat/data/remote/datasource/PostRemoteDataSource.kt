@@ -33,36 +33,36 @@ class PostRemoteDataSource(
 ) {
 
     suspend fun getExploreFeed(page: Int, pageSize: Int): ApiResponse<PaginatedResponse<FeedItemDto>> {
-        return httpClient.get("/posts/explore") {
+        return httpClient.get("/v1/posts/explore") {
             parameter("page", page)
             parameter("pageSize", pageSize)
         }.body()
     }
 
     suspend fun lovePost(postId: String): ApiResponse<Unit> {
-        return httpClient.post("/posts/$postId/love").body()
+        return httpClient.post("/v1/posts/$postId/love").body()
     }
 
     suspend fun unlovePost(postId: String): ApiResponse<Unit> {
-        return httpClient.post("/posts/$postId/unlove").body()
+        return httpClient.post("/v1/posts/$postId/unlove").body()
     }
 
     suspend fun loveReply(replyId: String): ApiResponse<Unit> {
-        return httpClient.post("/replies/$replyId/love").body()
+        return httpClient.post("/v1/replies/$replyId/love").body()
     }
 
     suspend fun unloveReply(replyId: String): ApiResponse<Unit> {
-        return httpClient.post("/replies/$replyId/unlove").body()
+        return httpClient.post("/v1/replies/$replyId/unlove").body()
     }
 
     suspend fun getRandomPosts(count: Int): ApiResponse<List<PostDto>> {
-        return httpClient.get("/posts/random") {
+        return httpClient.get("/v1/posts/random") {
             parameter("count", count)
         }.body()
     }
 
     suspend fun searchPosts(query: String, page: Int, pageSize: Int): ApiResponse<PaginatedResponse<PostDto>> {
-        return httpClient.get("/posts/search") {
+        return httpClient.get("/v1/posts/search") {
             parameter("query", query)
             parameter("page", page)
             parameter("pageSize", pageSize)
@@ -75,7 +75,7 @@ class PostRemoteDataSource(
         radiusKm: Double,
         limit: Int
     ): ApiResponse<List<PostDto>> {
-        return httpClient.get("/posts/nearby") {
+        return httpClient.get("/v1/posts/nearby") {
             parameter("latitude", latitude)
             parameter("longitude", longitude)
             parameter("radiusKm", radiusKm)
@@ -84,27 +84,27 @@ class PostRemoteDataSource(
     }
 
     suspend fun getPostById(postId: String): ApiResponse<PostDto> {
-        return httpClient.get("/posts/$postId").body()
+        return httpClient.get("/v1/posts/$postId").body()
     }
 
     suspend fun getReplyById(replyId: String): ApiResponse<ReplyDto> {
-        return httpClient.get("/replies/$replyId").body()
+        return httpClient.get("/v1/replies/$replyId").body()
     }
 
     suspend fun getPostComments(postId: String): ApiResponse<List<CommentDto>> {
-        return httpClient.get("/posts/$postId/comments").body()
+        return httpClient.get("/v1/posts/$postId/comments").body()
     }
 
     suspend fun getReplyComments(replyId: String): ApiResponse<List<CommentDto>> {
-        return httpClient.get("/replies/$replyId/comments").body()
+        return httpClient.get("/v1/replies/$replyId/comments").body()
     }
 
     suspend fun loveComment(commentId: String): ApiResponse<Unit> {
-        return httpClient.post("/comments/$commentId/love").body()
+        return httpClient.post("/v1/comments/$commentId/love").body()
     }
 
     suspend fun unloveComment(commentId: String): ApiResponse<Unit> {
-        return httpClient.post("/comments/$commentId/unlove").body()
+        return httpClient.post("/v1/comments/$commentId/unlove").body()
     }
 
     suspend fun createPost(
@@ -280,7 +280,7 @@ class PostRemoteDataSource(
     }
 
     suspend fun createComment(request: CreateCommentRequest): ApiResponse<CommentDto> {
-        return httpClient.post("/comments") {
+        return httpClient.post("/v1/comments") {
             setBody(request)
         }.body()
     }

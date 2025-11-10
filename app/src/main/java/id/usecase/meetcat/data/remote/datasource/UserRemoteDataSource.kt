@@ -17,45 +17,45 @@ class UserRemoteDataSource(
 ) {
 
     suspend fun getUserPosts(userId: String, page: Int, pageSize: Int): ApiResponse<PaginatedResponse<PostDto>> {
-        return httpClient.get("/users/$userId/posts") {
+        return httpClient.get("/v1/users/$userId/posts") {
             parameter("page", page)
             parameter("pageSize", pageSize)
         }.body()
     }
 
     suspend fun getUserReplies(userId: String, page: Int, pageSize: Int): ApiResponse<PaginatedResponse<ReplyDto>> {
-        return httpClient.get("/users/$userId/replies") {
+        return httpClient.get("/v1/users/$userId/replies") {
             parameter("page", page)
             parameter("pageSize", pageSize)
         }.body()
     }
 
     suspend fun getUserLovedItems(userId: String, page: Int, pageSize: Int): ApiResponse<PaginatedResponse<FeedItemDto>> {
-        return httpClient.get("/users/$userId/loved-items") {
+        return httpClient.get("/v1/users/$userId/loved-items") {
             parameter("page", page)
             parameter("pageSize", pageSize)
         }.body()
     }
 
     suspend fun getFollowers(userId: String, page: Int, pageSize: Int): ApiResponse<PaginatedResponse<UserDto>> {
-        return httpClient.get("/users/$userId/followers") {
+        return httpClient.get("/v1/users/$userId/followers") {
             parameter("page", page)
             parameter("pageSize", pageSize)
         }.body()
     }
 
     suspend fun getFollowing(userId: String, page: Int, pageSize: Int): ApiResponse<PaginatedResponse<UserDto>> {
-        return httpClient.get("/users/$userId/following") {
+        return httpClient.get("/v1/users/$userId/following") {
             parameter("page", page)
             parameter("pageSize", pageSize)
         }.body()
     }
 
     suspend fun followUser(userId: String): ApiResponse<Unit> {
-        return httpClient.post("/users/$userId/follow").body()
+        return httpClient.post("/v1/users/$userId/follow").body()
     }
 
     suspend fun unfollowUser(userId: String): ApiResponse<Unit> {
-        return httpClient.post("/users/$userId/unfollow").body()
+        return httpClient.post("/v1/users/$userId/unfollow").body()
     }
 }

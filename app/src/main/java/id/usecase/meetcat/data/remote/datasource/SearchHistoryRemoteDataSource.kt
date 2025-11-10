@@ -14,20 +14,20 @@ class SearchHistoryRemoteDataSource(
 ) {
 
     suspend fun getSearchHistory(): ApiResponse<List<String>> {
-        return httpClient.get("/search-history").body()
+        return httpClient.get("/v1/search-history").body()
     }
 
     suspend fun saveSearchQuery(query: String): ApiResponse<Unit> {
-        return httpClient.post("/search-history/save") {
+        return httpClient.post("/v1/search-history/save") {
             setBody(SaveSearchQueryRequest(query))
         }.body()
     }
 
     suspend fun deleteSearchQuery(query: String): ApiResponse<Unit> {
-        return httpClient.delete("/search-history/$query").body()
+        return httpClient.delete("/v1/search-history/$query").body()
     }
 
     suspend fun clearAllSearchHistory(): ApiResponse<Unit> {
-        return httpClient.delete("/search-history/all").body()
+        return httpClient.delete("/v1/search-history/all").body()
     }
 }
