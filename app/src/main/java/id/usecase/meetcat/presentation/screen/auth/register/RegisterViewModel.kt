@@ -89,7 +89,8 @@ class RegisterViewModel(
             )
                 .onSuccess {
                     _uiState.update { it.copy(isLoading = false) }
-                    _uiEffect.send(RegisterUiEffect.NavigateToMain)
+                    // Navigate to login after successful registration
+                    _uiEffect.send(RegisterUiEffect.NavigateToLogin)
                 }
                 .onFailure { error ->
                     _uiState.update { it.copy(isLoading = false) }
