@@ -138,8 +138,7 @@ private fun UserProfileContent(
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                     scrolledContainerColor = MaterialTheme.colorScheme.surface
-                ),
-                windowInsets = WindowInsets(0.dp)
+                )
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }

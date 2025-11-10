@@ -10,7 +10,6 @@ import id.usecase.meetcat.ui.theme.MeetCatTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContent {
             MeetCatTheme {
                 AppRouter()
