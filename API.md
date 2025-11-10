@@ -959,6 +959,200 @@ POST /replies/{replyId}/unlove
 
 ---
 
+### 11. Create Post
+```
+POST /posts
+```
+
+**Headers**: Requires `Authorization: Bearer {token}`
+
+**Request Body**:
+```json
+{
+  "caption": "Beautiful sunset at the beach!",
+  "mediaItems": [
+    {
+      "type": "image",
+      "url": "https://storage.example.com/images/abc123.jpg",
+      "thumbnailUrl": "https://storage.example.com/thumbnails/abc123.jpg",
+      "width": 1080,
+      "height": 1350
+    }
+  ],
+  "location": {
+    "latitude": -6.2088,
+    "longitude": 106.8456,
+    "name": "Jakarta, Indonesia",
+    "address": "Central Jakarta"
+  }
+}
+```
+
+**Response** (201 Created):
+```json
+{
+  "success": true,
+  "data": {
+    "id": "post123",
+    "userId": "user123",
+    "user": {
+      "id": "user123",
+      "username": "johndoe",
+      "displayName": "John Doe",
+      "profileImageUrl": "https://...",
+      "followersCount": 150,
+      "followingCount": 200,
+      "postsCount": 51,
+      "isFollowing": false
+    },
+    "caption": "Beautiful sunset at the beach!",
+    "mediaItems": [...],
+    "location": {...},
+    "lovesCount": 0,
+    "commentsCount": 0,
+    "repliesCount": 0,
+    "isLoved": false,
+    "createdAt": 1699123456789
+  }
+}
+```
+
+**Validations**:
+- Caption is required (minimum 1 character)
+- Media items are optional
+- Location is optional
+
+**Errors**:
+- `400`: Validation errors
+
+**Notes**:
+- Media files should be uploaded separately to a storage service
+- The request should include the URLs of uploaded media
+- Maximum 10 media items per post
+
+---
+
+### 12. Create Reply
+```
+POST /replies
+```
+
+**Headers**: Requires `Authorization: Bearer {token}`
+
+**Request Body**:
+```json
+{
+  "originalPostId": "post456",
+  "text": "This is my reply to the original post",
+  "mediaItems": [
+    {
+      "type": "image",
+      "url": "https://storage.example.com/images/def456.jpg",
+      "thumbnailUrl": "https://storage.example.com/thumbnails/def456.jpg",
+      "width": 800,
+      "height": 600
+    }
+  ],
+  "location": {
+    "latitude": -6.2088,
+    "longitude": 106.8456,
+    "name": "Jakarta, Indonesia"
+  }
+}
+```
+
+**Response** (201 Created):
+```json
+{
+  "success": true,
+  "data": {
+    "id": "reply123",
+    "originalPostId": "post456",
+    "originalPost": {...},
+    "userId": "user123",
+    "user": {...},
+    "text": "This is my reply to the original post",
+    "mediaItems": [...],
+    "location": {...},
+    "lovesCount": 0,
+    "commentsCount": 0,
+    "isLoved": false,
+    "createdAt": 1699123456789
+  }
+}
+```
+
+**Validations**:
+- originalPostId is required and must exist
+- text is required (minimum 1 character)
+- Media items are optional
+- Location is optional
+
+**Errors**:
+- `400`: Validation errors
+- `404`: Original post not found
+
+**Notes**:
+- Maximum 10 media items per reply
+
+---
+
+### 13. Create Comment
+```
+POST /comments
+```
+
+**Headers**: Requires `Authorization: Bearer {token}`
+
+**Request Body**:
+```json
+{
+  "postId": "post123",
+  "text": "Great post!"
+}
+```
+
+**Or for reply comments**:
+```json
+{
+  "replyId": "reply123",
+  "text": "Nice reply!"
+}
+```
+
+**Response** (201 Created):
+```json
+{
+  "success": true,
+  "data": {
+    "id": "comment123",
+    "postId": "post123",
+    "userId": "user456",
+    "user": {
+      "id": "user456",
+      "username": "janedoe",
+      "displayName": "Jane Doe",
+      "profileImageUrl": "https://...",
+      "isFollowing": false
+    },
+    "text": "Great post!",
+    "lovesCount": 0,
+    "isLoved": false,
+    "createdAt": 1699123456789
+  }
+}
+```
+
+**Validations**:
+- Either postId or replyId is required (not both)
+- text is required (minimum 1 character, maximum 500 characters)
+
+**Errors**:
+- `400`: Validation errors
+- `404`: Post or reply not found
+
+---
+
 ## Comment Endpoints
 
 ### 1. Get Post Comments
@@ -1479,12 +1673,15 @@ DELETE /search-history/all
 | GET | /posts/nearby | Yes | No | Get nearby posts |
 | GET | /posts/{postId} | Yes | No | Get single post |
 | GET | /replies/{replyId} | Yes | No | Get single reply |
+| POST | /posts | Yes | No | Create post |
+| POST | /replies | Yes | No | Create reply |
 | POST | /posts/{postId}/love | Yes | No | Love post |
 | POST | /posts/{postId}/unlove | Yes | No | Unlove post |
 | POST | /replies/{replyId}/love | Yes | No | Love reply |
 | POST | /replies/{replyId}/unlove | Yes | No | Unlove reply |
 | GET | /posts/{postId}/comments | Yes | No | Get post comments |
 | GET | /replies/{replyId}/comments | Yes | No | Get reply comments |
+| POST | /comments | Yes | No | Create comment |
 | POST | /comments/{commentId}/love | Yes | No | Love comment |
 | POST | /comments/{commentId}/unlove | Yes | No | Unlove comment |
 | GET | /search-history | Yes | No | Get search history |
@@ -1492,8 +1689,8 @@ DELETE /search-history/all
 | DELETE | /search-history/{query} | Yes | No | Delete search query |
 | DELETE | /search-history/all | Yes | No | Clear search history |
 
-**Total**: 31 endpoints
-**Authenticated**: 28 endpoints
+**Total**: 34 endpoints
+**Authenticated**: 31 endpoints
 **Paginated**: 8 endpoints
 
 **Note**: Location services (get location, permission status) are handled client-side and do not require server endpoints.

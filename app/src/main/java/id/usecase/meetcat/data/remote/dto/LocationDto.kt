@@ -19,3 +19,12 @@ fun LocationDto.toDomain(): Location {
         name = name
     )
 }
+
+fun Location.toDto(): LocationDto {
+    return LocationDto(
+        latitude = latitude,
+        longitude = longitude,
+        address = address,
+        name = name
+    )
+}

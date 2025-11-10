@@ -3,6 +3,7 @@ package id.usecase.meetcat.domain.repository
 import id.usecase.meetcat.domain.model.Comment
 import id.usecase.meetcat.domain.model.FeedItem
 import id.usecase.meetcat.domain.model.Location
+import id.usecase.meetcat.domain.model.MediaItem
 import id.usecase.meetcat.domain.model.Post
 import id.usecase.meetcat.domain.model.Reply
 
@@ -65,4 +66,45 @@ interface PostRepository {
      * @return Result<Unit>
      */
     suspend fun unloveComment(commentId: String): Result<Unit>
+
+    /**
+     * Create a new post
+     * @param caption Post caption
+     * @param mediaItems Optional list of media items
+     * @param location Optional location
+     * @return Result containing the created Post
+     */
+    suspend fun createPost(
+        caption: String,
+        mediaItems: List<MediaItem>? = null,
+        location: Location? = null
+    ): Result<Post>
+
+    /**
+     * Create a reply to a post
+     * @param originalPostId ID of the original post
+     * @param text Reply text
+     * @param mediaItems Optional list of media items
+     * @param location Optional location
+     * @return Result containing the created Reply
+     */
+    suspend fun createReply(
+        originalPostId: String,
+        text: String,
+        mediaItems: List<MediaItem>? = null,
+        location: Location? = null
+    ): Result<Reply>
+
+    /**
+     * Create a comment on a post or reply
+     * @param postId Optional post ID (if commenting on a post)
+     * @param replyId Optional reply ID (if commenting on a reply)
+     * @param text Comment text
+     * @return Result containing the created Comment
+     */
+    suspend fun createComment(
+        postId: String? = null,
+        replyId: String? = null,
+        text: String
+    ): Result<Comment>
 }

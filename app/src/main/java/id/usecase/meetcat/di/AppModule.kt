@@ -6,11 +6,12 @@ import id.usecase.meetcat.data.local.TokenStorage
 import id.usecase.meetcat.data.network.HttpClientFactory
 import id.usecase.meetcat.data.remote.datasource.AuthRemoteDataSource
 import id.usecase.meetcat.data.remote.datasource.PostRemoteDataSource
+import id.usecase.meetcat.data.remote.datasource.SearchHistoryRemoteDataSource
 import id.usecase.meetcat.data.remote.datasource.UserRemoteDataSource
 import id.usecase.meetcat.data.repository.AuthRepositoryImpl
-import id.usecase.meetcat.data.repository.FakeSearchHistoryRepository
 import id.usecase.meetcat.data.repository.LocationRepositoryImpl
 import id.usecase.meetcat.data.repository.PostRepositoryImpl
+import id.usecase.meetcat.data.repository.SearchHistoryRepositoryImpl
 import id.usecase.meetcat.data.repository.UserRepositoryImpl
 import id.usecase.meetcat.domain.repository.AuthRepository
 import id.usecase.meetcat.domain.repository.LocationRepository
@@ -207,6 +208,7 @@ val dataModule = module {
     single { AuthRemoteDataSource(get()) }
     single { PostRemoteDataSource(get()) }
     single { UserRemoteDataSource(get()) }
+    single { SearchHistoryRemoteDataSource(get()) }
 
     // Repositories - Real implementations with API integration
     single<AuthRepository> {
@@ -228,8 +230,11 @@ val dataModule = module {
         )
     }
 
-    // Search History Repository - Local only (no API needed)
-    singleOf(::FakeSearchHistoryRepository) bind SearchHistoryRepository::class
+    single<SearchHistoryRepository> {
+        SearchHistoryRepositoryImpl(
+            remoteDataSource = get()
+        )
+    }
 
     // Location Services - Real implementation with Android dependencies
     single<FusedLocationProviderClient> {

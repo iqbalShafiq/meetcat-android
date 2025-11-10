@@ -2,6 +2,9 @@ package id.usecase.meetcat.data.remote.datasource
 
 import id.usecase.meetcat.data.remote.dto.ApiResponse
 import id.usecase.meetcat.data.remote.dto.CommentDto
+import id.usecase.meetcat.data.remote.dto.CreateCommentRequest
+import id.usecase.meetcat.data.remote.dto.CreatePostRequest
+import id.usecase.meetcat.data.remote.dto.CreateReplyRequest
 import id.usecase.meetcat.data.remote.dto.FeedItemDto
 import id.usecase.meetcat.data.remote.dto.PaginatedResponse
 import id.usecase.meetcat.data.remote.dto.PostDto
@@ -11,6 +14,7 @@ import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
+import io.ktor.client.request.setBody
 
 class PostRemoteDataSource(
     private val httpClient: HttpClient
@@ -89,5 +93,23 @@ class PostRemoteDataSource(
 
     suspend fun unloveComment(commentId: String): ApiResponse<Unit> {
         return httpClient.post("/comments/$commentId/unlove").body()
+    }
+
+    suspend fun createPost(request: CreatePostRequest): ApiResponse<PostDto> {
+        return httpClient.post("/posts") {
+            setBody(request)
+        }.body()
+    }
+
+    suspend fun createReply(request: CreateReplyRequest): ApiResponse<ReplyDto> {
+        return httpClient.post("/replies") {
+            setBody(request)
+        }.body()
+    }
+
+    suspend fun createComment(request: CreateCommentRequest): ApiResponse<CommentDto> {
+        return httpClient.post("/comments") {
+            setBody(request)
+        }.body()
     }
 }

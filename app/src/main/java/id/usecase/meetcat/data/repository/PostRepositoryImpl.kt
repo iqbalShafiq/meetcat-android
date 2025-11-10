@@ -1,10 +1,15 @@
 package id.usecase.meetcat.data.repository
 
 import id.usecase.meetcat.data.remote.datasource.PostRemoteDataSource
+import id.usecase.meetcat.data.remote.dto.CreateCommentRequest
+import id.usecase.meetcat.data.remote.dto.CreatePostRequest
+import id.usecase.meetcat.data.remote.dto.CreateReplyRequest
+import id.usecase.meetcat.data.remote.dto.toDto
 import id.usecase.meetcat.data.remote.dto.toDomain
 import id.usecase.meetcat.domain.model.Comment
 import id.usecase.meetcat.domain.model.FeedItem
 import id.usecase.meetcat.domain.model.Location
+import id.usecase.meetcat.domain.model.MediaItem
 import id.usecase.meetcat.domain.model.Post
 import id.usecase.meetcat.domain.model.Reply
 import id.usecase.meetcat.domain.repository.PostRepository
@@ -241,6 +246,86 @@ class PostRepositoryImpl(
             } else {
                 Result.failure(
                     Exception(response.error?.message ?: "Failed to unlove comment")
+                )
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun createPost(
+        caption: String,
+        mediaItems: List<MediaItem>?,
+        location: Location?
+    ): Result<Post> {
+        return try {
+            val request = CreatePostRequest(
+                caption = caption,
+                mediaItems = mediaItems?.map { it.toDto() },
+                location = location?.toDto()
+            )
+
+            val response = remoteDataSource.createPost(request)
+
+            if (response.success && response.data != null) {
+                Result.success(response.data.toDomain())
+            } else {
+                Result.failure(
+                    Exception(response.error?.message ?: "Failed to create post")
+                )
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun createReply(
+        originalPostId: String,
+        text: String,
+        mediaItems: List<MediaItem>?,
+        location: Location?
+    ): Result<Reply> {
+        return try {
+            val request = CreateReplyRequest(
+                originalPostId = originalPostId,
+                text = text,
+                mediaItems = mediaItems?.map { it.toDto() },
+                location = location?.toDto()
+            )
+
+            val response = remoteDataSource.createReply(request)
+
+            if (response.success && response.data != null) {
+                Result.success(response.data.toDomain())
+            } else {
+                Result.failure(
+                    Exception(response.error?.message ?: "Failed to create reply")
+                )
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun createComment(
+        postId: String?,
+        replyId: String?,
+        text: String
+    ): Result<Comment> {
+        return try {
+            val request = CreateCommentRequest(
+                postId = postId,
+                replyId = replyId,
+                text = text
+            )
+
+            val response = remoteDataSource.createComment(request)
+
+            if (response.success && response.data != null) {
+                Result.success(response.data.toDomain())
+            } else {
+                Result.failure(
+                    Exception(response.error?.message ?: "Failed to create comment")
                 )
             }
         } catch (e: Exception) {

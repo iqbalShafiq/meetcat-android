@@ -36,3 +36,23 @@ fun MediaItemDto.toDomain(): MediaItem {
         )
     }
 }
+
+fun MediaItem.toDto(): MediaItemDto {
+    return when (this) {
+        is MediaItem.Image -> MediaItemDto(
+            type = "image",
+            url = url,
+            thumbnailUrl = thumbnailUrl,
+            width = width,
+            height = height
+        )
+        is MediaItem.Video -> MediaItemDto(
+            type = "video",
+            url = url,
+            thumbnailUrl = thumbnailUrl,
+            width = width,
+            height = height,
+            duration = duration
+        )
+    }
+}
