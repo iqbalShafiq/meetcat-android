@@ -22,12 +22,17 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
@@ -36,6 +41,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import id.usecase.meetcat.presentation.common.SnackbarController
+import id.usecase.meetcat.presentation.common.SnackbarEvent
 import id.usecase.meetcat.presentation.component.navigation.BottomNavItem
 import id.usecase.meetcat.presentation.component.navigation.MeetCatBottomNavBar
 import id.usecase.meetcat.presentation.screen.explore.ExploreScreen
@@ -128,11 +135,54 @@ private fun MainContent(
         onEvent(MainUiEvent.NavigateBack)
     }
 
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
+    // Global snackbar state
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    // Listen to global snackbar events
+    LaunchedEffect(Unit) {
+        SnackbarController.snackbarEvents.collect { event ->
+            when (event) {
+                is SnackbarEvent.Error -> {
+                    val result = snackbarHostState.showSnackbar(
+                        message = event.message,
+                        actionLabel = event.actionLabel,
+                        withDismissAction = true
+                    )
+
+                    // Handle retry action
+                    if (result == SnackbarResult.ActionPerformed) {
+                        event.onRetry?.invoke()
+                    }
+                }
+                is SnackbarEvent.Message -> {
+                    val result = snackbarHostState.showSnackbar(
+                        message = event.message,
+                        actionLabel = event.actionLabel,
+                        withDismissAction = true
+                    )
+
+                    // Handle action click
+                    if (result == SnackbarResult.ActionPerformed) {
+                        event.onActionClick?.invoke()
+                    }
+                }
+            }
+        }
+    }
+
+    Scaffold(
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState)
+        },
+        modifier = modifier.fillMaxSize()
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .background(MaterialTheme.colorScheme.background)
+        ) {
         // Main content with smooth transitions
         val bottomNavRoutes = listOf(
             BottomNavItem.Explore.route,
@@ -464,15 +514,16 @@ private fun MainContent(
         }
         }
 
-        // Navbar overlay at bottom (outside Scaffold to avoid padding issues)
-        MeetCatBottomNavBar(
-            currentRoute = mainUiState.currentRoute,
-            onNavigate = { route ->
-                onEvent(MainUiEvent.NavigateTo(route))
-            },
-            isVisible = isBottomNavVisible,
-            modifier = Modifier.align(Alignment.BottomCenter)
-        )
+            // Navbar overlay at bottom
+            MeetCatBottomNavBar(
+                currentRoute = mainUiState.currentRoute,
+                onNavigate = { route ->
+                    onEvent(MainUiEvent.NavigateTo(route))
+                },
+                isVisible = isBottomNavVisible,
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
+        }
     }
 }
 

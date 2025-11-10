@@ -7,6 +7,7 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import androidx.paging.map
+import id.usecase.meetcat.data.network.NetworkMonitor
 import id.usecase.meetcat.domain.model.FeedItem
 import id.usecase.meetcat.domain.paging.ExplorePagingSource
 import id.usecase.meetcat.domain.usecase.auth.GetCurrentUserUseCase
@@ -15,6 +16,8 @@ import id.usecase.meetcat.domain.usecase.post.LovePostUseCase
 import id.usecase.meetcat.domain.usecase.post.LoveReplyUseCase
 import id.usecase.meetcat.domain.usecase.post.UnlovePostUseCase
 import id.usecase.meetcat.domain.usecase.post.UnloveReplyUseCase
+import id.usecase.meetcat.presentation.common.SnackbarController
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,7 +34,8 @@ class ExploreViewModel(
     private val unlovePostUseCase: UnlovePostUseCase,
     private val loveReplyUseCase: LoveReplyUseCase,
     private val unloveReplyUseCase: UnloveReplyUseCase,
-    private val getCurrentUserUseCase: GetCurrentUserUseCase
+    private val getCurrentUserUseCase: GetCurrentUserUseCase,
+    private val networkMonitor: NetworkMonitor
 ) : ViewModel() {
 
     private val _uiEffect = Channel<ExploreUiEffect>()
@@ -44,6 +48,14 @@ class ExploreViewModel(
     // Preserve scroll position across navigation
     var scrollIndex: Int = 0
     var scrollOffset: Int = 0
+
+    // Track ongoing jobs to prevent double-tap
+    private val lovePostJobs = mutableMapOf<String, Job>()
+    private val loveReplyJobs = mutableMapOf<String, Job>()
+
+    // Track failure counts for retry limits
+    private val postFailureCounts = mutableMapOf<String, Int>()
+    private val replyFailureCounts = mutableMapOf<String, Int>()
 
     init {
         loadCurrentUser()
@@ -152,31 +164,39 @@ class ExploreViewModel(
     }
 
     private fun toggleLovePost(postId: String) {
-        viewModelScope.launch {
+        // Cancel previous job if still running (prevent double-tap)
+        lovePostJobs[postId]?.cancel()
+
+        lovePostJobs[postId] = viewModelScope.launch {
+            // Check offline
+            if (!networkMonitor.isOnline()) {
+                SnackbarController.showError("No internet connection")
+                return@launch
+            }
+
             // Optimistic update: toggle the item state
             val isCurrentlyToggled = _toggledPosts.value.contains(postId)
             _toggledPosts.update { current ->
                 if (isCurrentlyToggled) {
-                    // Already toggled, un-toggle it (back to original state)
                     current - postId
                 } else {
-                    // Not toggled, toggle it
                     current + postId
                 }
             }
 
-            // Determine action based on current display state
-            // Note: This assumes we're toggling from the currently displayed state
-            // If toggled=false (showing original), we're now adding toggle (loving)
-            // If toggled=true (showing toggled), we're now removing toggle (unloving)
+            // Determine action based on toggle state
             val result = if (!isCurrentlyToggled) {
                 lovePostUseCase(postId)
             } else {
                 unlovePostUseCase(postId)
             }
 
-            // Revert on failure
-            result.onFailure {
+            // Handle result
+            result.onSuccess {
+                // Reset failure count on success
+                postFailureCounts.remove(postId)
+            }.onFailure {
+                // Revert optimistic update
                 _toggledPosts.update { current ->
                     if (isCurrentlyToggled) {
                         current + postId
@@ -184,35 +204,64 @@ class ExploreViewModel(
                         current - postId
                     }
                 }
-                _uiEffect.send(ExploreUiEffect.ShowError("Failed to update love"))
+
+                // Track failures
+                val failureCount = postFailureCounts.getOrDefault(postId, 0) + 1
+                postFailureCounts[postId] = failureCount
+
+                // Show appropriate error message
+                val message = when {
+                    failureCount >= MAX_RETRIES -> "Having trouble connecting. Please check your internet."
+                    else -> "Failed to ${if (isCurrentlyToggled) "unlove" else "love"} post"
+                }
+
+                SnackbarController.showError(
+                    message = message,
+                    actionLabel = "Retry",
+                    onRetry = if (failureCount < MAX_RETRIES) {
+                        { toggleLovePost(postId) }
+                    } else null
+                )
             }
+
+            lovePostJobs.remove(postId)
         }
     }
 
     private fun toggleLoveReply(replyId: String) {
-        viewModelScope.launch {
+        // Cancel previous job if still running (prevent double-tap)
+        loveReplyJobs[replyId]?.cancel()
+
+        loveReplyJobs[replyId] = viewModelScope.launch {
+            // Check offline
+            if (!networkMonitor.isOnline()) {
+                SnackbarController.showError("No internet connection")
+                return@launch
+            }
+
             // Optimistic update: toggle the item state
             val isCurrentlyToggled = _toggledReplies.value.contains(replyId)
             _toggledReplies.update { current ->
                 if (isCurrentlyToggled) {
-                    // Already toggled, un-toggle it (back to original state)
                     current - replyId
                 } else {
-                    // Not toggled, toggle it
                     current + replyId
                 }
             }
 
             // Determine action based on toggle state
-            // If newly toggled: love, if un-toggled: unlove
             val result = if (!isCurrentlyToggled) {
                 loveReplyUseCase(replyId)
             } else {
                 unloveReplyUseCase(replyId)
             }
 
-            // Revert on failure
-            result.onFailure {
+            // Handle result
+            result.onSuccess {
+                // Reset failure count on success
+                replyFailureCounts.remove(replyId)
+            }.onFailure {
+                // Revert optimistic update
                 _toggledReplies.update { current ->
                     if (isCurrentlyToggled) {
                         current + replyId
@@ -220,13 +269,33 @@ class ExploreViewModel(
                         current - replyId
                     }
                 }
-                _uiEffect.send(ExploreUiEffect.ShowError("Failed to update love"))
+
+                // Track failures
+                val failureCount = replyFailureCounts.getOrDefault(replyId, 0) + 1
+                replyFailureCounts[replyId] = failureCount
+
+                // Show appropriate error message
+                val message = when {
+                    failureCount >= MAX_RETRIES -> "Having trouble connecting. Please check your internet."
+                    else -> "Failed to ${if (isCurrentlyToggled) "unlove" else "love"} reply"
+                }
+
+                SnackbarController.showError(
+                    message = message,
+                    actionLabel = "Retry",
+                    onRetry = if (failureCount < MAX_RETRIES) {
+                        { toggleLoveReply(replyId) }
+                    } else null
+                )
             }
+
+            loveReplyJobs.remove(replyId)
         }
     }
 
     companion object {
         private const val PAGE_SIZE = 20
         private const val PREFETCH_DISTANCE = 10 // Load more when 10 items from bottom
+        private const val MAX_RETRIES = 3
     }
 }

@@ -3,6 +3,7 @@ package id.usecase.meetcat.domain.repository
 import id.usecase.meetcat.domain.model.Comment
 import id.usecase.meetcat.domain.model.FeedItem
 import id.usecase.meetcat.domain.model.Location
+import id.usecase.meetcat.domain.model.MediaItem
 import id.usecase.meetcat.domain.model.Post
 import id.usecase.meetcat.domain.model.Reply
 
@@ -65,4 +66,79 @@ interface PostRepository {
      * @return Result<Unit>
      */
     suspend fun unloveComment(commentId: String): Result<Unit>
+
+    /**
+     * Create a new post
+     * @param caption Post caption
+     * @param mediaUris Optional list of media file URIs
+     * @param location Optional location
+     * @return Result containing the created Post
+     */
+    suspend fun createPost(
+        caption: String,
+        mediaUris: List<android.net.Uri>? = null,
+        location: Location? = null
+    ): Result<Post>
+
+    /**
+     * Update an existing post
+     * @param postId ID of the post to update
+     * @param caption Optional updated caption
+     * @param mediaUris Optional list of media file URIs (replaces all existing media if provided)
+     * @param location Optional location (null to keep existing, empty Location to remove)
+     * @param keepExistingMedia If true and mediaUris is null, keeps existing media
+     * @return Result containing the updated Post
+     */
+    suspend fun updatePost(
+        postId: String,
+        caption: String? = null,
+        mediaUris: List<android.net.Uri>? = null,
+        location: Location? = null,
+        keepExistingMedia: Boolean = false
+    ): Result<Post>
+
+    /**
+     * Create a reply to a post
+     * @param originalPostId ID of the original post
+     * @param text Reply text
+     * @param mediaUris Optional list of media file URIs
+     * @param location Optional location
+     * @return Result containing the created Reply
+     */
+    suspend fun createReply(
+        originalPostId: String,
+        text: String,
+        mediaUris: List<android.net.Uri>? = null,
+        location: Location? = null
+    ): Result<Reply>
+
+    /**
+     * Update an existing reply
+     * @param replyId ID of the reply to update
+     * @param text Optional updated text
+     * @param mediaUris Optional list of media file URIs (replaces all existing media if provided)
+     * @param location Optional location (null to keep existing, empty Location to remove)
+     * @param keepExistingMedia If true and mediaUris is null, keeps existing media
+     * @return Result containing the updated Reply
+     */
+    suspend fun updateReply(
+        replyId: String,
+        text: String? = null,
+        mediaUris: List<android.net.Uri>? = null,
+        location: Location? = null,
+        keepExistingMedia: Boolean = false
+    ): Result<Reply>
+
+    /**
+     * Create a comment on a post or reply
+     * @param postId Optional post ID (if commenting on a post)
+     * @param replyId Optional reply ID (if commenting on a reply)
+     * @param text Comment text
+     * @return Result containing the created Comment
+     */
+    suspend fun createComment(
+        postId: String? = null,
+        replyId: String? = null,
+        text: String
+    ): Result<Comment>
 }
