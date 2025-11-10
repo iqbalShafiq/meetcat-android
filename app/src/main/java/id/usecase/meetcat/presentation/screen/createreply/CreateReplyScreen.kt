@@ -179,8 +179,7 @@ private fun CreateReplyContent(
                 colors = vibrantColors,
                 modifier = Modifier
                     .offset(y = -FloatingToolbarDefaults.ScreenOffset)
-                    .zIndex(1f),,
-                windowInsets = WindowInsets(),
+                    .zIndex(1f),
                 content = {
                     // Back button
                     IconButton(
