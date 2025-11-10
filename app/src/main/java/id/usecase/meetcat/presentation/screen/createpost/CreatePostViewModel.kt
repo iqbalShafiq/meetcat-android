@@ -118,7 +118,7 @@ class CreatePostViewModel(
                     _uiState.update { it.copy(isUploading = false, uploadProgress = 1f) }
                     _uiEffect.send(CreatePostUiEffect.ShowSuccess("Post created successfully!"))
                     delay(500)
-                    _uiEffect.send(CreatePostUiEffect.NavigateBack)
+                    _uiEffect.send(CreatePostUiEffect.NavigateToPostDetail(createdPost.id))
                 },
                 onFailure = { error ->
                     _uiState.update {

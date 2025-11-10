@@ -75,6 +75,7 @@ import kotlinx.coroutines.flow.collectLatest
 fun CreateReplyScreen(
     viewModel: CreateReplyViewModel,
     onNavigateBack: () -> Unit,
+    onNavigateToReplyDetail: (String) -> Unit,
     onNavigateToCamera: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
@@ -86,6 +87,10 @@ fun CreateReplyScreen(
             when (effect) {
                 is CreateReplyUiEffect.NavigateBack -> {
                     onNavigateBack()
+                }
+
+                is CreateReplyUiEffect.NavigateToReplyDetail -> {
+                    onNavigateToReplyDetail(effect.replyId)
                 }
 
                 is CreateReplyUiEffect.ShowMediaPicker -> {

@@ -54,6 +54,7 @@ import kotlinx.coroutines.flow.collectLatest
 fun EditPostScreen(
     viewModel: EditPostViewModel,
     onNavigateBack: () -> Unit,
+    onNavigateToPostDetail: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -64,6 +65,10 @@ fun EditPostScreen(
             when (effect) {
                 is EditPostUiEffect.NavigateBack -> {
                     onNavigateBack()
+                }
+
+                is EditPostUiEffect.NavigateToPostDetail -> {
+                    onNavigateToPostDetail(effect.postId)
                 }
 
                 is EditPostUiEffect.ShowMediaPicker -> {

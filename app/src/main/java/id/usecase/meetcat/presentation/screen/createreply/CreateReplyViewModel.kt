@@ -107,7 +107,7 @@ class CreateReplyViewModel(
                     _uiState.update { it.copy(isPosting = false) }
                     _uiEffect.send(CreateReplyUiEffect.ShowSuccess("Reply posted!"))
                     delay(500)
-                    _uiEffect.send(CreateReplyUiEffect.NavigateBack)
+                    _uiEffect.send(CreateReplyUiEffect.NavigateToReplyDetail(createdReply.id))
                 },
                 onFailure = { error ->
                     _uiState.update {
