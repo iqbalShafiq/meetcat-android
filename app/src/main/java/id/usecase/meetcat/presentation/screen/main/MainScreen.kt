@@ -428,7 +428,7 @@ private fun MainContent(
 
             currentRoute.startsWith("edit_post/") -> {
                 val postId = currentRoute.substringAfter("edit_post/")
-                val editPostViewModel: EditPostViewModel = koinViewModel { parametersOf(postId) }
+                val editPostViewModel: EditPostViewModel = koinViewModel(key = "editPost_$postId") { parametersOf(postId) }
                 EditPostScreen(
                     viewModel = editPostViewModel,
                     onNavigateBack = {
@@ -439,7 +439,7 @@ private fun MainContent(
 
             currentRoute.startsWith("create_reply/") -> {
                 val postId = currentRoute.substringAfter("create_reply/")
-                val createReplyViewModel: CreateReplyViewModel = koinViewModel { parametersOf(postId) }
+                val createReplyViewModel: CreateReplyViewModel = koinViewModel(key = "createReply_$postId") { parametersOf(postId) }
 
                 // Handle selected image from camera/gallery
                 LaunchedEffect(mainUiState.selectedImageUri) {
@@ -472,7 +472,7 @@ private fun MainContent(
 
             currentRoute.startsWith("followers_list/") -> {
                 val userId = currentRoute.substringAfter("followers_list/")
-                val followersListViewModel: FollowersListViewModel = koinViewModel { parametersOf(userId) }
+                val followersListViewModel: FollowersListViewModel = koinViewModel(key = "followersList_$userId") { parametersOf(userId) }
                 FollowersListScreen(
                     viewModel = followersListViewModel,
                     onNavigateBack = {
@@ -486,7 +486,7 @@ private fun MainContent(
 
             currentRoute.startsWith("following_list/") -> {
                 val userId = currentRoute.substringAfter("following_list/")
-                val followingListViewModel: FollowingListViewModel = koinViewModel { parametersOf(userId) }
+                val followingListViewModel: FollowingListViewModel = koinViewModel(key = "followingList_$userId") { parametersOf(userId) }
                 FollowingListScreen(
                     viewModel = followingListViewModel,
                     onNavigateBack = {

@@ -72,7 +72,7 @@ fun PostDetailScreen(
     onNavigateToProfile: (String) -> Unit,
     onNavigateToCreateReply: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier,
-    viewModel: PostDetailViewModel = koinViewModel { parametersOf(postId) }
+    viewModel: PostDetailViewModel = koinViewModel(key = "postDetail_$postId") { parametersOf(postId) }
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
