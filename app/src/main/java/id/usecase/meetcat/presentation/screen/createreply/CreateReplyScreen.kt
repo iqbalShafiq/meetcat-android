@@ -58,12 +58,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import id.usecase.meetcat.R
 import id.usecase.meetcat.domain.model.Post
 import id.usecase.meetcat.domain.model.User
 import id.usecase.meetcat.ui.theme.MeetCatTheme
@@ -332,7 +334,9 @@ private fun CreateReplyContent(
                                     model = uiState.mediaUri,
                                     contentDescription = "Selected media",
                                     modifier = Modifier.fillMaxSize(),
-                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                    placeholder = painterResource(R.drawable.ic_placeholder_image),
+                                    error = painterResource(R.drawable.ic_placeholder_image)
                                 )
 
                                 // Remove button

@@ -19,11 +19,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import id.usecase.meetcat.R
 import id.usecase.meetcat.domain.model.MediaItem
 import id.usecase.meetcat.domain.model.Post
 import id.usecase.meetcat.domain.model.User
@@ -57,7 +59,9 @@ fun SearchPostGridItem(
                 .build(),
             contentDescription = post.caption,
             contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
+            placeholder = painterResource(R.drawable.ic_placeholder_image),
+            error = painterResource(R.drawable.ic_placeholder_image)
         )
 
         if (isVideo) {
