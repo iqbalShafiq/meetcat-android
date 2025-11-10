@@ -128,7 +128,14 @@ class PostRemoteDataSource(
                 mediaUris?.forEachIndexed { index, uri ->
                     val fileBytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
                     val fileName = getFileName(uri) ?: "media_$index"
-                    val mimeType = context.contentResolver.getType(uri) ?: "application/octet-stream"
+                    val mimeType = getMimeType(uri, fileName)
+
+                    // Validate file type
+                    if (!isSupportedFileType(mimeType)) {
+                        throw IllegalArgumentException(
+                            "Invalid file type: $mimeType. Only JPEG, PNG, WebP images and MP4, MOV videos are allowed"
+                        )
+                    }
 
                     fileBytes?.let { bytes ->
                         append(
@@ -173,7 +180,14 @@ class PostRemoteDataSource(
                 mediaUris?.forEachIndexed { index, uri ->
                     val fileBytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
                     val fileName = getFileName(uri) ?: "media_$index"
-                    val mimeType = context.contentResolver.getType(uri) ?: "application/octet-stream"
+                    val mimeType = getMimeType(uri, fileName)
+
+                    // Validate file type
+                    if (!isSupportedFileType(mimeType)) {
+                        throw IllegalArgumentException(
+                            "Invalid file type: $mimeType. Only JPEG, PNG, WebP images and MP4, MOV videos are allowed"
+                        )
+                    }
 
                     fileBytes?.let { bytes ->
                         append(
@@ -215,7 +229,14 @@ class PostRemoteDataSource(
                 mediaUris?.forEachIndexed { index, uri ->
                     val fileBytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
                     val fileName = getFileName(uri) ?: "media_$index"
-                    val mimeType = context.contentResolver.getType(uri) ?: "application/octet-stream"
+                    val mimeType = getMimeType(uri, fileName)
+
+                    // Validate file type
+                    if (!isSupportedFileType(mimeType)) {
+                        throw IllegalArgumentException(
+                            "Invalid file type: $mimeType. Only JPEG, PNG, WebP images and MP4, MOV videos are allowed"
+                        )
+                    }
 
                     fileBytes?.let { bytes ->
                         append(
@@ -260,7 +281,14 @@ class PostRemoteDataSource(
                 mediaUris?.forEachIndexed { index, uri ->
                     val fileBytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
                     val fileName = getFileName(uri) ?: "media_$index"
-                    val mimeType = context.contentResolver.getType(uri) ?: "application/octet-stream"
+                    val mimeType = getMimeType(uri, fileName)
+
+                    // Validate file type
+                    if (!isSupportedFileType(mimeType)) {
+                        throw IllegalArgumentException(
+                            "Invalid file type: $mimeType. Only JPEG, PNG, WebP images and MP4, MOV videos are allowed"
+                        )
+                    }
 
                     fileBytes?.let { bytes ->
                         append(
@@ -293,6 +321,48 @@ class PostRemoteDataSource(
             val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
             cursor.moveToFirst()
             cursor.getString(nameIndex)
+        }
+    }
+
+    /**
+     * Get MIME type from URI with fallback to extension-based detection
+     */
+    private fun getMimeType(uri: Uri, fileName: String?): String {
+        // First, try to get MIME type from ContentResolver
+        val mimeType = context.contentResolver.getType(uri)
+
+        // If ContentResolver returns a valid MIME type, use it
+        if (!mimeType.isNullOrBlank() && mimeType != "application/octet-stream") {
+            return mimeType
+        }
+
+        // Fallback: determine MIME type from file extension
+        val extension = fileName?.substringAfterLast('.', "")?.lowercase() ?: ""
+        return when (extension) {
+            // Images
+            "jpg", "jpeg" -> "image/jpeg"
+            "png" -> "image/png"
+            "webp" -> "image/webp"
+            // Videos
+            "mp4" -> "video/mp4"
+            "mov" -> "video/quicktime"
+            // Default: return original or unknown
+            else -> mimeType ?: "application/octet-stream"
+        }
+    }
+
+    /**
+     * Validate if file type is supported
+     */
+    private fun isSupportedFileType(mimeType: String): Boolean {
+        return when {
+            mimeType.startsWith("image/") -> {
+                mimeType in listOf("image/jpeg", "image/png", "image/webp")
+            }
+            mimeType.startsWith("video/") -> {
+                mimeType in listOf("video/mp4", "video/quicktime")
+            }
+            else -> false
         }
     }
 }
