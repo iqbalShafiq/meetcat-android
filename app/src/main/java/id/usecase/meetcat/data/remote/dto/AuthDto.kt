@@ -37,11 +37,6 @@ data class MessageResponse(
     val message: String
 )
 
-@Serializable
-data class IsLoggedInResponse(
-    val isLoggedIn: Boolean
-)
-
 fun AuthUserDto.toDomain(): AuthUser {
     return AuthUser(
         id = id,

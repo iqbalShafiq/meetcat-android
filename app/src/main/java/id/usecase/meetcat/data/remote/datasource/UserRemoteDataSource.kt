@@ -58,8 +58,4 @@ class UserRemoteDataSource(
     suspend fun unfollowUser(userId: String): ApiResponse<Unit> {
         return httpClient.post("/users/$userId/unfollow").body()
     }
-
-    suspend fun getUserProfile(userId: String): ApiResponse<UserDto> {
-        return httpClient.get("/users/$userId").body()
-    }
 }

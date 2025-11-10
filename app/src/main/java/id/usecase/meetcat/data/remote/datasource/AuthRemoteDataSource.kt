@@ -2,7 +2,6 @@ package id.usecase.meetcat.data.remote.datasource
 
 import id.usecase.meetcat.data.remote.dto.ApiResponse
 import id.usecase.meetcat.data.remote.dto.AuthUserDto
-import id.usecase.meetcat.data.remote.dto.IsLoggedInResponse
 import id.usecase.meetcat.data.remote.dto.LoginRequest
 import id.usecase.meetcat.data.remote.dto.MessageResponse
 import id.usecase.meetcat.data.remote.dto.RegisterRequest
@@ -38,10 +37,6 @@ class AuthRemoteDataSource(
         return httpClient.post("/auth/reset-password") {
             setBody(ResetPasswordRequest(email))
         }.body()
-    }
-
-    suspend fun isLoggedIn(): ApiResponse<IsLoggedInResponse> {
-        return httpClient.get("/auth/is-logged-in").body()
     }
 
     suspend fun getCurrentUser(): ApiResponse<AuthUserDto> {
