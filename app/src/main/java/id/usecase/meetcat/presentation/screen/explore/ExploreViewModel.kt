@@ -221,7 +221,7 @@ class ExploreViewModel(
                     onRetry = if (failureCount < MAX_RETRIES) {
                         { toggleLovePost(postId) }
                     } else null
-                }
+                )
             }
 
             lovePostJobs.remove(postId)
@@ -286,7 +286,7 @@ class ExploreViewModel(
                     onRetry = if (failureCount < MAX_RETRIES) {
                         { toggleLoveReply(replyId) }
                     } else null
-                }
+                )
             }
 
             loveReplyJobs.remove(replyId)

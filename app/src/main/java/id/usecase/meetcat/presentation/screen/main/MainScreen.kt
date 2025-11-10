@@ -155,6 +155,18 @@ private fun MainContent(
                         event.onRetry?.invoke()
                     }
                 }
+                is SnackbarEvent.Message -> {
+                    val result = snackbarHostState.showSnackbar(
+                        message = event.message,
+                        actionLabel = event.actionLabel,
+                        withDismissAction = true
+                    )
+
+                    // Handle action click
+                    if (result == SnackbarResult.ActionPerformed) {
+                        event.onActionClick?.invoke()
+                    }
+                }
             }
         }
     }
