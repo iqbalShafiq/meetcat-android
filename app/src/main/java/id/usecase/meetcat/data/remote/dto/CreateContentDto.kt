@@ -2,21 +2,10 @@ package id.usecase.meetcat.data.remote.dto
 
 import kotlinx.serialization.Serializable
 
-@Serializable
-data class CreatePostRequest(
-    val caption: String,
-    val mediaItems: List<MediaItemDto>? = null,
-    val location: LocationDto? = null
-)
-
-@Serializable
-data class CreateReplyRequest(
-    val originalPostId: String,
-    val text: String,
-    val mediaItems: List<MediaItemDto>? = null,
-    val location: LocationDto? = null
-)
-
+/**
+ * CreateCommentRequest is still used for JSON-based comment creation
+ * (comments don't support media uploads, so multipart is not needed)
+ */
 @Serializable
 data class CreateCommentRequest(
     val postId: String? = null,

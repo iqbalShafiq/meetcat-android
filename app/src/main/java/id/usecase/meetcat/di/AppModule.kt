@@ -210,7 +210,7 @@ val dataModule = module {
 
     // Remote Data Sources
     single { AuthRemoteDataSource(get()) }
-    single { PostRemoteDataSource(get()) }
+    single { PostRemoteDataSource(httpClient = get(), context = androidContext()) }
     single { UserRemoteDataSource(get()) }
     single { SearchHistoryRemoteDataSource(get()) }
 

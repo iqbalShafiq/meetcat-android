@@ -1,23 +1,35 @@
 package id.usecase.meetcat.data.remote.datasource
 
+import android.content.Context
+import android.net.Uri
+import android.provider.OpenableColumns
 import id.usecase.meetcat.data.remote.dto.ApiResponse
 import id.usecase.meetcat.data.remote.dto.CommentDto
 import id.usecase.meetcat.data.remote.dto.CreateCommentRequest
-import id.usecase.meetcat.data.remote.dto.CreatePostRequest
-import id.usecase.meetcat.data.remote.dto.CreateReplyRequest
 import id.usecase.meetcat.data.remote.dto.FeedItemDto
+import id.usecase.meetcat.data.remote.dto.LocationDto
 import id.usecase.meetcat.data.remote.dto.PaginatedResponse
 import id.usecase.meetcat.data.remote.dto.PostDto
 import id.usecase.meetcat.data.remote.dto.ReplyDto
+import id.usecase.meetcat.data.remote.dto.toDto
+import id.usecase.meetcat.domain.model.Location
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.request.forms.formData
+import io.ktor.client.request.forms.submitFormWithBinaryData
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
+import io.ktor.client.request.put
 import io.ktor.client.request.setBody
+import io.ktor.http.Headers
+import io.ktor.http.HttpHeaders
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 class PostRemoteDataSource(
-    private val httpClient: HttpClient
+    private val httpClient: HttpClient,
+    private val context: Context
 ) {
 
     suspend fun getExploreFeed(page: Int, pageSize: Int): ApiResponse<PaginatedResponse<FeedItemDto>> {
@@ -95,15 +107,175 @@ class PostRemoteDataSource(
         return httpClient.post("/comments/$commentId/unlove").body()
     }
 
-    suspend fun createPost(request: CreatePostRequest): ApiResponse<PostDto> {
-        return httpClient.post("/posts") {
-            setBody(request)
+    suspend fun createPost(
+        caption: String,
+        mediaUris: List<Uri>?,
+        location: Location?
+    ): ApiResponse<PostDto> {
+        return httpClient.submitFormWithBinaryData(
+            url = "/posts",
+            formData = formData {
+                // Add caption
+                append("caption", caption)
+
+                // Add location as JSON string if provided
+                location?.let {
+                    val locationJson = Json.encodeToString(it.toDto())
+                    append("location", locationJson)
+                }
+
+                // Add media files
+                mediaUris?.forEachIndexed { index, uri ->
+                    val fileBytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                    val fileName = getFileName(uri) ?: "media_$index"
+                    val mimeType = context.contentResolver.getType(uri) ?: "application/octet-stream"
+
+                    fileBytes?.let { bytes ->
+                        append(
+                            "media[]",
+                            bytes,
+                            Headers.build {
+                                append(HttpHeaders.ContentType, mimeType)
+                                append(HttpHeaders.ContentDisposition, "filename=\"$fileName\"")
+                            }
+                        )
+                    }
+                }
+            }
+        ).body()
+    }
+
+    suspend fun updatePost(
+        postId: String,
+        caption: String?,
+        mediaUris: List<Uri>?,
+        location: Location?,
+        keepExistingMedia: Boolean
+    ): ApiResponse<PostDto> {
+        return httpClient.submitFormWithBinaryData(
+            url = "/posts/$postId",
+            formData = formData {
+                // Add caption if provided
+                caption?.let {
+                    append("caption", it)
+                }
+
+                // Add location as JSON string if provided
+                location?.let {
+                    val locationJson = Json.encodeToString(it.toDto())
+                    append("location", locationJson)
+                }
+
+                // Add keepExistingMedia flag
+                append("keepExistingMedia", keepExistingMedia.toString())
+
+                // Add media files if provided
+                mediaUris?.forEachIndexed { index, uri ->
+                    val fileBytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                    val fileName = getFileName(uri) ?: "media_$index"
+                    val mimeType = context.contentResolver.getType(uri) ?: "application/octet-stream"
+
+                    fileBytes?.let { bytes ->
+                        append(
+                            "media[]",
+                            bytes,
+                            Headers.build {
+                                append(HttpHeaders.ContentType, mimeType)
+                                append(HttpHeaders.ContentDisposition, "filename=\"$fileName\"")
+                            }
+                        )
+                    }
+                }
+            }
+        ) {
+            method = io.ktor.http.HttpMethod.Put
         }.body()
     }
 
-    suspend fun createReply(request: CreateReplyRequest): ApiResponse<ReplyDto> {
-        return httpClient.post("/replies") {
-            setBody(request)
+    suspend fun createReply(
+        originalPostId: String,
+        text: String,
+        mediaUris: List<Uri>?,
+        location: Location?
+    ): ApiResponse<ReplyDto> {
+        return httpClient.submitFormWithBinaryData(
+            url = "/replies",
+            formData = formData {
+                // Add required fields
+                append("originalPostId", originalPostId)
+                append("text", text)
+
+                // Add location as JSON string if provided
+                location?.let {
+                    val locationJson = Json.encodeToString(it.toDto())
+                    append("location", locationJson)
+                }
+
+                // Add media files
+                mediaUris?.forEachIndexed { index, uri ->
+                    val fileBytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                    val fileName = getFileName(uri) ?: "media_$index"
+                    val mimeType = context.contentResolver.getType(uri) ?: "application/octet-stream"
+
+                    fileBytes?.let { bytes ->
+                        append(
+                            "media[]",
+                            bytes,
+                            Headers.build {
+                                append(HttpHeaders.ContentType, mimeType)
+                                append(HttpHeaders.ContentDisposition, "filename=\"$fileName\"")
+                            }
+                        )
+                    }
+                }
+            }
+        ).body()
+    }
+
+    suspend fun updateReply(
+        replyId: String,
+        text: String?,
+        mediaUris: List<Uri>?,
+        location: Location?,
+        keepExistingMedia: Boolean
+    ): ApiResponse<ReplyDto> {
+        return httpClient.submitFormWithBinaryData(
+            url = "/replies/$replyId",
+            formData = formData {
+                // Add text if provided
+                text?.let {
+                    append("text", it)
+                }
+
+                // Add location as JSON string if provided
+                location?.let {
+                    val locationJson = Json.encodeToString(it.toDto())
+                    append("location", locationJson)
+                }
+
+                // Add keepExistingMedia flag
+                append("keepExistingMedia", keepExistingMedia.toString())
+
+                // Add media files if provided
+                mediaUris?.forEachIndexed { index, uri ->
+                    val fileBytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                    val fileName = getFileName(uri) ?: "media_$index"
+                    val mimeType = context.contentResolver.getType(uri) ?: "application/octet-stream"
+
+                    fileBytes?.let { bytes ->
+                        append(
+                            "media[]",
+                            bytes,
+                            Headers.build {
+                                append(HttpHeaders.ContentType, mimeType)
+                                append(HttpHeaders.ContentDisposition, "filename=\"$fileName\"")
+                            }
+                        )
+                    }
+                }
+            }
+        ) {
+            method = io.ktor.http.HttpMethod.Put
         }.body()
     }
 
@@ -111,5 +283,16 @@ class PostRemoteDataSource(
         return httpClient.post("/comments") {
             setBody(request)
         }.body()
+    }
+
+    /**
+     * Get filename from URI
+     */
+    private fun getFileName(uri: Uri): String? {
+        return context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+            val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+            cursor.moveToFirst()
+            cursor.getString(nameIndex)
+        }
     }
 }

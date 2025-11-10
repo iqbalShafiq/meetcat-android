@@ -4,8 +4,8 @@
 
 This document describes the REST API requirements for the MeetCat social media application. The API follows RESTful principles and uses JSON for request/response bodies.
 
-**Total Endpoints**: 31
-**Current Status**: Mock implementation only (no real backend yet)
+**Total Endpoints**: 36
+**Current Status**: Fully integrated with real API
 **Authentication**: Token-based (Bearer token in Authorization header)
 
 **Note**: Location services are handled client-side using Android's FusedLocationProviderClient and do not require API endpoints.
@@ -964,28 +964,23 @@ POST /replies/{replyId}/unlove
 POST /posts
 ```
 
-**Headers**: Requires `Authorization: Bearer {token}`
+**Headers**:
+- `Authorization: Bearer {token}`
+- `Content-Type: multipart/form-data`
 
-**Request Body**:
-```json
-{
-  "caption": "Beautiful sunset at the beach!",
-  "mediaItems": [
-    {
-      "type": "image",
-      "url": "https://storage.example.com/images/abc123.jpg",
-      "thumbnailUrl": "https://storage.example.com/thumbnails/abc123.jpg",
-      "width": 1080,
-      "height": 1350
-    }
-  ],
-  "location": {
-    "latitude": -6.2088,
-    "longitude": 106.8456,
-    "name": "Jakarta, Indonesia",
-    "address": "Central Jakarta"
-  }
-}
+**Request Body** (multipart/form-data):
+- `caption` (text, required): Post caption
+- `location` (text, optional): JSON string of location data, e.g., `{"latitude": -6.2088, "longitude": 106.8456, "name": "Jakarta, Indonesia", "address": "Central Jakarta"}`
+- `media[]` (file, optional): Media files (images or videos). Can be multiple files. Maximum 10 files.
+
+**Example cURL**:
+```bash
+curl -X POST https://api.meetcat.com/v1/posts \
+  -H "Authorization: Bearer {token}" \
+  -F "caption=Beautiful sunset at the beach!" \
+  -F "location={\"latitude\":-6.2088,\"longitude\":106.8456,\"name\":\"Jakarta, Indonesia\"}" \
+  -F "media[]=@/path/to/image1.jpg" \
+  -F "media[]=@/path/to/image2.jpg"
 ```
 
 **Response** (201 Created):
@@ -1006,8 +1001,21 @@ POST /posts
       "isFollowing": false
     },
     "caption": "Beautiful sunset at the beach!",
-    "mediaItems": [...],
-    "location": {...},
+    "mediaItems": [
+      {
+        "type": "image",
+        "url": "https://storage.example.com/images/abc123.jpg",
+        "thumbnailUrl": "https://storage.example.com/thumbnails/abc123_thumb.jpg",
+        "width": 1080,
+        "height": 1350
+      }
+    ],
+    "location": {
+      "latitude": -6.2088,
+      "longitude": 106.8456,
+      "name": "Jakarta, Indonesia",
+      "address": "Central Jakarta"
+    },
     "lovesCount": 0,
     "commentsCount": 0,
     "repliesCount": 0,
@@ -1019,46 +1027,98 @@ POST /posts
 
 **Validations**:
 - Caption is required (minimum 1 character)
-- Media items are optional
-- Location is optional
+- Media files are optional (maximum 10 files)
+- Location is optional (must be valid JSON if provided)
+- Supported media formats: JPEG, PNG, WebP for images; MP4, MOV for videos
+- Maximum file size: 10MB for images, 100MB for videos
 
 **Errors**:
-- `400`: Validation errors
+- `400`: Validation errors (invalid caption, too many files, invalid file format, file too large)
+- `413`: Payload too large
 
-**Notes**:
-- Media files should be uploaded separately to a storage service
-- The request should include the URLs of uploaded media
-- Maximum 10 media items per post
+**Backend Processing**:
+- Server uploads files to object storage (S3, GCS, etc.)
+- Server generates thumbnails for images and videos
+- Server extracts dimensions (width, height) from images/videos
+- Server extracts duration from videos
+- Server returns URLs to uploaded files in response
 
 ---
 
-### 12. Create Reply
+### 12. Update Post
+```
+PUT /posts/{postId}
+```
+
+**Path Parameters**:
+- `postId` (string, required): Post ID to update
+
+**Headers**:
+- `Authorization: Bearer {token}`
+- `Content-Type: multipart/form-data`
+
+**Request Body** (multipart/form-data):
+- `caption` (text, optional): Updated post caption
+- `location` (text, optional): JSON string of location data. Set to empty string to remove location.
+- `media[]` (file, optional): New media files to replace existing ones. If provided, replaces ALL existing media.
+- `keepExistingMedia` (text, optional): "true" or "false" (default: false). If true and media[] is not provided, keeps existing media.
+
+**Response** (200 OK):
+```json
+{
+  "success": true,
+  "data": {
+    "id": "post123",
+    "userId": "user123",
+    "user": {...},
+    "caption": "Updated caption",
+    "mediaItems": [...],
+    "location": {...},
+    "lovesCount": 42,
+    "commentsCount": 8,
+    "repliesCount": 3,
+    "isLoved": false,
+    "createdAt": 1699123456789,
+    "updatedAt": 1699130000000
+  }
+}
+```
+
+**Validations**:
+- At least one field must be provided (caption, location, or media)
+- User must be the owner of the post
+- Same file validations as create post
+
+**Errors**:
+- `400`: Validation errors
+- `403`: Not authorized to edit this post
+- `404`: Post not found
+
+---
+
+### 13. Create Reply
 ```
 POST /replies
 ```
 
-**Headers**: Requires `Authorization: Bearer {token}`
+**Headers**:
+- `Authorization: Bearer {token}`
+- `Content-Type: multipart/form-data`
 
-**Request Body**:
-```json
-{
-  "originalPostId": "post456",
-  "text": "This is my reply to the original post",
-  "mediaItems": [
-    {
-      "type": "image",
-      "url": "https://storage.example.com/images/def456.jpg",
-      "thumbnailUrl": "https://storage.example.com/thumbnails/def456.jpg",
-      "width": 800,
-      "height": 600
-    }
-  ],
-  "location": {
-    "latitude": -6.2088,
-    "longitude": 106.8456,
-    "name": "Jakarta, Indonesia"
-  }
-}
+**Request Body** (multipart/form-data):
+- `originalPostId` (text, required): ID of the post being replied to
+- `text` (text, required): Reply text content
+- `location` (text, optional): JSON string of location data
+- `media[]` (file, optional): Media files (images or videos). Can be multiple files. Maximum 10 files.
+
+**Example cURL**:
+```bash
+curl -X POST https://api.meetcat.com/v1/replies \
+  -H "Authorization: Bearer {token}" \
+  -F "originalPostId=post456" \
+  -F "text=This is my reply to the original post" \
+  -F "location={\"latitude\":-6.2088,\"longitude\":106.8456,\"name\":\"Jakarta\"}" \
+  -F "media[]=@/path/to/image.jpg"
 ```
 
 **Response** (201 Created):
@@ -1072,8 +1132,20 @@ POST /replies
     "userId": "user123",
     "user": {...},
     "text": "This is my reply to the original post",
-    "mediaItems": [...],
-    "location": {...},
+    "mediaItems": [
+      {
+        "type": "image",
+        "url": "https://storage.example.com/images/def456.jpg",
+        "thumbnailUrl": "https://storage.example.com/thumbnails/def456_thumb.jpg",
+        "width": 800,
+        "height": 600
+      }
+    ],
+    "location": {
+      "latitude": -6.2088,
+      "longitude": 106.8456,
+      "name": "Jakarta, Indonesia"
+    },
     "lovesCount": 0,
     "commentsCount": 0,
     "isLoved": false,
@@ -1085,19 +1157,73 @@ POST /replies
 **Validations**:
 - originalPostId is required and must exist
 - text is required (minimum 1 character)
-- Media items are optional
-- Location is optional
+- Media files are optional (maximum 10 files)
+- Location is optional (must be valid JSON if provided)
+- Same file format and size validations as create post
 
 **Errors**:
 - `400`: Validation errors
 - `404`: Original post not found
+- `413`: Payload too large
 
-**Notes**:
-- Maximum 10 media items per reply
+**Backend Processing**:
+- Same as create post (upload to storage, generate thumbnails, etc.)
 
 ---
 
-### 13. Create Comment
+### 14. Update Reply
+```
+PUT /replies/{replyId}
+```
+
+**Path Parameters**:
+- `replyId` (string, required): Reply ID to update
+
+**Headers**:
+- `Authorization: Bearer {token}`
+- `Content-Type: multipart/form-data`
+
+**Request Body** (multipart/form-data):
+- `text` (text, optional): Updated reply text
+- `location` (text, optional): JSON string of location data. Set to empty string to remove location.
+- `media[]` (file, optional): New media files to replace existing ones. If provided, replaces ALL existing media.
+- `keepExistingMedia` (text, optional): "true" or "false" (default: false). If true and media[] is not provided, keeps existing media.
+
+**Response** (200 OK):
+```json
+{
+  "success": true,
+  "data": {
+    "id": "reply123",
+    "originalPostId": "post456",
+    "originalPost": {...},
+    "userId": "user123",
+    "user": {...},
+    "text": "Updated reply text",
+    "mediaItems": [...],
+    "location": {...},
+    "lovesCount": 15,
+    "commentsCount": 3,
+    "isLoved": false,
+    "createdAt": 1699123456789,
+    "updatedAt": 1699130000000
+  }
+}
+```
+
+**Validations**:
+- At least one field must be provided (text, location, or media)
+- User must be the owner of the reply
+- Same file validations as create reply
+
+**Errors**:
+- `400`: Validation errors
+- `403`: Not authorized to edit this reply
+- `404`: Reply not found
+
+---
+
+### 15. Create Comment
 ```
 POST /comments
 ```
@@ -1674,7 +1800,9 @@ DELETE /search-history/all
 | GET | /posts/{postId} | Yes | No | Get single post |
 | GET | /replies/{replyId} | Yes | No | Get single reply |
 | POST | /posts | Yes | No | Create post |
+| PUT | /posts/{postId} | Yes | No | Update post |
 | POST | /replies | Yes | No | Create reply |
+| PUT | /replies/{replyId} | Yes | No | Update reply |
 | POST | /posts/{postId}/love | Yes | No | Love post |
 | POST | /posts/{postId}/unlove | Yes | No | Unlove post |
 | POST | /replies/{replyId}/love | Yes | No | Love reply |
@@ -1689,8 +1817,8 @@ DELETE /search-history/all
 | DELETE | /search-history/{query} | Yes | No | Delete search query |
 | DELETE | /search-history/all | Yes | No | Clear search history |
 
-**Total**: 34 endpoints
-**Authenticated**: 31 endpoints
+**Total**: 36 endpoints
+**Authenticated**: 33 endpoints
 **Paginated**: 8 endpoints
 
 **Note**: Location services (get location, permission status) are handled client-side and do not require server endpoints.
@@ -1701,6 +1829,6 @@ DELETE /search-history/all
 
 For questions or clarifications about this API specification, please contact the development team.
 
-**Version**: 1.0
-**Last Updated**: 2025-11-06
-**Status**: Draft - Mock Implementation Only
+**Version**: 1.1
+**Last Updated**: 2025-11-10
+**Status**: Fully Implemented - Multipart Upload Support

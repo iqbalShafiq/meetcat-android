@@ -2,14 +2,10 @@ package id.usecase.meetcat.data.repository
 
 import id.usecase.meetcat.data.remote.datasource.PostRemoteDataSource
 import id.usecase.meetcat.data.remote.dto.CreateCommentRequest
-import id.usecase.meetcat.data.remote.dto.CreatePostRequest
-import id.usecase.meetcat.data.remote.dto.CreateReplyRequest
-import id.usecase.meetcat.data.remote.dto.toDto
 import id.usecase.meetcat.data.remote.dto.toDomain
 import id.usecase.meetcat.domain.model.Comment
 import id.usecase.meetcat.domain.model.FeedItem
 import id.usecase.meetcat.domain.model.Location
-import id.usecase.meetcat.domain.model.MediaItem
 import id.usecase.meetcat.domain.model.Post
 import id.usecase.meetcat.domain.model.Reply
 import id.usecase.meetcat.domain.repository.PostRepository
@@ -255,17 +251,15 @@ class PostRepositoryImpl(
 
     override suspend fun createPost(
         caption: String,
-        mediaItems: List<MediaItem>?,
+        mediaUris: List<android.net.Uri>?,
         location: Location?
     ): Result<Post> {
         return try {
-            val request = CreatePostRequest(
+            val response = remoteDataSource.createPost(
                 caption = caption,
-                mediaItems = mediaItems?.map { it.toDto() },
-                location = location?.toDto()
+                mediaUris = mediaUris,
+                location = location
             )
-
-            val response = remoteDataSource.createPost(request)
 
             if (response.success && response.data != null) {
                 Result.success(response.data.toDomain())
@@ -279,27 +273,81 @@ class PostRepositoryImpl(
         }
     }
 
+    override suspend fun updatePost(
+        postId: String,
+        caption: String?,
+        mediaUris: List<android.net.Uri>?,
+        location: Location?,
+        keepExistingMedia: Boolean
+    ): Result<Post> {
+        return try {
+            val response = remoteDataSource.updatePost(
+                postId = postId,
+                caption = caption,
+                mediaUris = mediaUris,
+                location = location,
+                keepExistingMedia = keepExistingMedia
+            )
+
+            if (response.success && response.data != null) {
+                Result.success(response.data.toDomain())
+            } else {
+                Result.failure(
+                    Exception(response.error?.message ?: "Failed to update post")
+                )
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     override suspend fun createReply(
         originalPostId: String,
         text: String,
-        mediaItems: List<MediaItem>?,
+        mediaUris: List<android.net.Uri>?,
         location: Location?
     ): Result<Reply> {
         return try {
-            val request = CreateReplyRequest(
+            val response = remoteDataSource.createReply(
                 originalPostId = originalPostId,
                 text = text,
-                mediaItems = mediaItems?.map { it.toDto() },
-                location = location?.toDto()
+                mediaUris = mediaUris,
+                location = location
             )
-
-            val response = remoteDataSource.createReply(request)
 
             if (response.success && response.data != null) {
                 Result.success(response.data.toDomain())
             } else {
                 Result.failure(
                     Exception(response.error?.message ?: "Failed to create reply")
+                )
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun updateReply(
+        replyId: String,
+        text: String?,
+        mediaUris: List<android.net.Uri>?,
+        location: Location?,
+        keepExistingMedia: Boolean
+    ): Result<Reply> {
+        return try {
+            val response = remoteDataSource.updateReply(
+                replyId = replyId,
+                text = text,
+                mediaUris = mediaUris,
+                location = location,
+                keepExistingMedia = keepExistingMedia
+            )
+
+            if (response.success && response.data != null) {
+                Result.success(response.data.toDomain())
+            } else {
+                Result.failure(
+                    Exception(response.error?.message ?: "Failed to update reply")
                 )
             }
         } catch (e: Exception) {
