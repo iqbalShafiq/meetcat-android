@@ -31,6 +31,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -41,6 +42,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -52,6 +56,7 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import id.usecase.meetcat.domain.model.FeedItem
 import id.usecase.meetcat.presentation.component.card.PostCard
 import id.usecase.meetcat.presentation.component.card.ReplyCard
+import id.usecase.meetcat.presentation.component.chip.NewUpdatesChip
 import id.usecase.meetcat.presentation.component.state.EmptyView
 import id.usecase.meetcat.presentation.component.state.ErrorView
 import id.usecase.meetcat.presentation.component.state.LoadingView
@@ -75,7 +80,24 @@ fun ExploreScreen(
 ) {
     val feedItems = viewModel.feedItems.collectAsLazyPagingItems()
     val currentUserId by viewModel.currentUserId.collectAsStateWithLifecycle()
+    val hasNewUpdates by viewModel.hasNewUpdates.collectAsStateWithLifecycle()
+    val newUpdatesCount by viewModel.newUpdatesCount.collectAsStateWithLifecycle()
+    val shouldScrollToTop by viewModel.shouldScrollToTop.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+
+    // Lifecycle observer to detect screen resume
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.onEvent(ExploreUiEvent.ScreenResumed)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.uiEffect.collect { effect ->
@@ -118,7 +140,10 @@ fun ExploreScreen(
         onNavigateToReply = onNavigateToReply,
         onNavigateToCreatePost = onNavigateToCreatePost,
         currentUserId = currentUserId,
-        isBottomNavVisible = isBottomNavVisible
+        isBottomNavVisible = isBottomNavVisible,
+        hasNewUpdates = hasNewUpdates,
+        newUpdatesCount = newUpdatesCount,
+        shouldScrollToTop = shouldScrollToTop
     )
 }
 
@@ -135,7 +160,10 @@ private fun ExploreContent(
     onNavigateToReply: (String) -> Unit = {},
     onNavigateToCreatePost: () -> Unit = {},
     currentUserId: String? = null,
-    isBottomNavVisible: Boolean = true
+    isBottomNavVisible: Boolean = true,
+    hasNewUpdates: Boolean = false,
+    newUpdatesCount: Int = 0,
+    shouldScrollToTop: Boolean = false
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -210,21 +238,41 @@ private fun ExploreContent(
             }
 
             else -> {
-                PullToRefreshBox(
-                    isRefreshing = loadState.refresh is LoadState.Loading && feedItems.itemCount > 0,
-                    onRefresh = { feedItems.refresh() },
+                Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues)
                 ) {
-                    FeedList(
-                        feedItems = feedItems,
-                        viewModel = viewModel,
-                        onEvent = onEvent,
-                        onShowBottomNav = onShowBottomNav,
-                        onHideBottomNav = onHideBottomNav,
-                        onNavigateToReply = onNavigateToReply,
-                        currentUserId = currentUserId
+                    PullToRefreshBox(
+                        isRefreshing = loadState.refresh is LoadState.Loading && feedItems.itemCount > 0,
+                        onRefresh = {
+                            feedItems.refresh()
+                            onEvent(ExploreUiEvent.Refresh)
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        FeedList(
+                            feedItems = feedItems,
+                            viewModel = viewModel,
+                            onEvent = onEvent,
+                            onShowBottomNav = onShowBottomNav,
+                            onHideBottomNav = onHideBottomNav,
+                            onNavigateToReply = onNavigateToReply,
+                            currentUserId = currentUserId,
+                            shouldScrollToTop = shouldScrollToTop
+                        )
+                    }
+
+                    // New Updates Chip
+                    NewUpdatesChip(
+                        visible = hasNewUpdates,
+                        count = newUpdatesCount,
+                        onClick = {
+                            onEvent(ExploreUiEvent.NewUpdatesChipClicked)
+                        },
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(top = 8.dp)
                     )
                 }
             }
@@ -241,13 +289,25 @@ private fun FeedList(
     onHideBottomNav: () -> Unit = {},
     onNavigateToReply: (String) -> Unit = {},
     viewModel: ExploreViewModel,
-    currentUserId: String? = null
+    currentUserId: String? = null,
+    shouldScrollToTop: Boolean = false
 ) {
     // Use scroll position from ViewModel to preserve across navigation
     val lazyListState = rememberLazyListState(
         initialFirstVisibleItemIndex = viewModel.scrollIndex,
         initialFirstVisibleItemScrollOffset = viewModel.scrollOffset
     )
+
+    // Handle smooth scroll to top when chip is clicked
+    LaunchedEffect(shouldScrollToTop) {
+        if (shouldScrollToTop) {
+            lazyListState.animateScrollToItem(0)
+            onEvent(ExploreUiEvent.ScrolledToTop)
+            viewModel.resetScrollToTop()
+            // Also refresh to load new items
+            feedItems.refresh()
+        }
+    }
 
     // Track previous scroll position to detect scroll direction
     var previousIndex by remember { mutableIntStateOf(lazyListState.firstVisibleItemIndex) }
@@ -272,6 +332,11 @@ private fun FeedList(
                 lazyListState.isScrollInProgress
             )
         }.collect { (currentIndex, currentOffset, isScrolling) ->
+            // Clear new updates chip when user manually scrolls to top
+            if (currentIndex == 0 && currentOffset == 0) {
+                onEvent(ExploreUiEvent.ScrolledToTop)
+            }
+
             // Only detect scroll direction when user is actively scrolling
             if (!isScrolling) return@collect
 

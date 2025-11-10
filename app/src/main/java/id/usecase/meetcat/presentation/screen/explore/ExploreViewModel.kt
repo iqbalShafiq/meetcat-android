@@ -49,6 +49,19 @@ class ExploreViewModel(
     var scrollIndex: Int = 0
     var scrollOffset: Int = 0
 
+    // Auto-refresh states
+    private val _hasNewUpdates = MutableStateFlow(false)
+    val hasNewUpdates: StateFlow<Boolean> = _hasNewUpdates.asStateFlow()
+
+    private val _newUpdatesCount = MutableStateFlow(0)
+    val newUpdatesCount: StateFlow<Int> = _newUpdatesCount.asStateFlow()
+
+    private val _shouldScrollToTop = MutableStateFlow(false)
+    val shouldScrollToTop: StateFlow<Boolean> = _shouldScrollToTop.asStateFlow()
+
+    private var lastRefreshTimestamp: Long = 0
+    private var lastScreenResumeTimestamp: Long = 0
+
     // Track ongoing jobs to prevent double-tap
     private val lovePostJobs = mutableMapOf<String, Job>()
     private val loveReplyJobs = mutableMapOf<String, Job>()
@@ -129,9 +142,25 @@ class ExploreViewModel(
         when (event) {
             is ExploreUiEvent.Refresh -> {
                 // Refresh is handled by LazyPagingItems.refresh() in UI layer
+                // Clear new updates state on manual refresh
+                _hasNewUpdates.value = false
+                _newUpdatesCount.value = 0
             }
             is ExploreUiEvent.LoadMore -> {
                 // LoadMore is handled automatically by Paging3
+            }
+            is ExploreUiEvent.ScreenResumed -> {
+                handleScreenResumed()
+            }
+            is ExploreUiEvent.ScrolledToTop -> {
+                // Clear new updates state and scroll trigger
+                _hasNewUpdates.value = false
+                _newUpdatesCount.value = 0
+                _shouldScrollToTop.value = false
+            }
+            is ExploreUiEvent.NewUpdatesChipClicked -> {
+                // Trigger smooth scroll to top
+                _shouldScrollToTop.value = true
             }
             is ExploreUiEvent.LovePost -> toggleLovePost(event.postId)
             is ExploreUiEvent.LoveReply -> toggleLoveReply(event.replyId)
@@ -161,6 +190,48 @@ class ExploreViewModel(
                 }
             }
         }
+    }
+
+    private fun handleScreenResumed() {
+        val currentTime = System.currentTimeMillis()
+
+        // Debouncing: Only refresh if at least 2 seconds have passed since last screen resume
+        if (currentTime - lastScreenResumeTimestamp < SCREEN_RESUME_DEBOUNCE_MS) {
+            return
+        }
+
+        lastScreenResumeTimestamp = currentTime
+
+        // Only trigger refresh if at least 5 seconds have passed since last refresh
+        if (currentTime - lastRefreshTimestamp < REFRESH_DEBOUNCE_MS) {
+            return
+        }
+
+        lastRefreshTimestamp = currentTime
+
+        // Simulate checking for new updates
+        // In real implementation, this would be a background refresh
+        // For now, we'll just set a flag to show the chip
+        // The actual refresh will happen when user clicks the chip
+        checkForNewUpdates()
+    }
+
+    private fun checkForNewUpdates() {
+        viewModelScope.launch {
+            // In a real implementation, you would:
+            // 1. Fetch the latest feed from the server with limit=1 or a special endpoint
+            // 2. Compare the timestamp/ID with the current first item
+            // 3. If different, set hasNewUpdates to true and update the count
+
+            // For now, we'll trigger a refresh and assume there might be new updates
+            // The UI will handle the refresh silently
+            _hasNewUpdates.value = true
+            _newUpdatesCount.value = 1 // This would come from API response
+        }
+    }
+
+    fun resetScrollToTop() {
+        _shouldScrollToTop.value = false
     }
 
     private fun toggleLovePost(postId: String) {
@@ -297,5 +368,7 @@ class ExploreViewModel(
         private const val PAGE_SIZE = 20
         private const val PREFETCH_DISTANCE = 10 // Load more when 10 items from bottom
         private const val MAX_RETRIES = 3
+        private const val SCREEN_RESUME_DEBOUNCE_MS = 2000L // 2 seconds
+        private const val REFRESH_DEBOUNCE_MS = 5000L // 5 seconds
     }
 }
