@@ -112,6 +112,7 @@ fun MainScreen(
         aboutViewModel = aboutViewModel,
         accountSettingsViewModel = accountSettingsViewModel,
         privacySettingsViewModel = privacySettingsViewModel,
+        onNavigateToLogin = onNavigateToLogin,
         modifier = modifier
     )
 }
@@ -129,6 +130,7 @@ private fun MainContent(
     aboutViewModel: AboutViewModel,
     accountSettingsViewModel: AccountSettingsViewModel,
     privacySettingsViewModel: PrivacySettingsViewModel,
+    onNavigateToLogin: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     // Handle system back button
@@ -570,7 +572,8 @@ private fun MainScreenPreview() {
             settingsViewModel = koinViewModel(),
             aboutViewModel = koinViewModel(),
             accountSettingsViewModel = koinViewModel(),
-            privacySettingsViewModel = koinViewModel()
+            privacySettingsViewModel = koinViewModel(),
+            onNavigateToLogin = {}
         )
     }
 }
