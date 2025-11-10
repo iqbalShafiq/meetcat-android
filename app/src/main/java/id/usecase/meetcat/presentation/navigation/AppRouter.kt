@@ -124,7 +124,10 @@ fun AppRouter(
             }
 
             is AppRoute.Main -> {
-                MainScreen(modifier = modifier)
+                MainScreen(
+                    onNavigateToLogin = { currentRoute = AppRoute.Login },
+                    modifier = modifier
+                )
             }
         }
     }

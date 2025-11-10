@@ -43,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -58,6 +59,7 @@ import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
+import id.usecase.meetcat.R
 import id.usecase.meetcat.domain.model.Location
 import id.usecase.meetcat.domain.model.MediaItem
 import id.usecase.meetcat.domain.model.Post
@@ -317,7 +319,9 @@ private fun PostDetailBubble(
                         .size(48.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.surfaceVariant),
-                    contentScale = ContentScale.Crop
+                    contentScale = ContentScale.Crop,
+                    placeholder = painterResource(R.drawable.ic_placeholder_avatar),
+                    error = painterResource(R.drawable.ic_placeholder_avatar)
                 )
 
                 Spacer(modifier = Modifier.width(12.dp))
@@ -358,7 +362,9 @@ private fun PostDetailBubble(
                     .height(200.dp)
                     .clip(RoundedCornerShape(8.dp))
                     .background(MaterialTheme.colorScheme.surfaceVariant),
-                contentScale = ContentScale.Crop
+                contentScale = ContentScale.Crop,
+                placeholder = painterResource(R.drawable.ic_placeholder_image),
+                error = painterResource(R.drawable.ic_placeholder_image)
             )
 
             Spacer(modifier = Modifier.height(12.dp))

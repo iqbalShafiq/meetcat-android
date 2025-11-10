@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -72,7 +73,7 @@ fun PostDetailScreen(
     onNavigateToProfile: (String) -> Unit,
     onNavigateToCreateReply: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier,
-    viewModel: PostDetailViewModel = koinViewModel { parametersOf(postId) }
+    viewModel: PostDetailViewModel = koinViewModel(key = "postDetail_$postId") { parametersOf(postId) }
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -170,7 +171,8 @@ private fun PostDetailContent(
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                     titleContentColor = MaterialTheme.colorScheme.onSurface
-                )
+                ),
+                windowInsets = WindowInsets()
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },

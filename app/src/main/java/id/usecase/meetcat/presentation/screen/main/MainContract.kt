@@ -15,6 +15,7 @@ data class MainUiState(
 
 sealed class MainUiEvent {
     data class NavigateTo(val route: String) : MainUiEvent()
+    data class NavigateToAndReplace(val route: String) : MainUiEvent()
     data object NavigateBack : MainUiEvent()
     data object ShowBottomNav : MainUiEvent()
     data object HideBottomNav : MainUiEvent()

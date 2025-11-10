@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -59,7 +60,7 @@ fun UserProfileScreen(
     onNavigateBack: () -> Unit,
     onNavigateToPost: (String) -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: UserProfileViewModel = koinViewModel { parametersOf(userId) }
+    viewModel: UserProfileViewModel = koinViewModel(key = "userProfile_$userId") { parametersOf(userId) }
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -137,7 +138,8 @@ private fun UserProfileContent(
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                     scrolledContainerColor = MaterialTheme.colorScheme.surface
-                )
+                ),
+                windowInsets = WindowInsets()
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }

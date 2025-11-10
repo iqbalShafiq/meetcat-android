@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -70,7 +71,7 @@ fun ReplyDetailScreen(
     onNavigateToProfile: (String) -> Unit,
     onNavigateToPost: (String) -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: ReplyDetailViewModel = koinViewModel { parametersOf(replyId) }
+    viewModel: ReplyDetailViewModel = koinViewModel(key = "replyDetail_$replyId") { parametersOf(replyId) }
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -143,7 +144,8 @@ private fun ReplyDetailContent(
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                     titleContentColor = MaterialTheme.colorScheme.onSurface
-                )
+                ),
+                windowInsets = WindowInsets()
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },

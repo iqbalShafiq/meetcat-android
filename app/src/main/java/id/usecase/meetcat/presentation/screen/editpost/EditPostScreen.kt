@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -54,6 +55,7 @@ import kotlinx.coroutines.flow.collectLatest
 fun EditPostScreen(
     viewModel: EditPostViewModel,
     onNavigateBack: () -> Unit,
+    onNavigateToPostDetail: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -64,6 +66,10 @@ fun EditPostScreen(
             when (effect) {
                 is EditPostUiEffect.NavigateBack -> {
                     onNavigateBack()
+                }
+
+                is EditPostUiEffect.NavigateToPostDetail -> {
+                    onNavigateToPostDetail(effect.postId)
                 }
 
                 is EditPostUiEffect.ShowMediaPicker -> {
@@ -158,7 +164,8 @@ private fun EditPostContent(
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                     titleContentColor = MaterialTheme.colorScheme.onSurface
-                )
+                ),
+                windowInsets = WindowInsets()
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }

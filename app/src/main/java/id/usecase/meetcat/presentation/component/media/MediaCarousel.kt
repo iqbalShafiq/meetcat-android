@@ -22,10 +22,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import id.usecase.meetcat.R
 import id.usecase.meetcat.domain.model.Location
 import id.usecase.meetcat.domain.model.MediaItem
 import id.usecase.meetcat.presentation.component.common.LocationBadge
@@ -70,7 +72,9 @@ fun MediaCarousel(
                                     Modifier
                                 }
                             ),
-                        contentScale = ContentScale.Crop
+                        contentScale = ContentScale.Crop,
+                        placeholder = painterResource(R.drawable.ic_placeholder_image),
+                        error = painterResource(R.drawable.ic_placeholder_image)
                     )
                 }
                 is MediaItem.Video -> {
@@ -81,7 +85,9 @@ fun MediaCarousel(
                             .build(),
                         contentDescription = "Video thumbnail ${page + 1}",
                         modifier = Modifier.fillMaxWidth(),
-                        contentScale = ContentScale.Crop
+                        contentScale = ContentScale.Crop,
+                        placeholder = painterResource(R.drawable.ic_placeholder_image),
+                        error = painterResource(R.drawable.ic_placeholder_image)
                     )
                 }
             }

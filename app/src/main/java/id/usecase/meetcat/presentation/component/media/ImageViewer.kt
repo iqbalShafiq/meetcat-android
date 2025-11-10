@@ -48,6 +48,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -55,6 +56,7 @@ import androidx.compose.ui.window.DialogProperties
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import id.usecase.meetcat.R
 import id.usecase.meetcat.ui.theme.MeetCatTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -339,7 +341,9 @@ private fun ZoomableImage(
                     }
                 }
             },
-        contentScale = ContentScale.Fit
+        contentScale = ContentScale.Fit,
+        placeholder = painterResource(R.drawable.ic_placeholder_image),
+        error = painterResource(R.drawable.ic_placeholder_image)
     )
 }
 

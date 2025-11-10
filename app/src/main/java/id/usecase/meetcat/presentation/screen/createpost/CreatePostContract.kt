@@ -27,6 +27,7 @@ data class CreatePostUiState(
 
 sealed interface CreatePostUiEffect {
     data object NavigateBack : CreatePostUiEffect
+    data class NavigateToPostDetail(val postId: String) : CreatePostUiEffect
     data object ShowMediaPicker : CreatePostUiEffect
     data object ShowLocationPicker : CreatePostUiEffect
     data class ShowSuccess(val message: String) : CreatePostUiEffect

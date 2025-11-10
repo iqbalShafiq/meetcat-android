@@ -85,6 +85,7 @@ import org.koin.core.parameter.parametersOf
 
 @Composable
 fun MainScreen(
+    onNavigateToLogin: () -> Unit,
     mainViewModel: MainViewModel = koinViewModel(),
     exploreViewModel: ExploreViewModel = koinViewModel(),
     searchViewModel: SearchViewModel = koinViewModel(),
@@ -111,6 +112,7 @@ fun MainScreen(
         aboutViewModel = aboutViewModel,
         accountSettingsViewModel = accountSettingsViewModel,
         privacySettingsViewModel = privacySettingsViewModel,
+        onNavigateToLogin = onNavigateToLogin,
         modifier = modifier
     )
 }
@@ -128,6 +130,7 @@ private fun MainContent(
     aboutViewModel: AboutViewModel,
     accountSettingsViewModel: AccountSettingsViewModel,
     privacySettingsViewModel: PrivacySettingsViewModel,
+    onNavigateToLogin: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     // Handle system back button
@@ -333,9 +336,7 @@ private fun MainContent(
                     onNavigateToAbout = {
                         onEvent(MainUiEvent.NavigateTo("about"))
                     },
-                    onNavigateToLogin = {
-                        // TODO: Handle logout and navigate to login
-                    }
+                    onNavigateToLogin = onNavigateToLogin
                 )
             }
 
@@ -421,6 +422,9 @@ private fun MainContent(
                     onNavigateBack = {
                         onEvent(MainUiEvent.NavigateBack)
                     },
+                    onNavigateToPostDetail = { postId ->
+                        onEvent(MainUiEvent.NavigateToAndReplace("post_detail/$postId"))
+                    },
                     onNavigateToCamera = {
                         onEvent(MainUiEvent.NavigateTo("camera"))
                     }
@@ -429,18 +433,21 @@ private fun MainContent(
 
             currentRoute.startsWith("edit_post/") -> {
                 val postId = currentRoute.substringAfter("edit_post/")
-                val editPostViewModel: EditPostViewModel = koinViewModel { parametersOf(postId) }
+                val editPostViewModel: EditPostViewModel = koinViewModel(key = "editPost_$postId") { parametersOf(postId) }
                 EditPostScreen(
                     viewModel = editPostViewModel,
                     onNavigateBack = {
                         onEvent(MainUiEvent.NavigateBack)
+                    },
+                    onNavigateToPostDetail = { detailPostId ->
+                        onEvent(MainUiEvent.NavigateToAndReplace("post_detail/$detailPostId"))
                     }
                 )
             }
 
             currentRoute.startsWith("create_reply/") -> {
                 val postId = currentRoute.substringAfter("create_reply/")
-                val createReplyViewModel: CreateReplyViewModel = koinViewModel { parametersOf(postId) }
+                val createReplyViewModel: CreateReplyViewModel = koinViewModel(key = "createReply_$postId") { parametersOf(postId) }
 
                 // Handle selected image from camera/gallery
                 LaunchedEffect(mainUiState.selectedImageUri) {
@@ -454,6 +461,9 @@ private fun MainContent(
                     viewModel = createReplyViewModel,
                     onNavigateBack = {
                         onEvent(MainUiEvent.NavigateBack)
+                    },
+                    onNavigateToReplyDetail = { replyId ->
+                        onEvent(MainUiEvent.NavigateToAndReplace("reply_detail/$replyId"))
                     },
                     onNavigateToCamera = {
                         onEvent(MainUiEvent.NavigateTo("camera"))
@@ -473,7 +483,7 @@ private fun MainContent(
 
             currentRoute.startsWith("followers_list/") -> {
                 val userId = currentRoute.substringAfter("followers_list/")
-                val followersListViewModel: FollowersListViewModel = koinViewModel { parametersOf(userId) }
+                val followersListViewModel: FollowersListViewModel = koinViewModel(key = "followersList_$userId") { parametersOf(userId) }
                 FollowersListScreen(
                     viewModel = followersListViewModel,
                     onNavigateBack = {
@@ -487,7 +497,7 @@ private fun MainContent(
 
             currentRoute.startsWith("following_list/") -> {
                 val userId = currentRoute.substringAfter("following_list/")
-                val followingListViewModel: FollowingListViewModel = koinViewModel { parametersOf(userId) }
+                val followingListViewModel: FollowingListViewModel = koinViewModel(key = "followingList_$userId") { parametersOf(userId) }
                 FollowingListScreen(
                     viewModel = followingListViewModel,
                     onNavigateBack = {
@@ -571,7 +581,8 @@ private fun MainScreenPreview() {
             settingsViewModel = koinViewModel(),
             aboutViewModel = koinViewModel(),
             accountSettingsViewModel = koinViewModel(),
-            privacySettingsViewModel = koinViewModel()
+            privacySettingsViewModel = koinViewModel(),
+            onNavigateToLogin = {}
         )
     }
 }

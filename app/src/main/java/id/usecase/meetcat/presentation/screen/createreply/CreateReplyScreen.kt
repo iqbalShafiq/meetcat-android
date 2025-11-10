@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -58,12 +59,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import id.usecase.meetcat.R
 import id.usecase.meetcat.domain.model.Post
 import id.usecase.meetcat.domain.model.User
 import id.usecase.meetcat.ui.theme.MeetCatTheme
@@ -73,6 +76,7 @@ import kotlinx.coroutines.flow.collectLatest
 fun CreateReplyScreen(
     viewModel: CreateReplyViewModel,
     onNavigateBack: () -> Unit,
+    onNavigateToReplyDetail: (String) -> Unit,
     onNavigateToCamera: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
@@ -84,6 +88,10 @@ fun CreateReplyScreen(
             when (effect) {
                 is CreateReplyUiEffect.NavigateBack -> {
                     onNavigateBack()
+                }
+
+                is CreateReplyUiEffect.NavigateToReplyDetail -> {
+                    onNavigateToReplyDetail(effect.replyId)
                 }
 
                 is CreateReplyUiEffect.ShowMediaPicker -> {
@@ -138,7 +146,8 @@ private fun CreateReplyContent(
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                     titleContentColor = MaterialTheme.colorScheme.onSurface
-                )
+                ),
+                windowInsets = WindowInsets()
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -332,7 +341,9 @@ private fun CreateReplyContent(
                                     model = uiState.mediaUri,
                                     contentDescription = "Selected media",
                                     modifier = Modifier.fillMaxSize(),
-                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                    placeholder = painterResource(R.drawable.ic_placeholder_image),
+                                    error = painterResource(R.drawable.ic_placeholder_image)
                                 )
 
                                 // Remove button
