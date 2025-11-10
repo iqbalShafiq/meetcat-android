@@ -113,7 +113,7 @@ class PostRemoteDataSource(
         location: Location?
     ): ApiResponse<PostDto> {
         return httpClient.submitFormWithBinaryData(
-            url = "/posts",
+            url = "/v1/posts",
             formData = formData {
                 // Add caption
                 append("caption", caption)
@@ -160,7 +160,7 @@ class PostRemoteDataSource(
         keepExistingMedia: Boolean
     ): ApiResponse<PostDto> {
         return httpClient.submitFormWithBinaryData(
-            url = "/posts/$postId",
+            url = "/v1/posts/$postId",
             formData = formData {
                 // Add caption if provided
                 caption?.let {
@@ -213,7 +213,7 @@ class PostRemoteDataSource(
         location: Location?
     ): ApiResponse<ReplyDto> {
         return httpClient.submitFormWithBinaryData(
-            url = "/replies",
+            url = "/v1/replies",
             formData = formData {
                 // Add required fields
                 append("originalPostId", originalPostId)
@@ -261,7 +261,7 @@ class PostRemoteDataSource(
         keepExistingMedia: Boolean
     ): ApiResponse<ReplyDto> {
         return httpClient.submitFormWithBinaryData(
-            url = "/replies/$replyId",
+            url = "/v1/replies/$replyId",
             formData = formData {
                 // Add text if provided
                 text?.let {
