@@ -422,6 +422,9 @@ private fun MainContent(
                     onNavigateBack = {
                         onEvent(MainUiEvent.NavigateBack)
                     },
+                    onNavigateToPostDetail = { postId ->
+                        onEvent(MainUiEvent.NavigateToAndReplace("post_detail/$postId"))
+                    },
                     onNavigateToCamera = {
                         onEvent(MainUiEvent.NavigateTo("camera"))
                     }
@@ -435,6 +438,9 @@ private fun MainContent(
                     viewModel = editPostViewModel,
                     onNavigateBack = {
                         onEvent(MainUiEvent.NavigateBack)
+                    },
+                    onNavigateToPostDetail = { detailPostId ->
+                        onEvent(MainUiEvent.NavigateToAndReplace("post_detail/$detailPostId"))
                     }
                 )
             }
@@ -455,6 +461,9 @@ private fun MainContent(
                     viewModel = createReplyViewModel,
                     onNavigateBack = {
                         onEvent(MainUiEvent.NavigateBack)
+                    },
+                    onNavigateToReplyDetail = { replyId ->
+                        onEvent(MainUiEvent.NavigateToAndReplace("reply_detail/$replyId"))
                     },
                     onNavigateToCamera = {
                         onEvent(MainUiEvent.NavigateTo("camera"))

@@ -23,6 +23,7 @@ data class CreateReplyUiState(
 
 sealed interface CreateReplyUiEffect {
     data object NavigateBack : CreateReplyUiEffect
+    data class NavigateToReplyDetail(val replyId: String) : CreateReplyUiEffect
     data object ShowMediaPicker : CreateReplyUiEffect
     data class ShowSuccess(val message: String) : CreateReplyUiEffect
     data class ShowError(val message: String) : CreateReplyUiEffect

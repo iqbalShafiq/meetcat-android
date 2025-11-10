@@ -26,6 +26,7 @@ data class EditPostUiState(
 
 sealed interface EditPostUiEffect {
     data object NavigateBack : EditPostUiEffect
+    data class NavigateToPostDetail(val postId: String) : EditPostUiEffect
     data object ShowMediaPicker : EditPostUiEffect
     data object ShowDeleteConfirmation : EditPostUiEffect
     data class ShowSuccess(val message: String) : EditPostUiEffect

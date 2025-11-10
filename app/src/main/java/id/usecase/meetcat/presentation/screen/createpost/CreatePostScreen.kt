@@ -69,6 +69,7 @@ import kotlinx.coroutines.flow.collectLatest
 fun CreatePostScreen(
     viewModel: CreatePostViewModel,
     onNavigateBack: () -> Unit,
+    onNavigateToPostDetail: (String) -> Unit,
     modifier: Modifier = Modifier,
     onNavigateToCamera: (() -> Unit)? = null
 ) {
@@ -80,6 +81,10 @@ fun CreatePostScreen(
             when (effect) {
                 is CreatePostUiEffect.NavigateBack -> {
                     onNavigateBack()
+                }
+
+                is CreatePostUiEffect.NavigateToPostDetail -> {
+                    onNavigateToPostDetail(effect.postId)
                 }
 
                 is CreatePostUiEffect.ShowMediaPicker -> {

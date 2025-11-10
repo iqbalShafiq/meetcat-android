@@ -124,7 +124,7 @@ class EditPostViewModel(
                     _uiState.update { it.copy(isSaving = false) }
                     _uiEffect.send(EditPostUiEffect.ShowSuccess("Post updated successfully!"))
                     delay(500)
-                    _uiEffect.send(EditPostUiEffect.NavigateBack)
+                    _uiEffect.send(EditPostUiEffect.NavigateToPostDetail(postId))
                 },
                 onFailure = { error ->
                     _uiState.update {

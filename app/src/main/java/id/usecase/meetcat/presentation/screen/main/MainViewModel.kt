@@ -31,6 +31,7 @@ class MainViewModel : ViewModel() {
     fun onEvent(event: MainUiEvent) {
         when (event) {
             is MainUiEvent.NavigateTo -> navigateTo(event.route)
+            is MainUiEvent.NavigateToAndReplace -> navigateToAndReplace(event.route)
             is MainUiEvent.NavigateBack -> navigateBack()
             is MainUiEvent.ShowBottomNav -> showBottomNav()
             is MainUiEvent.HideBottomNav -> hideBottomNav()
@@ -69,6 +70,33 @@ class MainViewModel : ViewModel() {
                     isNavigatingBack = false
                 )
             }
+        }
+
+        // Auto-hide bottom nav when navigating to detail screens
+        // Show when navigating to main bottom nav screens
+        if (route in bottomNavRoutes) {
+            showBottomNav()
+        } else {
+            hideBottomNav()
+        }
+    }
+
+    private fun navigateToAndReplace(route: String) {
+        _uiState.update { currentState ->
+            // Replace the last item in the stack with the new route
+            // This is useful for navigating from create/edit screens to detail screens
+            // so that back navigation skips the create/edit screen
+            val newStack = if (currentState.backStack.size > 1) {
+                (currentState.backStack.dropLast(1) + route).toImmutableList()
+            } else {
+                listOf(route).toImmutableList()
+            }
+
+            currentState.copy(
+                currentRoute = route,
+                backStack = newStack,
+                isNavigatingBack = false
+            )
         }
 
         // Auto-hide bottom nav when navigating to detail screens
