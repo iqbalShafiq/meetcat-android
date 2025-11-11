@@ -30,6 +30,7 @@ fun TimelineTrack(
     currentPositionMs: Long,
     color: Color,
     modifier: Modifier = Modifier,
+    showSoundIndicator: Boolean = false,
     onItemClick: (String) -> Unit = {},
     onItemDrag: (String, Long, Long) -> Unit = { _, _, _ -> }
 ) {
@@ -52,10 +53,24 @@ fun TimelineTrack(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp)
-                    .pointerInput(Unit) {
+                    .pointerInput(items, totalDurationMs) {
                         detectHorizontalDragGestures { change, dragAmount ->
                             // TODO: Handle drag to move items
                             change.consume()
+                        }
+                    }
+                    .pointerInput(items, totalDurationMs) {
+                        // Handle click to select item
+                        androidx.compose.foundation.gestures.detectTapGestures { offset ->
+                            // Find which item was clicked
+                            val clickX = offset.x
+                            items.forEach { item ->
+                                val startX = (item.startMs.toFloat() / totalDurationMs) * size.width
+                                val width = ((item.endMs - item.startMs).toFloat() / totalDurationMs) * size.width
+                                if (clickX >= startX && clickX <= startX + width) {
+                                    onItemClick(item.id)
+                                }
+                            }
                         }
                     }
             ) {
@@ -80,6 +95,21 @@ fun TimelineTrack(
                         cornerRadius = androidx.compose.ui.geometry.CornerRadius(4.dp.toPx()),
                         style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.dp.toPx())
                     )
+
+                    // Draw sound indicator if item has sound
+                    if (showSoundIndicator && item.hasSound) {
+                        drawCircle(
+                            color = Color.Yellow,
+                            radius = 6.dp.toPx(),
+                            center = Offset(startX + width - 12.dp.toPx(), 8.dp.toPx() + 8.dp.toPx())
+                        )
+                        // Draw musical note symbol (approximation)
+                        drawCircle(
+                            color = Color.Black,
+                            radius = 3.dp.toPx(),
+                            center = Offset(startX + width - 12.dp.toPx(), 8.dp.toPx() + 8.dp.toPx())
+                        )
+                    }
                 }
 
                 // Draw playhead
@@ -102,5 +132,6 @@ data class TimelineItem(
     val id: String,
     val startMs: Long,
     val endMs: Long,
-    val label: String = ""
+    val label: String = "",
+    val hasSound: Boolean = false
 )

@@ -46,8 +46,10 @@ class VideoEditorViewModel(
 
             // Object Events
             is VideoEditorUiEvent.OnObjectSelected -> handleObjectSelected(event)
+            is VideoEditorUiEvent.OnObjectClicked -> handleObjectClicked(event)
             is VideoEditorUiEvent.OnObjectMoved -> handleObjectMoved(event)
             is VideoEditorUiEvent.OnObjectRemoved -> handleObjectRemoved(event)
+            is VideoEditorUiEvent.OnObjectSoundUpdated -> handleObjectSoundUpdated(event)
 
             // Audio Events
             is VideoEditorUiEvent.OnAudioSelected -> handleAudioSelected(event)
@@ -138,6 +140,29 @@ class VideoEditorViewModel(
                 objectLayers = state.objectLayers
                     .filter { it.id != event.id }
                     .toPersistentList()
+            )
+        }
+    }
+
+    private fun handleObjectClicked(event: VideoEditorUiEvent.OnObjectClicked) {
+        _uiState.update { state ->
+            state.copy(selectedObjectForSoundEdit = event.objectId)
+        }
+    }
+
+    private fun handleObjectSoundUpdated(event: VideoEditorUiEvent.OnObjectSoundUpdated) {
+        _uiState.update { state ->
+            state.copy(
+                objectLayers = state.objectLayers
+                    .map { layer ->
+                        if (layer.id == event.objectId) {
+                            layer.copy(soundConfig = event.soundConfig)
+                        } else {
+                            layer
+                        }
+                    }
+                    .toPersistentList(),
+                selectedObjectForSoundEdit = null // Close dialog
             )
         }
     }

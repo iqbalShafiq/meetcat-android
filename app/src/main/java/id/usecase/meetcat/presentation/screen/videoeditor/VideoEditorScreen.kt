@@ -68,6 +68,7 @@ import androidx.media3.common.util.UnstableApi
 import coil3.compose.AsyncImage
 import id.usecase.meetcat.presentation.component.state.LoadingView
 import id.usecase.meetcat.presentation.component.videoeditor.ExportProgressDialog
+import id.usecase.meetcat.presentation.component.videoeditor.ObjectSoundEditDialog
 import id.usecase.meetcat.presentation.component.videoeditor.TimelineItem
 import id.usecase.meetcat.presentation.component.videoeditor.TimelineTrack
 import kotlinx.coroutines.launch
@@ -210,6 +211,26 @@ fun VideoEditorScreen(
         ExportProgressDialog(
             progress = uiState.exportProgress
         )
+    }
+
+    // Object Sound Edit Dialog
+    uiState.selectedObjectForSoundEdit?.let { objectId ->
+        val selectedObject = uiState.objectLayers.find { it.id == objectId }
+        selectedObject?.let { obj ->
+            val catObject = uiState.availableObjects.find { it.id == obj.objectId }
+            ObjectSoundEditDialog(
+                objectName = catObject?.name ?: "Cat Object",
+                objectDurationMs = obj.endMs - obj.startMs,
+                currentSoundConfig = obj.soundConfig,
+                availableSounds = uiState.availableSounds.toList(),
+                onDismiss = {
+                    viewModel.onEvent(VideoEditorUiEvent.OnObjectSoundUpdated(objectId, obj.soundConfig))
+                },
+                onSave = { soundConfig ->
+                    viewModel.onEvent(VideoEditorUiEvent.OnObjectSoundUpdated(objectId, soundConfig))
+                }
+            )
+        }
     }
 }
 
@@ -372,15 +393,24 @@ private fun TimelineSection(
             color = MaterialTheme.colorScheme.primary
         )
 
-        // Objects track
+        // Objects track (with sound indicators)
         TimelineTrack(
-            label = "🐱 Cat Objects",
+            label = "🐱 Cat Objects (tap to add sound)",
             items = uiState.objectLayers.map {
-                TimelineItem(it.id, it.startMs, it.endMs)
+                TimelineItem(
+                    id = it.id,
+                    startMs = it.startMs,
+                    endMs = it.endMs,
+                    hasSound = it.soundConfig != null
+                )
             },
             totalDurationMs = uiState.totalDurationMs,
             currentPositionMs = uiState.currentPositionMs,
-            color = MaterialTheme.colorScheme.secondary
+            color = MaterialTheme.colorScheme.secondary,
+            showSoundIndicator = true,
+            onItemClick = { objectId ->
+                onEvent(VideoEditorUiEvent.OnObjectClicked(objectId))
+            }
         )
 
         // Audio track

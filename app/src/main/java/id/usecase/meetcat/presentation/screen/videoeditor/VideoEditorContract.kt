@@ -19,8 +19,13 @@ sealed interface VideoEditorUiEvent {
 
     // Object Actions
     data class OnObjectSelected(val objectId: String, val startMs: Long, val endMs: Long) : VideoEditorUiEvent
+    data class OnObjectClicked(val objectId: String) : VideoEditorUiEvent
     data class OnObjectMoved(val id: String, val newStartMs: Long, val newEndMs: Long) : VideoEditorUiEvent
     data class OnObjectRemoved(val id: String) : VideoEditorUiEvent
+    data class OnObjectSoundUpdated(
+        val objectId: String,
+        val soundConfig: ObjectSoundConfig?
+    ) : VideoEditorUiEvent
 
     // Audio Actions
     data class OnAudioSelected(val uri: Uri, val startMs: Long, val endMs: Long) : VideoEditorUiEvent
@@ -59,7 +64,8 @@ data class VideoEditorUiState(
     @FloatRange(from = 0.0, to = 1.0)
     val exportProgress: Float = 0f,
     val timelineScale: Float = 1f, // 1f = default zoom level
-    val error: String? = null
+    val error: String? = null,
+    val selectedObjectForSoundEdit: String? = null // Object ID being edited
 )
 
 // UI Effects (One-time events)
@@ -97,7 +103,22 @@ data class ObjectLayer(
     val endMs: Long,
     val x: Float = 0.5f, // Normalized position (0-1)
     val y: Float = 0.5f, // Normalized position (0-1)
-    val scale: Float = 1f
+    val scale: Float = 1f,
+    val soundConfig: ObjectSoundConfig? = null // Optional sound attachment
+)
+
+/**
+ * Sound configuration attached to an object
+ * This is the sound that plays when the object is visible
+ */
+@Immutable
+data class ObjectSoundConfig(
+    val soundUri: Uri,
+    val soundName: String,
+    val offsetMs: Long = 0, // Delay from object start (0 = play immediately when object appears)
+    val durationMs: Long? = null, // null = play until object disappears
+    @FloatRange(from = 0.0, to = 1.0)
+    val volume: Float = 1f
 )
 
 /**
