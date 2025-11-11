@@ -50,6 +50,8 @@ data class VideoEditorUiState(
     val objectLayers: ImmutableList<ObjectLayer> = persistentListOf(),
     val audioTracks: ImmutableList<AudioTrack> = persistentListOf(),
     val availableObjects: ImmutableList<CatObject> = persistentListOf(),
+    val availableBackgrounds: ImmutableList<BackgroundAsset> = persistentListOf(),
+    val availableSounds: ImmutableList<SoundAsset> = persistentListOf(),
     val currentPositionMs: Long = 0,
     val totalDurationMs: Long = 30000, // Default 30 seconds
     val isPlaying: Boolean = false,

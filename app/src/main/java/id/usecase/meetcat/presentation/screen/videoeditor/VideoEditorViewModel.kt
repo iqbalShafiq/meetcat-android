@@ -18,7 +18,9 @@ import java.util.UUID
  * ViewModel for VideoEditor screen
  * Manages the state of backgrounds, objects, and audio tracks in the timeline
  */
-class VideoEditorViewModel : ViewModel() {
+class VideoEditorViewModel(
+    private val assetManager: VideoEditorAssetManager
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(VideoEditorUiState())
     val uiState: StateFlow<VideoEditorUiState> = _uiState.asStateFlow()
@@ -27,7 +29,7 @@ class VideoEditorViewModel : ViewModel() {
     val uiEffect = _uiEffect.receiveAsFlow()
 
     init {
-        loadAvailableCatObjects()
+        loadAvailableAssets()
     }
 
     fun onEvent(event: VideoEditorUiEvent) {
@@ -263,42 +265,32 @@ class VideoEditorViewModel : ViewModel() {
     }
 
     // Data Loading
-    private fun loadAvailableCatObjects() {
-        // Mock data - in real app, load from assets or remote server
-        val mockObjects = listOf(
-            CatObject(
-                id = "cat_1",
-                name = "Dancing Cat",
-                thumbnailUri = "https://placeholder.com/cat1.jpg",
-                resourceUri = "asset:///cats/dancing_cat.gif",
-                type = CatObjectType.GIF
-            ),
-            CatObject(
-                id = "cat_2",
-                name = "Jumping Cat",
-                thumbnailUri = "https://placeholder.com/cat2.jpg",
-                resourceUri = "asset:///cats/jumping_cat.gif",
-                type = CatObjectType.GIF
-            ),
-            CatObject(
-                id = "cat_3",
-                name = "Sleeping Cat",
-                thumbnailUri = "https://placeholder.com/cat3.jpg",
-                resourceUri = "asset:///cats/sleeping_cat.gif",
-                type = CatObjectType.GIF
-            ),
-            CatObject(
-                id = "cat_4",
-                name = "Running Cat",
-                thumbnailUri = "https://placeholder.com/cat4.jpg",
-                resourceUri = "asset:///cats/running_cat.mp4",
-                type = CatObjectType.VIDEO
-            )
-        )
+    private fun loadAvailableAssets() {
+        viewModelScope.launch {
+            // Load cat objects from assets
+            val catObjects = assetManager.getCatObjects()
 
-        _uiState.update { state ->
-            state.copy(availableObjects = mockObjects.toPersistentList())
+            // Load backgrounds from assets
+            val backgrounds = assetManager.getBackgrounds()
+
+            // Load sounds from assets
+            val sounds = assetManager.getSounds()
+
+            _uiState.update { state ->
+                state.copy(
+                    availableObjects = catObjects.toPersistentList(),
+                    availableBackgrounds = backgrounds.toPersistentList(),
+                    availableSounds = sounds.toPersistentList()
+                )
+            }
         }
+    }
+
+    /**
+     * Refresh assets - useful after downloading new assets
+     */
+    fun refreshAssets() {
+        loadAvailableAssets()
     }
 
     /**

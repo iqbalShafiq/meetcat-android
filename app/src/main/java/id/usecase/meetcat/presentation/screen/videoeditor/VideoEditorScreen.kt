@@ -453,19 +453,30 @@ private fun BottomSheetContent(
 
         // Content based on selected tab
         when (selectedTab) {
-            PickerTab.BACKGROUND -> BackgroundPicker(onEvent)
-            PickerTab.OBJECTS -> ObjectPicker(uiState.availableObjects, onEvent)
-            PickerTab.AUDIO -> AudioPicker(onEvent)
+            PickerTab.BACKGROUND -> BackgroundPicker(
+                backgrounds = uiState.availableBackgrounds,
+                onEvent = onEvent
+            )
+            PickerTab.OBJECTS -> ObjectPicker(
+                objects = uiState.availableObjects,
+                onEvent = onEvent
+            )
+            PickerTab.AUDIO -> AudioPicker(
+                sounds = uiState.availableSounds,
+                onEvent = onEvent
+            )
         }
     }
 }
 
 /**
- * Background picker with gallery access
+ * Background picker with bundled assets + gallery access
  */
 @Composable
-private fun BackgroundPicker(onEvent: (VideoEditorUiEvent) -> Unit) {
-    val context = LocalContext.current
+private fun BackgroundPicker(
+    backgrounds: List<BackgroundAsset>,
+    onEvent: (VideoEditorUiEvent) -> Unit
+) {
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -476,28 +487,79 @@ private fun BackgroundPicker(onEvent: (VideoEditorUiEvent) -> Unit) {
     }
 
     Column(
-        modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        modifier = Modifier.fillMaxSize()
     ) {
-        Button(
-            onClick = { galleryLauncher.launch("image/*") }
+        if (backgrounds.isNotEmpty()) {
+            // Show bundled backgrounds
+            LazyRow(
+                modifier = Modifier.weight(1f),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(backgrounds) { background ->
+                    BackgroundAssetItem(
+                        background = background,
+                        onClick = {
+                            onEvent(VideoEditorUiEvent.OnBackgroundSelected(
+                                background.uri, 0, 5000
+                            ))
+                        }
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
+        // Gallery picker button
+        FilledTonalButton(
+            onClick = { galleryLauncher.launch("image/*") },
+            modifier = Modifier.fillMaxWidth()
         ) {
             Icon(Icons.Default.Image, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
             Text("Choose from Gallery")
         }
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "Select a background image or video",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
     }
 }
 
 /**
- * Object picker showing available cat GIFs/videos
+ * Individual background asset item
+ */
+@Composable
+private fun BackgroundAssetItem(
+    background: BackgroundAsset,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .width(120.dp)
+            .clickable(onClick = onClick)
+    ) {
+        Column(
+            modifier = Modifier.padding(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            AsyncImage(
+                model = background.thumbnailUri,
+                contentDescription = background.name,
+                modifier = Modifier
+                    .size(80.dp)
+                    .clip(RoundedCornerShape(8.dp)),
+                contentScale = ContentScale.Crop
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = background.name,
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+/**
+ * Object picker showing available cat GIFs/videos (bundled only)
  */
 @Composable
 private fun ObjectPicker(
@@ -567,10 +629,13 @@ private fun CatObjectItem(
 }
 
 /**
- * Audio picker with file access
+ * Audio picker with bundled sounds + file access
  */
 @Composable
-private fun AudioPicker(onEvent: (VideoEditorUiEvent) -> Unit) {
+private fun AudioPicker(
+    sounds: List<SoundAsset>,
+    onEvent: (VideoEditorUiEvent) -> Unit
+) {
     val audioLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -581,23 +646,69 @@ private fun AudioPicker(onEvent: (VideoEditorUiEvent) -> Unit) {
     }
 
     Column(
-        modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        modifier = Modifier.fillMaxSize()
     ) {
-        Button(
-            onClick = { audioLauncher.launch("audio/*") }
+        if (sounds.isNotEmpty()) {
+            // Show bundled sounds
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(sounds) { sound ->
+                    SoundAssetItem(
+                        sound = sound,
+                        onClick = {
+                            onEvent(VideoEditorUiEvent.OnAudioSelected(
+                                sound.uri, 0, 10000
+                            ))
+                        }
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
+        // File picker button
+        FilledTonalButton(
+            onClick = { audioLauncher.launch("audio/*") },
+            modifier = Modifier.fillMaxWidth()
         ) {
             Icon(Icons.Default.AudioFile, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
             Text("Choose Audio File")
         }
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "Select an audio track",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+    }
+}
+
+/**
+ * Individual sound asset item
+ */
+@Composable
+private fun SoundAssetItem(
+    sound: SoundAsset,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.AudioFile,
+                contentDescription = null,
+                modifier = Modifier.size(32.dp)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = sound.name,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.weight(1f)
+            )
+        }
     }
 }
 

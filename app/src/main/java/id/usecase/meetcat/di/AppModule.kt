@@ -55,6 +55,7 @@ import id.usecase.meetcat.presentation.screen.explore.ExploreViewModel
 import id.usecase.meetcat.presentation.screen.followerslist.FollowersListViewModel
 import id.usecase.meetcat.presentation.screen.followinglist.FollowingListViewModel
 import id.usecase.meetcat.presentation.screen.main.MainViewModel
+import id.usecase.meetcat.presentation.screen.videoeditor.VideoEditorAssetManager
 import id.usecase.meetcat.presentation.screen.videoeditor.VideoEditorViewModel
 import id.usecase.meetcat.presentation.screen.mediapicker.MediaPickerViewModel
 import id.usecase.meetcat.presentation.screen.postdetail.PostDetailViewModel
@@ -85,7 +86,11 @@ val appModule = module {
     viewModelOf(::ExploreViewModel)
     viewModelOf(::MainViewModel)
     viewModelOf(::SearchViewModel)
-    viewModelOf(::VideoEditorViewModel)
+    viewModel {
+        VideoEditorViewModel(
+            assetManager = get()
+        )
+    }
     viewModel {
         ProfileViewModel(
             getCurrentUserUseCase = get(),
@@ -256,4 +261,7 @@ val dataModule = module {
             fusedLocationClient = get()
         )
     }
+
+    // Video Editor Asset Manager
+    single { VideoEditorAssetManager(androidContext()) }
 }
