@@ -4,18 +4,13 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -29,29 +24,27 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AudioFile
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Pets
-import androidx.compose.material.icons.filled.VideoFile
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberBottomSheetScaffoldState
 import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.runtime.Composable
@@ -64,25 +57,28 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.media3.common.util.UnstableApi
 import coil3.compose.AsyncImage
+import id.usecase.meetcat.presentation.component.state.LoadingView
+import id.usecase.meetcat.presentation.component.videoeditor.ExportProgressDialog
+import id.usecase.meetcat.presentation.component.videoeditor.TimelineItem
+import id.usecase.meetcat.presentation.component.videoeditor.TimelineTrack
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 
 /**
- * Main VideoEditor Screen
- * Provides a video editing interface with timeline, preview, and layer controls
+ * 🎬 MeetCat Video Editor Screen
+ * Create adorable cat videos with backgrounds, objects, and sounds!
  */
 @OptIn(ExperimentalMaterial3Api::class)
+@UnstableApi
 @Composable
 fun VideoEditorScreen(
     onNavigateBack: () -> Unit,
@@ -96,26 +92,23 @@ fun VideoEditorScreen(
         )
     )
     val scope = rememberCoroutineScope()
+    var showExportSuccess by remember { mutableStateOf(false) }
 
     // Handle UI Effects
     LaunchedEffect(Unit) {
         viewModel.uiEffect.collect { effect ->
             when (effect) {
                 is VideoEditorUiEffect.NavigateBack -> onNavigateBack()
-                is VideoEditorUiEffect.OpenBackgroundPicker -> {
-                    scope.launch { scaffoldState.bottomSheetState.expand() }
-                }
-                is VideoEditorUiEffect.OpenObjectPicker -> {
-                    scope.launch { scaffoldState.bottomSheetState.expand() }
-                }
+                is VideoEditorUiEffect.OpenBackgroundPicker,
+                is VideoEditorUiEffect.OpenObjectPicker,
                 is VideoEditorUiEffect.OpenAudioPicker -> {
                     scope.launch { scaffoldState.bottomSheetState.expand() }
                 }
                 is VideoEditorUiEffect.ShowError -> {
-                    // TODO: Show snackbar or toast
+                    // TODO: Show error snackbar
                 }
                 is VideoEditorUiEffect.ExportSuccess -> {
-                    // TODO: Show success message and share options
+                    showExportSuccess = true
                 }
             }
         }
@@ -127,81 +120,101 @@ fun VideoEditorScreen(
         scaffoldState = scaffoldState,
         topBar = {
             TopAppBar(
-                title = { Text("Video Editor") },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Pets,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Cat Video Studio")
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = { viewModel.onEvent(VideoEditorUiEvent.OnBackClicked) }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
-                actions = {
-                    Button(
-                        onClick = { viewModel.onEvent(VideoEditorUiEvent.OnExportClicked) },
-                        enabled = !uiState.isExporting && uiState.backgroundLayers.isNotEmpty()
-                    ) {
-                        Text("Export")
-                    }
-                }
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
             )
         },
         sheetContent = {
-            BottomSheetContent(
+            AssetPickerSheet(
                 selectedTab = selectedTab,
                 onTabSelected = { selectedTab = it },
                 uiState = uiState,
                 onEvent = viewModel::onEvent
             )
         },
-        sheetPeekHeight = 280.dp
+        sheetPeekHeight = 300.dp
     ) { paddingValues ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Preview Area
-            PreviewSection(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                uiState = uiState
-            )
-
-            // Export Progress
-            AnimatedVisibility(visible = uiState.isExporting) {
-                Column(
+            Column(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                // Preview Section
+                PreviewSection(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-                    Text("Exporting video...")
-                    LinearProgressIndicator(
-                        progress = { uiState.exportProgress },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
+                        .weight(1f),
+                    uiState = uiState
+                )
+
+                // Playback Controls
+                PlaybackControls(
+                    modifier = Modifier.fillMaxWidth(),
+                    uiState = uiState,
+                    onEvent = viewModel::onEvent
+                )
+
+                // Timeline
+                TimelineSection(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(220.dp)
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    uiState = uiState,
+                    onEvent = viewModel::onEvent
+                )
             }
 
-            // Playback Controls
-            PlaybackControls(
-                modifier = Modifier.fillMaxWidth(),
-                uiState = uiState,
-                onEvent = viewModel::onEvent
-            )
-
-            // Timeline
-            TimelineSection(
+            // Export FAB
+            AnimatedVisibility(
+                visible = !uiState.isExporting && uiState.backgroundLayers.isNotEmpty(),
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp),
-                uiState = uiState,
-                onEvent = viewModel::onEvent
-            )
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp)
+            ) {
+                ExtendedFloatingActionButton(
+                    onClick = { viewModel.onEvent(VideoEditorUiEvent.OnExportClicked) },
+                    icon = {
+                        Icon(Icons.Default.Pets, contentDescription = null)
+                    },
+                    text = { Text("🎬 Export Video") },
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                )
+            }
         }
+    }
+
+    // Export Progress Dialog
+    if (uiState.isExporting) {
+        ExportProgressDialog(
+            progress = uiState.exportProgress
+        )
     }
 }
 
 /**
- * Preview section showing the composed video
+ * Preview section showing composed video
  */
 @Composable
 private fun PreviewSection(
@@ -209,32 +222,55 @@ private fun PreviewSection(
     uiState: VideoEditorUiState
 ) {
     Box(
-        modifier = modifier
-            .background(Color.Black),
+        modifier = modifier.background(Color.Black),
         contentAlignment = Alignment.Center
     ) {
-        // Preview placeholder - in real implementation, use ExoPlayer
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(16f / 9f)
-                .background(Color.DarkGray),
-            contentAlignment = Alignment.Center
-        ) {
+        if (uiState.backgroundLayers.isEmpty()) {
+            // Empty state
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier.padding(32.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.VideoFile,
+                    imageVector = Icons.Default.Pets,
                     contentDescription = null,
-                    modifier = Modifier.size(64.dp),
-                    tint = Color.White.copy(alpha = 0.5f)
+                    tint = Color.White.copy(alpha = 0.3f),
+                    modifier = Modifier.size(80.dp)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "Start by adding a background! 🎨",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.White.copy(alpha = 0.7f),
+                    textAlign = TextAlign.Center
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Preview Area\n${uiState.backgroundLayers.size} backgrounds, ${uiState.objectLayers.size} objects",
-                    color = Color.White.copy(alpha = 0.7f),
+                    text = "Then add cute cats and sounds",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White.copy(alpha = 0.5f),
+                    textAlign = TextAlign.Center
+                )
+            }
+        } else {
+            // TODO: Show ExoPlayer preview with composed video
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier.padding(32.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Pets,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(64.dp)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "Preview: ${uiState.backgroundLayers.size} bg, ${uiState.objectLayers.size} cats, ${uiState.audioTracks.size} sounds",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White.copy(alpha = 0.8f),
                     textAlign = TextAlign.Center
                 )
             }
@@ -243,7 +279,7 @@ private fun PreviewSection(
 }
 
 /**
- * Playback controls (play/pause, seek bar)
+ * Playback controls
  */
 @Composable
 private fun PlaybackControls(
@@ -252,16 +288,19 @@ private fun PlaybackControls(
     onEvent: (VideoEditorUiEvent) -> Unit
 ) {
     Column(
-        modifier = modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+        modifier = modifier
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
-        // Seek bar
+        // Time slider
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 text = formatTime(uiState.currentPositionMs),
-                style = MaterialTheme.typography.bodySmall
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Slider(
                 value = uiState.currentPositionMs.toFloat(),
@@ -269,26 +308,34 @@ private fun PlaybackControls(
                 valueRange = 0f..uiState.totalDurationMs.toFloat(),
                 modifier = Modifier
                     .weight(1f)
-                    .padding(horizontal = 8.dp)
+                    .padding(horizontal = 12.dp)
             )
             Text(
                 text = formatTime(uiState.totalDurationMs),
-                style = MaterialTheme.typography.bodySmall
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
-        // Play/Pause button
+        // Play button
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center
         ) {
             IconButton(
-                onClick = { onEvent(VideoEditorUiEvent.OnPlayPauseClicked) }
+                onClick = { onEvent(VideoEditorUiEvent.OnPlayPauseClicked) },
+                modifier = Modifier
+                    .size(56.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        shape = CircleShape
+                    )
             ) {
                 Icon(
                     imageVector = if (uiState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                     contentDescription = if (uiState.isPlaying) "Pause" else "Play",
-                    modifier = Modifier.size(48.dp)
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.size(32.dp)
                 )
             }
         }
@@ -296,7 +343,7 @@ private fun PlaybackControls(
 }
 
 /**
- * Timeline section showing all layers
+ * Timeline section with all tracks
  */
 @Composable
 private fun TimelineSection(
@@ -305,114 +352,55 @@ private fun TimelineSection(
     onEvent: (VideoEditorUiEvent) -> Unit
 ) {
     Column(
-        modifier = modifier
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .padding(8.dp)
+        modifier = modifier.padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(
             text = "Timeline",
             style = MaterialTheme.typography.titleSmall,
-            modifier = Modifier.padding(bottom = 4.dp)
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         // Background track
         TimelineTrack(
-            label = "Background",
-            items = uiState.backgroundLayers,
-            totalDuration = uiState.totalDurationMs,
-            currentPosition = uiState.currentPositionMs,
-            color = MaterialTheme.colorScheme.primary,
-            onItemRemove = { onEvent(VideoEditorUiEvent.OnBackgroundRemoved(it)) }
+            label = "🎨 Backgrounds",
+            items = uiState.backgroundLayers.map {
+                TimelineItem(it.id, it.startMs, it.endMs)
+            },
+            totalDurationMs = uiState.totalDurationMs,
+            currentPositionMs = uiState.currentPositionMs,
+            color = MaterialTheme.colorScheme.primary
         )
 
-        Spacer(modifier = Modifier.height(4.dp))
-
-        // Object track
+        // Objects track
         TimelineTrack(
-            label = "Objects",
-            items = uiState.objectLayers,
-            totalDuration = uiState.totalDurationMs,
-            currentPosition = uiState.currentPositionMs,
-            color = MaterialTheme.colorScheme.secondary,
-            onItemRemove = { onEvent(VideoEditorUiEvent.OnObjectRemoved(it)) }
+            label = "🐱 Cat Objects",
+            items = uiState.objectLayers.map {
+                TimelineItem(it.id, it.startMs, it.endMs)
+            },
+            totalDurationMs = uiState.totalDurationMs,
+            currentPositionMs = uiState.currentPositionMs,
+            color = MaterialTheme.colorScheme.secondary
         )
-
-        Spacer(modifier = Modifier.height(4.dp))
 
         // Audio track
         TimelineTrack(
-            label = "Audio",
-            items = uiState.audioTracks,
-            totalDuration = uiState.totalDurationMs,
-            currentPosition = uiState.currentPositionMs,
-            color = MaterialTheme.colorScheme.tertiary,
-            onItemRemove = { onEvent(VideoEditorUiEvent.OnAudioRemoved(it)) }
+            label = "🎵 Sounds",
+            items = uiState.audioTracks.map {
+                TimelineItem(it.id, it.startMs, it.endMs)
+            },
+            totalDurationMs = uiState.totalDurationMs,
+            currentPositionMs = uiState.currentPositionMs,
+            color = MaterialTheme.colorScheme.tertiary
         )
     }
 }
 
 /**
- * Generic timeline track for displaying items
+ * Asset picker bottom sheet
  */
 @Composable
-private fun <T : Any> TimelineTrack(
-    label: String,
-    items: List<T>,
-    totalDuration: Long,
-    currentPosition: Long,
-    color: Color,
-    onItemRemove: (String) -> Unit
-) {
-    Column {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(40.dp)
-                .background(Color.White.copy(alpha = 0.3f), RoundedCornerShape(4.dp))
-        ) {
-            // Draw timeline items
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                items.forEach { item ->
-                    val (startMs, endMs, id) = when (item) {
-                        is BackgroundLayer -> Triple(item.startMs, item.endMs, item.id)
-                        is ObjectLayer -> Triple(item.startMs, item.endMs, item.id)
-                        is AudioTrack -> Triple(item.startMs, item.endMs, item.id)
-                        else -> return@forEach
-                    }
-
-                    val startX = (startMs.toFloat() / totalDuration) * size.width
-                    val width = ((endMs - startMs).toFloat() / totalDuration) * size.width
-
-                    drawRect(
-                        color = color,
-                        topLeft = Offset(startX, 0f),
-                        size = Size(width, size.height)
-                    )
-                }
-
-                // Draw playhead
-                val playheadX = (currentPosition.toFloat() / totalDuration) * size.width
-                drawLine(
-                    color = Color.Red,
-                    start = Offset(playheadX, 0f),
-                    end = Offset(playheadX, size.height),
-                    strokeWidth = 2.dp.toPx()
-                )
-            }
-        }
-    }
-}
-
-/**
- * Bottom sheet content for selecting backgrounds, objects, and audio
- */
-@Composable
-private fun BottomSheetContent(
+private fun AssetPickerSheet(
     selectedTab: PickerTab,
     onTabSelected: (PickerTab) -> Unit,
     uiState: VideoEditorUiState,
@@ -421,18 +409,20 @@ private fun BottomSheetContent(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .height(280.dp)
+            .height(300.dp)
+            .background(MaterialTheme.colorScheme.surface)
             .padding(16.dp)
     ) {
         // Tabs
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             PickerTab.entries.forEach { tab ->
                 FilledTonalButton(
                     onClick = { onTabSelected(tab) },
-                    modifier = Modifier.weight(1f).padding(horizontal = 4.dp)
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
                     Icon(
                         imageVector = when (tab) {
@@ -441,17 +431,17 @@ private fun BottomSheetContent(
                             PickerTab.AUDIO -> Icons.Default.AudioFile
                         },
                         contentDescription = null,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(20.dp)
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(tab.name.lowercase().replaceFirstChar { it.uppercase() })
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(tab.label)
                 }
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Content based on selected tab
+        // Content
         when (selectedTab) {
             PickerTab.BACKGROUND -> BackgroundPicker(
                 backgrounds = uiState.availableBackgrounds,
@@ -470,7 +460,7 @@ private fun BottomSheetContent(
 }
 
 /**
- * Background picker with bundled assets + gallery access
+ * Background picker
  */
 @Composable
 private fun BackgroundPicker(
@@ -481,36 +471,30 @@ private fun BackgroundPicker(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let {
-            // Add background with default 5-second duration at current position
             onEvent(VideoEditorUiEvent.OnBackgroundSelected(it, 0, 5000))
         }
     }
 
-    Column(
-        modifier = Modifier.fillMaxSize()
-    ) {
+    Column(modifier = Modifier.fillMaxSize()) {
         if (backgrounds.isNotEmpty()) {
-            // Show bundled backgrounds
             LazyRow(
                 modifier = Modifier.weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(backgrounds) { background ->
-                    BackgroundAssetItem(
-                        background = background,
+                items(backgrounds) { bg ->
+                    AssetCard(
+                        imageUri = bg.thumbnailUri,
+                        label = bg.name,
                         onClick = {
-                            onEvent(VideoEditorUiEvent.OnBackgroundSelected(
-                                background.uri, 0, 5000
-                            ))
+                            onEvent(VideoEditorUiEvent.OnBackgroundSelected(bg.uri, 0, 5000))
                         }
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
         }
 
-        // Gallery picker button
-        FilledTonalButton(
+        Button(
             onClick = { galleryLauncher.launch("image/*") },
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -522,44 +506,7 @@ private fun BackgroundPicker(
 }
 
 /**
- * Individual background asset item
- */
-@Composable
-private fun BackgroundAssetItem(
-    background: BackgroundAsset,
-    onClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .width(120.dp)
-            .clickable(onClick = onClick)
-    ) {
-        Column(
-            modifier = Modifier.padding(8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            AsyncImage(
-                model = background.thumbnailUri,
-                contentDescription = background.name,
-                modifier = Modifier
-                    .size(80.dp)
-                    .clip(RoundedCornerShape(8.dp)),
-                contentScale = ContentScale.Crop
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = background.name,
-                style = MaterialTheme.typography.bodySmall,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center
-            )
-        }
-    }
-}
-
-/**
- * Object picker showing available cat GIFs/videos (bundled only)
+ * Object picker
  */
 @Composable
 private fun ObjectPicker(
@@ -571,19 +518,24 @@ private fun ObjectPicker(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            CircularProgressIndicator()
+            Text(
+                text = "No cat objects available.\nAdd GIFs to assets/cats/ folder",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
         }
     } else {
         LazyRow(
             modifier = Modifier.fillMaxSize(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(objects) { catObject ->
-                CatObjectItem(
-                    catObject = catObject,
+            items(objects) { cat ->
+                AssetCard(
+                    imageUri = cat.thumbnailUri.toUri(),
+                    label = cat.name,
                     onClick = {
-                        // Add object with default 3-second duration at current position
-                        onEvent(VideoEditorUiEvent.OnObjectSelected(catObject.id, 0, 3000))
+                        onEvent(VideoEditorUiEvent.OnObjectSelected(cat.id, 0, 3000))
                     }
                 )
             }
@@ -592,44 +544,7 @@ private fun ObjectPicker(
 }
 
 /**
- * Individual cat object item
- */
-@Composable
-private fun CatObjectItem(
-    catObject: CatObject,
-    onClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .width(120.dp)
-            .clickable(onClick = onClick)
-    ) {
-        Column(
-            modifier = Modifier.padding(8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            AsyncImage(
-                model = catObject.thumbnailUri,
-                contentDescription = catObject.name,
-                modifier = Modifier
-                    .size(80.dp)
-                    .clip(RoundedCornerShape(8.dp)),
-                contentScale = ContentScale.Crop
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = catObject.name,
-                style = MaterialTheme.typography.bodySmall,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center
-            )
-        }
-    }
-}
-
-/**
- * Audio picker with bundled sounds + file access
+ * Audio picker
  */
 @Composable
 private fun AudioPicker(
@@ -640,36 +555,29 @@ private fun AudioPicker(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let {
-            // Add audio with default 10-second duration at current position
             onEvent(VideoEditorUiEvent.OnAudioSelected(it, 0, 10000))
         }
     }
 
-    Column(
-        modifier = Modifier.fillMaxSize()
-    ) {
+    Column(modifier = Modifier.fillMaxSize()) {
         if (sounds.isNotEmpty()) {
-            // Show bundled sounds
             LazyColumn(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(sounds) { sound ->
-                    SoundAssetItem(
+                    SoundItem(
                         sound = sound,
                         onClick = {
-                            onEvent(VideoEditorUiEvent.OnAudioSelected(
-                                sound.uri, 0, 10000
-                            ))
+                            onEvent(VideoEditorUiEvent.OnAudioSelected(sound.uri, 0, 10000))
                         }
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
         }
 
-        // File picker button
-        FilledTonalButton(
+        Button(
             onClick = { audioLauncher.launch("audio/*") },
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -681,17 +589,59 @@ private fun AudioPicker(
 }
 
 /**
- * Individual sound asset item
+ * Asset card component
  */
 @Composable
-private fun SoundAssetItem(
+private fun AssetCard(
+    imageUri: Uri,
+    label: String,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .width(100.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            AsyncImage(
+                model = imageUri,
+                contentDescription = label,
+                modifier = Modifier
+                    .size(70.dp)
+                    .clip(RoundedCornerShape(8.dp)),
+                contentScale = ContentScale.Crop
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
+
+/**
+ * Sound item component
+ */
+@Composable
+private fun SoundItem(
     sound: SoundAsset,
     onClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(12.dp)
     ) {
         Row(
             modifier = Modifier.padding(12.dp),
@@ -700,6 +650,7 @@ private fun SoundAssetItem(
             Icon(
                 imageVector = Icons.Default.AudioFile,
                 contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(32.dp)
             )
             Spacer(modifier = Modifier.width(12.dp))
@@ -713,7 +664,7 @@ private fun SoundAssetItem(
 }
 
 /**
- * Helper function to format milliseconds to MM:SS
+ * Format milliseconds to MM:SS
  */
 private fun formatTime(ms: Long): String {
     val totalSeconds = ms / 1000
@@ -725,8 +676,8 @@ private fun formatTime(ms: Long): String {
 /**
  * Picker tabs
  */
-private enum class PickerTab {
-    BACKGROUND,
-    OBJECTS,
-    AUDIO
+private enum class PickerTab(val label: String) {
+    BACKGROUND("Backgrounds"),
+    OBJECTS("Cats"),
+    AUDIO("Sounds")
 }

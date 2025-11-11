@@ -88,7 +88,8 @@ val appModule = module {
     viewModelOf(::SearchViewModel)
     viewModel {
         VideoEditorViewModel(
-            assetManager = get()
+            assetManager = get(),
+            context = androidContext()
         )
     }
     viewModel {

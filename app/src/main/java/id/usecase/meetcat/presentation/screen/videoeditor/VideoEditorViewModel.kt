@@ -1,8 +1,10 @@
 package id.usecase.meetcat.presentation.screen.videoeditor
 
+import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.media3.common.util.UnstableApi
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.channels.Channel
@@ -18,9 +20,13 @@ import java.util.UUID
  * ViewModel for VideoEditor screen
  * Manages the state of backgrounds, objects, and audio tracks in the timeline
  */
+@UnstableApi
 class VideoEditorViewModel(
-    private val assetManager: VideoEditorAssetManager
+    private val assetManager: VideoEditorAssetManager,
+    private val context: Context
 ) : ViewModel() {
+
+    private val videoCompositor = VideoCompositor(context)
 
     private val _uiState = MutableStateFlow(VideoEditorUiState())
     val uiState: StateFlow<VideoEditorUiState> = _uiState.asStateFlow()
@@ -199,32 +205,50 @@ class VideoEditorViewModel(
 
     // Export Handlers
     private fun handleExport() {
+        val state = _uiState.value
+
+        // Validate that we have content to export
+        if (state.backgroundLayers.isEmpty()) {
+            viewModelScope.launch {
+                _uiEffect.send(VideoEditorUiEffect.ShowError("Please add at least one background"))
+            }
+            return
+        }
+
         viewModelScope.launch {
             try {
                 _uiState.update { it.copy(isExporting = true, exportProgress = 0f) }
 
-                // TODO: Implement actual Media3 Transformer export
-                // This is a placeholder for the export logic
-                // In real implementation, you would:
-                // 1. Create EditedMediaItem for each layer
-                // 2. Apply Effects (OverlayEffect, etc.)
-                // 3. Use Transformer to export
-                // 4. Track progress with Transformer.getProgress()
+                val outputPath = videoCompositor.getOutputFilePath()
 
-                // Simulate export progress
-                for (i in 1..10) {
-                    kotlinx.coroutines.delay(200)
-                    _uiState.update { it.copy(exportProgress = i / 10f) }
+                // Start real export with Media3 Transformer
+                videoCompositor.exportVideo(
+                    backgroundLayers = state.backgroundLayers.toList(),
+                    objectLayers = state.objectLayers.toList(),
+                    audioTracks = state.audioTracks.toList(),
+                    outputPath = outputPath,
+                    totalDurationMs = state.totalDurationMs
+                ).collect { progress ->
+                    when (progress) {
+                        is ExportProgress.Progress -> {
+                            _uiState.update { it.copy(exportProgress = progress.progress) }
+                        }
+                        is ExportProgress.Complete -> {
+                            _uiState.update { it.copy(isExporting = false, exportProgress = 1f) }
+                            _uiEffect.send(VideoEditorUiEffect.ExportSuccess(
+                                videoCompositor.getOutputUri()
+                            ))
+                        }
+                        is ExportProgress.Error -> {
+                            _uiState.update { it.copy(isExporting = false, exportProgress = 0f) }
+                            _uiEffect.send(VideoEditorUiEffect.ShowError(progress.message))
+                        }
+                    }
                 }
 
-                // Mock success
-                val mockOutputUri = Uri.parse("file:///mock/output.mp4")
-                _uiEffect.send(VideoEditorUiEffect.ExportSuccess(mockOutputUri))
-
             } catch (e: Exception) {
-                _uiEffect.send(VideoEditorUiEffect.ShowError(e.message ?: "Export failed"))
-            } finally {
                 _uiState.update { it.copy(isExporting = false, exportProgress = 0f) }
+                _uiEffect.send(VideoEditorUiEffect.ShowError(e.message ?: "Export failed"))
             }
         }
     }
