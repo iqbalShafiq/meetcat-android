@@ -85,12 +85,20 @@ fun ExploreScreen(
     val shouldScrollToTop by viewModel.shouldScrollToTop.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Lifecycle observer to detect screen resume
+    // Lifecycle observer to start/stop polling
+    // ON_START: Screen becomes visible (start polling)
+    // ON_STOP: Screen becomes invisible (stop polling to save battery)
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                viewModel.onEvent(ExploreUiEvent.ScreenResumed)
+            when (event) {
+                Lifecycle.Event.ON_START -> {
+                    viewModel.onEvent(ExploreUiEvent.ScreenStarted)
+                }
+                Lifecycle.Event.ON_STOP -> {
+                    viewModel.onEvent(ExploreUiEvent.ScreenStopped)
+                }
+                else -> {}
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)

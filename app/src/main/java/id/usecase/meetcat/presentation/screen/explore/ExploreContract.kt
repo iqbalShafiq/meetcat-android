@@ -17,7 +17,8 @@ data class ExploreUiState(
 sealed class ExploreUiEvent {
     data object Refresh : ExploreUiEvent()
     data object LoadMore : ExploreUiEvent()
-    data object ScreenResumed : ExploreUiEvent()
+    data object ScreenStarted : ExploreUiEvent()
+    data object ScreenStopped : ExploreUiEvent()
     data object ScrolledToTop : ExploreUiEvent()
     data object NewUpdatesChipClicked : ExploreUiEvent()
     data class LovePost(val postId: String) : ExploreUiEvent()
