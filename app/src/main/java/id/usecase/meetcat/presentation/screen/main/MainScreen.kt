@@ -47,8 +47,8 @@ import id.usecase.meetcat.presentation.component.navigation.BottomNavItem
 import id.usecase.meetcat.presentation.component.navigation.MeetCatBottomNavBar
 import id.usecase.meetcat.presentation.screen.explore.ExploreScreen
 import id.usecase.meetcat.presentation.screen.explore.ExploreViewModel
-import id.usecase.meetcat.presentation.screen.maps.MapsScreen
-import id.usecase.meetcat.presentation.screen.maps.MapsViewModel
+import id.usecase.meetcat.presentation.screen.videoeditor.VideoEditorScreen
+import id.usecase.meetcat.presentation.screen.videoeditor.VideoEditorViewModel
 import id.usecase.meetcat.presentation.screen.postdetail.PostDetailScreen
 import id.usecase.meetcat.presentation.screen.profile.ProfileScreen
 import id.usecase.meetcat.presentation.screen.profile.ProfileViewModel
@@ -89,7 +89,7 @@ fun MainScreen(
     mainViewModel: MainViewModel = koinViewModel(),
     exploreViewModel: ExploreViewModel = koinViewModel(),
     searchViewModel: SearchViewModel = koinViewModel(),
-    mapsViewModel: MapsViewModel = koinViewModel(),
+    videoEditorViewModel: VideoEditorViewModel = koinViewModel(),
     profileViewModel: ProfileViewModel = koinViewModel(),
     settingsViewModel: SettingsViewModel = koinViewModel(),
     aboutViewModel: AboutViewModel = koinViewModel(),
@@ -106,7 +106,7 @@ fun MainScreen(
         onEvent = mainViewModel::onEvent,
         exploreViewModel = exploreViewModel,
         searchViewModel = searchViewModel,
-        mapsViewModel = mapsViewModel,
+        videoEditorViewModel = videoEditorViewModel,
         profileViewModel = profileViewModel,
         settingsViewModel = settingsViewModel,
         aboutViewModel = aboutViewModel,
@@ -124,7 +124,7 @@ private fun MainContent(
     onEvent: (MainUiEvent) -> Unit,
     exploreViewModel: ExploreViewModel,
     searchViewModel: SearchViewModel,
-    mapsViewModel: MapsViewModel,
+    videoEditorViewModel: VideoEditorViewModel,
     profileViewModel: ProfileViewModel,
     settingsViewModel: SettingsViewModel,
     aboutViewModel: AboutViewModel,
@@ -286,15 +286,11 @@ private fun MainContent(
             }
 
             currentRoute == BottomNavItem.NearMe.route -> {
-                MapsScreen(
-                    onNavigateToPost = { postId ->
-                        onEvent(MainUiEvent.NavigateTo("post_detail/$postId"))
+                VideoEditorScreen(
+                    onNavigateBack = {
+                        onEvent(MainUiEvent.NavigateBack)
                     },
-                    onNavigateToProfile = { userId ->
-                        onEvent(MainUiEvent.NavigateTo("user_profile/$userId"))
-                    },
-                    viewModel = mapsViewModel,
-                    modifier = Modifier.fillMaxSize()
+                    viewModel = videoEditorViewModel
                 )
             }
 
@@ -576,7 +572,7 @@ private fun MainScreenPreview() {
             onEvent = {},
             exploreViewModel = koinViewModel(),
             searchViewModel = koinViewModel(),
-            mapsViewModel = koinViewModel(),
+            videoEditorViewModel = koinViewModel(),
             profileViewModel = koinViewModel(),
             settingsViewModel = koinViewModel(),
             aboutViewModel = koinViewModel(),

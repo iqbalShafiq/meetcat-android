@@ -55,7 +55,7 @@ import id.usecase.meetcat.presentation.screen.explore.ExploreViewModel
 import id.usecase.meetcat.presentation.screen.followerslist.FollowersListViewModel
 import id.usecase.meetcat.presentation.screen.followinglist.FollowingListViewModel
 import id.usecase.meetcat.presentation.screen.main.MainViewModel
-import id.usecase.meetcat.presentation.screen.maps.MapsViewModel
+import id.usecase.meetcat.presentation.screen.videoeditor.VideoEditorViewModel
 import id.usecase.meetcat.presentation.screen.mediapicker.MediaPickerViewModel
 import id.usecase.meetcat.presentation.screen.postdetail.PostDetailViewModel
 import id.usecase.meetcat.presentation.screen.profile.ProfileViewModel
@@ -85,7 +85,7 @@ val appModule = module {
     viewModelOf(::ExploreViewModel)
     viewModelOf(::MainViewModel)
     viewModelOf(::SearchViewModel)
-    viewModelOf(::MapsViewModel)
+    viewModelOf(::VideoEditorViewModel)
     viewModel {
         ProfileViewModel(
             getCurrentUserUseCase = get(),

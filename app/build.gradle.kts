@@ -64,6 +64,7 @@ dependencies {
     // Coil
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
+    implementation(libs.coil.gif)
 
     // Kotlinx
     implementation(libs.kotlinx.collections.immutable)
@@ -82,6 +83,13 @@ dependencies {
     implementation(libs.androidx.camera.camera2)
     implementation(libs.androidx.camera.lifecycle)
     implementation(libs.androidx.camera.view)
+
+    // Media3 for video editing
+    implementation(libs.androidx.media3.transformer)
+    implementation(libs.androidx.media3.effect)
+    implementation(libs.androidx.media3.common)
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.ui)
 
     // Ktor
     implementation(libs.ktor.client.core)
