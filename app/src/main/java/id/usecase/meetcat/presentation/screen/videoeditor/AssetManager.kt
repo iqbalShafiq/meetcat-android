@@ -47,15 +47,30 @@ class VideoEditorAssetManager(private val context: Context) {
 
     /**
      * Get list of available cat objects from assets
+     * Each cat object will have a default sound attached
      */
     fun getCatObjects(): List<CatObject> {
         return try {
             val assetManager = context.assets
             val files = assetManager.list(CATS_PATH) ?: emptyArray()
 
-            files.mapNotNull { fileName ->
+            // Get available sounds to assign as defaults
+            val availableSounds = getSounds()
+
+            files.mapIndexed { index, fileName ->
                 val assetPath = "$CATS_PATH/$fileName"
                 val uri = getAssetUri(assetPath)
+
+                // Assign default sound (cycle through available sounds, or try to match by name)
+                val defaultSound = if (availableSounds.isNotEmpty()) {
+                    // Try to find matching sound by name first (e.g., "dancing_cat" -> "cat_dancing" or "meow")
+                    val catBaseName = fileName.substringBeforeLast(".").lowercase()
+                    availableSounds.find {
+                        it.name.lowercase().contains("cat") ||
+                        it.name.lowercase().contains("meow") ||
+                        it.name.lowercase().contains("purr")
+                    } ?: availableSounds[index % availableSounds.size] // Fallback to cycling
+                } else null
 
                 CatObject(
                     id = fileName.substringBeforeLast("."),
@@ -66,7 +81,9 @@ class VideoEditorAssetManager(private val context: Context) {
                         "gif" -> CatObjectType.GIF
                         "mp4", "mov" -> CatObjectType.VIDEO
                         else -> CatObjectType.GIF
-                    }
+                    },
+                    defaultSoundUri = defaultSound?.uri,
+                    defaultSoundName = defaultSound?.name
                 )
             }
         } catch (e: Exception) {

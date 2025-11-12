@@ -101,11 +101,26 @@ class VideoEditorViewModel(
 
     // Object Handlers
     private fun handleObjectSelected(event: VideoEditorUiEvent.OnObjectSelected) {
+        // Find the cat object to get default sound
+        val catObject = _uiState.value.availableObjects.find { it.id == event.objectId }
+
+        // Create default sound config if object has default sound
+        val defaultSoundConfig = if (catObject?.defaultSoundUri != null && catObject.defaultSoundName != null) {
+            ObjectSoundConfig(
+                soundUri = catObject.defaultSoundUri,
+                soundName = catObject.defaultSoundName,
+                offsetMs = 0L, // Play immediately when object appears
+                durationMs = null, // Play until object disappears
+                volume = 1f
+            )
+        } else null
+
         val newObject = ObjectLayer(
             id = UUID.randomUUID().toString(),
             objectId = event.objectId,
             startMs = event.startMs,
-            endMs = event.endMs
+            endMs = event.endMs,
+            soundConfig = defaultSoundConfig // Attach default sound
         )
 
         _uiState.update { state ->

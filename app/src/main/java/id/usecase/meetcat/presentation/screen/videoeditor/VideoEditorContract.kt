@@ -144,7 +144,9 @@ data class CatObject(
     val name: String,
     val thumbnailUri: String,
     val resourceUri: String, // Local or remote URI to the asset
-    val type: CatObjectType
+    val type: CatObjectType,
+    val defaultSoundUri: Uri? = null, // Default sound that plays with this object
+    val defaultSoundName: String? = null
 )
 
 enum class CatObjectType {
