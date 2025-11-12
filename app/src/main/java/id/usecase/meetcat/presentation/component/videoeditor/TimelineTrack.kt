@@ -3,6 +3,7 @@ package id.usecase.meetcat.presentation.component.videoeditor
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -34,6 +35,9 @@ fun TimelineTrack(
     onItemClick: (String) -> Unit = {},
     onItemDrag: (String, Long, Long) -> Unit = { _, _, _ -> }
 ) {
+    // Get color from MaterialTheme before Canvas block
+    val playheadColor = MaterialTheme.colorScheme.primary
+
     Column(modifier = modifier) {
         Text(
             text = label,
@@ -61,7 +65,7 @@ fun TimelineTrack(
                     }
                     .pointerInput(items, totalDurationMs) {
                         // Handle click to select item
-                        androidx.compose.foundation.gestures.detectTapGestures { offset ->
+                        detectTapGestures { offset ->
                             // Find which item was clicked
                             val clickX = offset.x
                             items.forEach { item ->
@@ -115,7 +119,7 @@ fun TimelineTrack(
                 // Draw playhead
                 val playheadX = (currentPositionMs.toFloat() / totalDurationMs) * size.width
                 drawLine(
-                    color = MaterialTheme.colorScheme.primary,
+                    color = playheadColor,
                     start = Offset(playheadX, 0f),
                     end = Offset(playheadX, size.height),
                     strokeWidth = 3.dp.toPx()
