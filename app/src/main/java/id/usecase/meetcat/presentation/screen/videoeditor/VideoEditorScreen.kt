@@ -61,6 +61,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -71,6 +72,9 @@ import id.usecase.meetcat.presentation.component.videoeditor.ExportProgressDialo
 import id.usecase.meetcat.presentation.component.videoeditor.ObjectSoundEditDialog
 import id.usecase.meetcat.presentation.component.videoeditor.TimelineItem
 import id.usecase.meetcat.presentation.component.videoeditor.TimelineTrack
+import id.usecase.meetcat.ui.theme.MeetCatTheme
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 
@@ -710,4 +714,468 @@ private enum class PickerTab(val label: String) {
     BACKGROUND("Backgrounds"),
     OBJECTS("Cats"),
     AUDIO("Sounds")
+}
+
+// ================================
+// Previews
+// ================================
+
+/**
+ * Preview: Empty state - no content added yet
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+private fun VideoEditorScreenEmptyPreview() {
+    MeetCatTheme {
+        VideoEditorScreenContent(
+            uiState = VideoEditorUiState(
+                backgroundLayers = persistentListOf(),
+                objectLayers = persistentListOf(),
+                audioTracks = persistentListOf(),
+                availableObjects = persistentListOf(),
+                availableBackgrounds = persistentListOf(),
+                availableSounds = persistentListOf(),
+                currentPositionMs = 0,
+                totalDurationMs = 30000,
+                isPlaying = false,
+                isExporting = false,
+                exportProgress = 0f
+            ),
+            onEvent = {},
+            onNavigateBack = {}
+        )
+    }
+}
+
+/**
+ * Preview: With content - backgrounds, objects, and audio added
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+private fun VideoEditorScreenWithContentPreview() {
+    MeetCatTheme {
+        VideoEditorScreenContent(
+            uiState = VideoEditorUiState(
+                backgroundLayers = listOf(
+                    BackgroundLayer(
+                        id = "bg1",
+                        uri = Uri.parse("file:///android_asset/backgrounds/bg1.jpg"),
+                        startMs = 0,
+                        endMs = 10000
+                    ),
+                    BackgroundLayer(
+                        id = "bg2",
+                        uri = Uri.parse("file:///android_asset/backgrounds/bg2.jpg"),
+                        startMs = 10000,
+                        endMs = 20000
+                    )
+                ).toImmutableList(),
+                objectLayers = listOf(
+                    ObjectLayer(
+                        id = "obj1",
+                        objectId = "cat1",
+                        startMs = 2000,
+                        endMs = 8000,
+                        soundConfig = ObjectSoundConfig(
+                            soundUri = Uri.parse("file:///android_asset/sounds/meow.mp3"),
+                            soundName = "Meow",
+                            offsetMs = 0,
+                            durationMs = null,
+                            volume = 1f
+                        )
+                    ),
+                    ObjectLayer(
+                        id = "obj2",
+                        objectId = "cat2",
+                        startMs = 12000,
+                        endMs = 18000
+                    )
+                ).toImmutableList(),
+                audioTracks = listOf(
+                    AudioTrack(
+                        id = "audio1",
+                        uri = Uri.parse("file:///android_asset/sounds/background.mp3"),
+                        startMs = 0,
+                        endMs = 20000,
+                        name = "Background Music"
+                    )
+                ).toImmutableList(),
+                availableObjects = listOf(
+                    CatObject(
+                        id = "cat1",
+                        name = "Dancing Cat",
+                        thumbnailUri = "file:///android_asset/cats/cat1.gif",
+                        resourceUri = "file:///android_asset/cats/cat1.gif",
+                        type = CatObjectType.GIF,
+                        defaultSoundUri = Uri.parse("file:///android_asset/sounds/meow.mp3"),
+                        defaultSoundName = "Meow"
+                    ),
+                    CatObject(
+                        id = "cat2",
+                        name = "Cute Kitten",
+                        thumbnailUri = "file:///android_asset/cats/cat2.gif",
+                        resourceUri = "file:///android_asset/cats/cat2.gif",
+                        type = CatObjectType.GIF
+                    )
+                ).toImmutableList(),
+                availableBackgrounds = listOf(
+                    BackgroundAsset(
+                        id = "bg1",
+                        name = "Beach",
+                        uri = Uri.parse("file:///android_asset/backgrounds/bg1.jpg"),
+                        thumbnailUri = Uri.parse("file:///android_asset/backgrounds/bg1.jpg")
+                    ),
+                    BackgroundAsset(
+                        id = "bg2",
+                        name = "Garden",
+                        uri = Uri.parse("file:///android_asset/backgrounds/bg2.jpg"),
+                        thumbnailUri = Uri.parse("file:///android_asset/backgrounds/bg2.jpg")
+                    )
+                ).toImmutableList(),
+                availableSounds = listOf(
+                    SoundAsset(
+                        id = "sound1",
+                        name = "Meow Sound",
+                        uri = Uri.parse("file:///android_asset/sounds/meow.mp3")
+                    ),
+                    SoundAsset(
+                        id = "sound2",
+                        name = "Purr Sound",
+                        uri = Uri.parse("file:///android_asset/sounds/purr.mp3")
+                    )
+                ).toImmutableList(),
+                currentPositionMs = 5000,
+                totalDurationMs = 30000,
+                isPlaying = false,
+                isExporting = false,
+                exportProgress = 0f
+            ),
+            onEvent = {},
+            onNavigateBack = {}
+        )
+    }
+}
+
+/**
+ * Preview: Exporting state
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+private fun VideoEditorScreenExportingPreview() {
+    MeetCatTheme {
+        VideoEditorScreenContent(
+            uiState = VideoEditorUiState(
+                backgroundLayers = listOf(
+                    BackgroundLayer(
+                        id = "bg1",
+                        uri = Uri.parse("file:///android_asset/backgrounds/bg1.jpg"),
+                        startMs = 0,
+                        endMs = 10000
+                    )
+                ).toImmutableList(),
+                objectLayers = listOf(
+                    ObjectLayer(
+                        id = "obj1",
+                        objectId = "cat1",
+                        startMs = 2000,
+                        endMs = 8000
+                    )
+                ).toImmutableList(),
+                audioTracks = persistentListOf(),
+                availableObjects = persistentListOf(),
+                availableBackgrounds = persistentListOf(),
+                availableSounds = persistentListOf(),
+                currentPositionMs = 0,
+                totalDurationMs = 30000,
+                isPlaying = false,
+                isExporting = true,
+                exportProgress = 0.65f
+            ),
+            onEvent = {},
+            onNavigateBack = {}
+        )
+    }
+}
+
+/**
+ * Extracted content composable for previews
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun VideoEditorScreenContent(
+    uiState: VideoEditorUiState,
+    onEvent: (VideoEditorUiEvent) -> Unit,
+    onNavigateBack: () -> Unit
+) {
+    val scaffoldState = rememberBottomSheetScaffoldState(
+        bottomSheetState = rememberStandardBottomSheetState(
+            initialValue = SheetValue.PartiallyExpanded,
+            skipHiddenState = false
+        )
+    )
+    var selectedTab by remember { mutableStateOf(PickerTab.BACKGROUND) }
+
+    BottomSheetScaffold(
+        scaffoldState = scaffoldState,
+        topBar = {
+            TopAppBar(
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Pets,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Cat Video Studio")
+                    }
+                },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            )
+        },
+        sheetContent = {
+            AssetPickerSheet(
+                selectedTab = selectedTab,
+                onTabSelected = { selectedTab = it },
+                uiState = uiState,
+                onEvent = onEvent
+            )
+        },
+        sheetPeekHeight = 300.dp
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                // Preview Section
+                PreviewSection(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    uiState = uiState
+                )
+
+                // Playback Controls
+                PlaybackControls(
+                    modifier = Modifier.fillMaxWidth(),
+                    uiState = uiState,
+                    onEvent = onEvent
+                )
+
+                // Timeline
+                TimelineSection(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(220.dp)
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    uiState = uiState,
+                    onEvent = onEvent
+                )
+            }
+
+            // Export FAB
+            AnimatedVisibility(
+                visible = !uiState.isExporting && uiState.backgroundLayers.isNotEmpty(),
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp)
+            ) {
+                ExtendedFloatingActionButton(
+                    onClick = { onEvent(VideoEditorUiEvent.OnExportClicked) },
+                    icon = {
+                        Icon(Icons.Default.Pets, contentDescription = null)
+                    },
+                    text = { Text("🎬 Export Video") },
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                )
+            }
+        }
+    }
+
+    // Export Progress Dialog
+    if (uiState.isExporting) {
+        ExportProgressDialog(
+            progress = uiState.exportProgress
+        )
+    }
+}
+
+/**
+ * Preview: Preview section only - empty state
+ */
+@Preview(showBackground = true)
+@Composable
+private fun PreviewSectionEmptyPreview() {
+    MeetCatTheme {
+        PreviewSection(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(300.dp),
+            uiState = VideoEditorUiState()
+        )
+    }
+}
+
+/**
+ * Preview: Preview section only - with content
+ */
+@Preview(showBackground = true)
+@Composable
+private fun PreviewSectionWithContentPreview() {
+    MeetCatTheme {
+        PreviewSection(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(300.dp),
+            uiState = VideoEditorUiState(
+                backgroundLayers = listOf(
+                    BackgroundLayer(
+                        id = "bg1",
+                        uri = Uri.parse("file:///android_asset/backgrounds/bg1.jpg"),
+                        startMs = 0,
+                        endMs = 10000
+                    )
+                ).toImmutableList(),
+                objectLayers = listOf(
+                    ObjectLayer(
+                        id = "obj1",
+                        objectId = "cat1",
+                        startMs = 2000,
+                        endMs = 8000
+                    )
+                ).toImmutableList(),
+                audioTracks = listOf(
+                    AudioTrack(
+                        id = "audio1",
+                        uri = Uri.parse("file:///android_asset/sounds/bg.mp3"),
+                        startMs = 0,
+                        endMs = 10000,
+                        name = "Background Music"
+                    )
+                ).toImmutableList()
+            )
+        )
+    }
+}
+
+/**
+ * Preview: Timeline section
+ */
+@Preview(showBackground = true)
+@Composable
+private fun TimelineSectionPreview() {
+    MeetCatTheme {
+        TimelineSection(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(220.dp)
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+            uiState = VideoEditorUiState(
+                backgroundLayers = listOf(
+                    BackgroundLayer(
+                        id = "bg1",
+                        uri = Uri.parse("file:///android_asset/backgrounds/bg1.jpg"),
+                        startMs = 0,
+                        endMs = 10000
+                    ),
+                    BackgroundLayer(
+                        id = "bg2",
+                        uri = Uri.parse("file:///android_asset/backgrounds/bg2.jpg"),
+                        startMs = 10000,
+                        endMs = 20000
+                    )
+                ).toImmutableList(),
+                objectLayers = listOf(
+                    ObjectLayer(
+                        id = "obj1",
+                        objectId = "cat1",
+                        startMs = 2000,
+                        endMs = 8000,
+                        soundConfig = ObjectSoundConfig(
+                            soundUri = Uri.parse("file:///android_asset/sounds/meow.mp3"),
+                            soundName = "Meow",
+                            offsetMs = 0,
+                            durationMs = null,
+                            volume = 1f
+                        )
+                    ),
+                    ObjectLayer(
+                        id = "obj2",
+                        objectId = "cat2",
+                        startMs = 12000,
+                        endMs = 18000
+                    )
+                ).toImmutableList(),
+                audioTracks = listOf(
+                    AudioTrack(
+                        id = "audio1",
+                        uri = Uri.parse("file:///android_asset/sounds/bg.mp3"),
+                        startMs = 0,
+                        endMs = 20000,
+                        name = "Background Music"
+                    )
+                ).toImmutableList(),
+                currentPositionMs = 5000,
+                totalDurationMs = 30000
+            ),
+            onEvent = {}
+        )
+    }
+}
+
+/**
+ * Preview: Asset picker sheet
+ */
+@Preview(showBackground = true)
+@Composable
+private fun AssetPickerSheetPreview() {
+    MeetCatTheme {
+        AssetPickerSheet(
+            selectedTab = PickerTab.OBJECTS,
+            onTabSelected = {},
+            uiState = VideoEditorUiState(
+                availableObjects = listOf(
+                    CatObject(
+                        id = "cat1",
+                        name = "Dancing Cat",
+                        thumbnailUri = "file:///android_asset/cats/cat1.gif",
+                        resourceUri = "file:///android_asset/cats/cat1.gif",
+                        type = CatObjectType.GIF,
+                        defaultSoundUri = Uri.parse("file:///android_asset/sounds/meow.mp3"),
+                        defaultSoundName = "Meow"
+                    ),
+                    CatObject(
+                        id = "cat2",
+                        name = "Cute Kitten",
+                        thumbnailUri = "file:///android_asset/cats/cat2.gif",
+                        resourceUri = "file:///android_asset/cats/cat2.gif",
+                        type = CatObjectType.GIF
+                    ),
+                    CatObject(
+                        id = "cat3",
+                        name = "Sleepy Cat",
+                        thumbnailUri = "file:///android_asset/cats/cat3.gif",
+                        resourceUri = "file:///android_asset/cats/cat3.gif",
+                        type = CatObjectType.GIF
+                    )
+                ).toImmutableList()
+            ),
+            onEvent = {}
+        )
+    }
 }
