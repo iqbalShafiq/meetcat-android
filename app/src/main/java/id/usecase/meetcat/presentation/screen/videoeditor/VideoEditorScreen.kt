@@ -387,12 +387,19 @@ private fun TimelineSection(
             },
             totalDurationMs = uiState.totalDurationMs,
             currentPositionMs = uiState.currentPositionMs,
-            color = MaterialTheme.colorScheme.primary
+            color = MaterialTheme.colorScheme.primary,
+            selectedItemId = uiState.selectedBackgroundId,
+            onItemClick = { id ->
+                onEvent(VideoEditorUiEvent.OnBackgroundItemClicked(id))
+            },
+            onItemResize = { id, newStartMs, newEndMs ->
+                onEvent(VideoEditorUiEvent.OnBackgroundResized(id, newStartMs, newEndMs))
+            }
         )
 
         // Objects track (with sound indicators)
         TimelineTrack(
-            label = "🐱 Cat Objects (tap to add sound)",
+            label = "🐱 Cat Objects (tap to select, drag edges to resize)",
             items = uiState.objectLayers.map {
                 TimelineItem(
                     id = it.id,
@@ -405,8 +412,17 @@ private fun TimelineSection(
             currentPositionMs = uiState.currentPositionMs,
             color = MaterialTheme.colorScheme.secondary,
             showSoundIndicator = true,
-            onItemClick = { objectId ->
-                onEvent(VideoEditorUiEvent.OnObjectClicked(objectId))
+            selectedItemId = uiState.selectedObjectId,
+            onItemClick = { id ->
+                // Select the item first, then if double clicked, open sound editor
+                if (uiState.selectedObjectId == id) {
+                    onEvent(VideoEditorUiEvent.OnObjectClicked(id))
+                } else {
+                    onEvent(VideoEditorUiEvent.OnObjectItemClicked(id))
+                }
+            },
+            onItemResize = { id, newStartMs, newEndMs ->
+                onEvent(VideoEditorUiEvent.OnObjectResized(id, newStartMs, newEndMs))
             }
         )
 
@@ -418,7 +434,14 @@ private fun TimelineSection(
             },
             totalDurationMs = uiState.totalDurationMs,
             currentPositionMs = uiState.currentPositionMs,
-            color = MaterialTheme.colorScheme.tertiary
+            color = MaterialTheme.colorScheme.tertiary,
+            selectedItemId = uiState.selectedAudioId,
+            onItemClick = { id ->
+                onEvent(VideoEditorUiEvent.OnAudioItemClicked(id))
+            },
+            onItemResize = { id, newStartMs, newEndMs ->
+                onEvent(VideoEditorUiEvent.OnAudioResized(id, newStartMs, newEndMs))
+            }
         )
     }
 }

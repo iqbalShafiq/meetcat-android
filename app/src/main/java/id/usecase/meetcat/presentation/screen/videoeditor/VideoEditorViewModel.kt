@@ -56,6 +56,16 @@ class VideoEditorViewModel(
             is VideoEditorUiEvent.OnAudioRemoved -> handleAudioRemoved(event)
             is VideoEditorUiEvent.OnAudioMoved -> handleAudioMoved(event)
 
+            // Timeline Item Selection
+            is VideoEditorUiEvent.OnBackgroundItemClicked -> handleBackgroundItemClicked(event)
+            is VideoEditorUiEvent.OnObjectItemClicked -> handleObjectItemClicked(event)
+            is VideoEditorUiEvent.OnAudioItemClicked -> handleAudioItemClicked(event)
+
+            // Timeline Item Resize
+            is VideoEditorUiEvent.OnBackgroundResized -> handleBackgroundResized(event)
+            is VideoEditorUiEvent.OnObjectResized -> handleObjectResized(event)
+            is VideoEditorUiEvent.OnAudioResized -> handleAudioResized(event)
+
             // Playback Events
             is VideoEditorUiEvent.OnPlayPauseClicked -> handlePlayPause()
             is VideoEditorUiEvent.OnSeekTo -> handleSeekTo(event)
@@ -325,6 +335,89 @@ class VideoEditorViewModel(
     private fun handleOpenAudioPicker() {
         viewModelScope.launch {
             _uiEffect.send(VideoEditorUiEffect.OpenAudioPicker)
+        }
+    }
+
+    // Timeline Item Selection Handlers
+    private fun handleBackgroundItemClicked(event: VideoEditorUiEvent.OnBackgroundItemClicked) {
+        _uiState.update { state ->
+            state.copy(
+                selectedBackgroundId = event.id,
+                selectedObjectId = null,
+                selectedAudioId = null
+            )
+        }
+    }
+
+    private fun handleObjectItemClicked(event: VideoEditorUiEvent.OnObjectItemClicked) {
+        _uiState.update { state ->
+            state.copy(
+                selectedBackgroundId = null,
+                selectedObjectId = event.id,
+                selectedAudioId = null
+            )
+        }
+    }
+
+    private fun handleAudioItemClicked(event: VideoEditorUiEvent.OnAudioItemClicked) {
+        _uiState.update { state ->
+            state.copy(
+                selectedBackgroundId = null,
+                selectedObjectId = null,
+                selectedAudioId = event.id
+            )
+        }
+    }
+
+    // Timeline Item Resize Handlers
+    private fun handleBackgroundResized(event: VideoEditorUiEvent.OnBackgroundResized) {
+        _uiState.update { state ->
+            state.copy(
+                backgroundLayers = state.backgroundLayers
+                    .map { layer ->
+                        if (layer.id == event.id) {
+                            layer.copy(
+                                startMs = event.newStartMs,
+                                endMs = event.newEndMs
+                            )
+                        } else layer
+                    }
+                    .toPersistentList()
+            )
+        }
+    }
+
+    private fun handleObjectResized(event: VideoEditorUiEvent.OnObjectResized) {
+        _uiState.update { state ->
+            state.copy(
+                objectLayers = state.objectLayers
+                    .map { layer ->
+                        if (layer.id == event.id) {
+                            layer.copy(
+                                startMs = event.newStartMs,
+                                endMs = event.newEndMs
+                            )
+                        } else layer
+                    }
+                    .toPersistentList()
+            )
+        }
+    }
+
+    private fun handleAudioResized(event: VideoEditorUiEvent.OnAudioResized) {
+        _uiState.update { state ->
+            state.copy(
+                audioTracks = state.audioTracks
+                    .map { track ->
+                        if (track.id == event.id) {
+                            track.copy(
+                                startMs = event.newStartMs,
+                                endMs = event.newEndMs
+                            )
+                        } else track
+                    }
+                    .toPersistentList()
+            )
         }
     }
 

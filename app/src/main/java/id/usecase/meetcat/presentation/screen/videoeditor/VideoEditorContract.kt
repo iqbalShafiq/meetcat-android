@@ -32,6 +32,16 @@ sealed interface VideoEditorUiEvent {
     data class OnAudioRemoved(val id: String) : VideoEditorUiEvent
     data class OnAudioMoved(val id: String, val newStartMs: Long, val newEndMs: Long) : VideoEditorUiEvent
 
+    // Timeline Item Selection
+    data class OnBackgroundItemClicked(val id: String) : VideoEditorUiEvent
+    data class OnObjectItemClicked(val id: String) : VideoEditorUiEvent
+    data class OnAudioItemClicked(val id: String) : VideoEditorUiEvent
+
+    // Timeline Item Resize
+    data class OnBackgroundResized(val id: String, val newStartMs: Long, val newEndMs: Long) : VideoEditorUiEvent
+    data class OnObjectResized(val id: String, val newStartMs: Long, val newEndMs: Long) : VideoEditorUiEvent
+    data class OnAudioResized(val id: String, val newStartMs: Long, val newEndMs: Long) : VideoEditorUiEvent
+
     // Playback Actions
     data object OnPlayPauseClicked : VideoEditorUiEvent
     data class OnSeekTo(val positionMs: Long) : VideoEditorUiEvent
@@ -65,7 +75,10 @@ data class VideoEditorUiState(
     val exportProgress: Float = 0f,
     val timelineScale: Float = 1f, // 1f = default zoom level
     val error: String? = null,
-    val selectedObjectForSoundEdit: String? = null // Object ID being edited
+    val selectedObjectForSoundEdit: String? = null, // Object ID being edited
+    val selectedBackgroundId: String? = null, // Selected background item on timeline
+    val selectedObjectId: String? = null, // Selected object item on timeline
+    val selectedAudioId: String? = null // Selected audio item on timeline
 )
 
 // UI Effects (One-time events)
