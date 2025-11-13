@@ -55,6 +55,7 @@ import id.usecase.meetcat.presentation.screen.explore.ExploreViewModel
 import id.usecase.meetcat.presentation.screen.followerslist.FollowersListViewModel
 import id.usecase.meetcat.presentation.screen.followinglist.FollowingListViewModel
 import id.usecase.meetcat.presentation.screen.main.MainViewModel
+import id.usecase.meetcat.presentation.screen.maps.MapsViewModel
 import id.usecase.meetcat.presentation.screen.videoeditor.VideoEditorAssetManager
 import id.usecase.meetcat.presentation.screen.videoeditor.VideoEditorViewModel
 import id.usecase.meetcat.presentation.screen.mediapicker.MediaPickerViewModel
@@ -86,6 +87,16 @@ val appModule = module {
     viewModelOf(::ExploreViewModel)
     viewModelOf(::MainViewModel)
     viewModelOf(::SearchViewModel)
+    viewModel {
+        MapsViewModel(
+            locationRepository = get(),
+            getCurrentLocationUseCase = get(),
+            hasLocationPermissionUseCase = get(),
+            getNearbyPostsUseCase = get(),
+            lovePostUseCase = get(),
+            unlovePostUseCase = get()
+        )
+    }
     viewModel {
         VideoEditorViewModel(
             assetManager = get(),
