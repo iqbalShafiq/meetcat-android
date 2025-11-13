@@ -181,7 +181,6 @@ private fun CreatePostContent(
                 scrollBehavior = scrollBehavior,
                 colors = vibrantColors,
                 modifier = Modifier
-                    .offset(y = -FloatingToolbarDefaults.ScreenOffset)
                     .zIndex(1f),
                 content = {
                     // Back button

@@ -1,10 +1,10 @@
 package id.usecase.meetcat.presentation.screen.search
 
-import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -14,9 +14,6 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
-import androidx.paging.LoadState
-import androidx.paging.compose.LazyPagingItems
-import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
@@ -31,7 +28,6 @@ import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -39,25 +35,22 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import id.usecase.meetcat.domain.model.MediaItem
+import androidx.paging.LoadState
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
 import id.usecase.meetcat.domain.model.Post
-import id.usecase.meetcat.domain.model.User
 import id.usecase.meetcat.presentation.component.state.EmptyView
 import id.usecase.meetcat.presentation.component.state.ErrorView
 import id.usecase.meetcat.presentation.component.state.LoadingView
 import id.usecase.meetcat.presentation.screen.search.component.SearchHistoryItem
 import id.usecase.meetcat.presentation.screen.search.component.SearchPostGridItem
-import id.usecase.meetcat.ui.theme.MeetCatTheme
 import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -119,12 +112,7 @@ private fun SearchContent(
                 .padding(bottom = paddingValues.calculateBottomPadding())
         ) {
             // Wrap SearchBar in Surface for solid background to prevent transparency overlap
-            Surface(
-                shadowElevation = 2.dp,
-                tonalElevation = 3.dp,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                SearchBar(
+            SearchBar(
                 inputField = {
                     SearchBarDefaults.InputField(
                         query = uiState.query,
@@ -181,7 +169,8 @@ private fun SearchContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = if (uiState.isSearchActive) 0.dp else 16.dp)
-                    .padding(top = 8.dp, bottom = 16.dp)
+                    .padding(top = 8.dp, bottom = 16.dp),
+                windowInsets = WindowInsets()
             ) {
                 // Search history content
                 if (uiState.searchHistory.isNotEmpty()) {
@@ -231,13 +220,13 @@ private fun SearchContent(
                     }
                 }
             }
-            }
 
             // Main content - Random grid or search results
             when {
                 uiState.isLoading -> {
                     LoadingView()
                 }
+
                 uiState.error != null && uiState.randomPosts.isEmpty() -> {
                     ErrorView(
                         message = uiState.error,
@@ -258,6 +247,7 @@ private fun SearchContent(
                 uiState.hasSubmittedSearch && searchResults.loadState.refresh is LoadState.NotLoading && searchResults.itemCount == 0 -> {
                     EmptyView(message = "No results found")
                 }
+
                 else -> {
                     RandomPostsGrid(
                         posts = uiState.randomPosts,
@@ -456,6 +446,7 @@ private fun SearchResultsGrid(
                         }
                     }
                 }
+
                 is LoadState.Error -> {
                     item {
                         Box(
@@ -470,6 +461,7 @@ private fun SearchResultsGrid(
                         }
                     }
                 }
+
                 is LoadState.NotLoading -> {
                     // End of list - do nothing
                 }
@@ -493,6 +485,7 @@ private fun SearchResultsGrid(
                         }
                     }
                 }
+
                 is LoadState.Error -> {
                     if (searchResults.itemCount == 0) {
                         item {
@@ -511,6 +504,7 @@ private fun SearchResultsGrid(
                         }
                     }
                 }
+
                 else -> {}
             }
         }

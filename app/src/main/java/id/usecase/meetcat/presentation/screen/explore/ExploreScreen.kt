@@ -1,20 +1,19 @@
 package id.usecase.meetcat.presentation.screen.explore
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -34,18 +33,15 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.LoadState
@@ -57,10 +53,6 @@ import id.usecase.meetcat.presentation.component.card.ReplyCard
 import id.usecase.meetcat.presentation.component.state.EmptyView
 import id.usecase.meetcat.presentation.component.state.ErrorView
 import id.usecase.meetcat.presentation.component.state.LoadingView
-import id.usecase.meetcat.presentation.preview.PreviewData
-import id.usecase.meetcat.ui.theme.MeetCatTheme
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toImmutableList
 
 @Composable
 fun ExploreScreen(
@@ -177,9 +169,9 @@ private fun ExploreContent(
                     )
                 )
             ) {
-                Column(
-                    modifier = Modifier.padding(bottom = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                Row(
+                    modifier = Modifier.padding(bottom = 40.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     // Video Editor FAB
                     FloatingActionButton(
@@ -375,8 +367,7 @@ private fun FeedList(
                             currentUserId = currentUserId,
                             onEditClick = {
                                 onEvent(ExploreUiEvent.NavigateToEditPost(item.post.id))
-                            },
-                            modifier = Modifier.padding(vertical = 8.dp)
+                            }
                         )
                     }
 
@@ -403,8 +394,7 @@ private fun FeedList(
                             },
                             onShareClick = {
                                 // Share action
-                            },
-                            modifier = Modifier.padding(vertical = 8.dp)
+                            }
                         )
                     }
                 }
@@ -466,6 +456,3 @@ private fun FeedList(
         }
     }
 }
-
-// Note: Previews for ExploreContent are not included as they require LazyPagingItems
-// which cannot be easily mocked in Compose previews.
