@@ -72,6 +72,9 @@ import id.usecase.meetcat.presentation.component.videoeditor.ExportProgressDialo
 import id.usecase.meetcat.presentation.component.videoeditor.ObjectSoundEditDialog
 import id.usecase.meetcat.presentation.component.videoeditor.TimelineItem
 import id.usecase.meetcat.presentation.component.videoeditor.TimelineTrack
+import id.usecase.meetcat.presentation.screen.videoeditor.BackgroundAsset
+import id.usecase.meetcat.presentation.screen.videoeditor.BackgroundType
+import id.usecase.meetcat.presentation.screen.videoeditor.SoundAsset
 import id.usecase.meetcat.ui.theme.MeetCatTheme
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -825,25 +828,29 @@ private fun VideoEditorScreenWithContentPreview() {
                         id = "bg1",
                         name = "Beach",
                         uri = Uri.parse("file:///android_asset/backgrounds/bg1.jpg"),
-                        thumbnailUri = Uri.parse("file:///android_asset/backgrounds/bg1.jpg")
+                        thumbnailUri = Uri.parse("file:///android_asset/backgrounds/bg1.jpg"),
+                        type = BackgroundType.IMAGE
                     ),
                     BackgroundAsset(
                         id = "bg2",
                         name = "Garden",
                         uri = Uri.parse("file:///android_asset/backgrounds/bg2.jpg"),
-                        thumbnailUri = Uri.parse("file:///android_asset/backgrounds/bg2.jpg")
+                        thumbnailUri = Uri.parse("file:///android_asset/backgrounds/bg2.jpg"),
+                        type = BackgroundType.IMAGE
                     )
                 ).toImmutableList(),
                 availableSounds = listOf(
                     SoundAsset(
                         id = "sound1",
                         name = "Meow Sound",
-                        uri = Uri.parse("file:///android_asset/sounds/meow.mp3")
+                        uri = Uri.parse("file:///android_asset/sounds/meow.mp3"),
+                        duration = 3000L
                     ),
                     SoundAsset(
                         id = "sound2",
                         name = "Purr Sound",
-                        uri = Uri.parse("file:///android_asset/sounds/purr.mp3")
+                        uri = Uri.parse("file:///android_asset/sounds/purr.mp3"),
+                        duration = 5000L
                     )
                 ).toImmutableList(),
                 currentPositionMs = 5000,
