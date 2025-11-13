@@ -26,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AudioFile
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.Pets
 import androidx.compose.material.icons.filled.PlayArrow
@@ -158,7 +159,7 @@ fun VideoEditorScreen(
                 onEvent = viewModel::onEvent
             )
         },
-        sheetPeekHeight = 300.dp
+        sheetPeekHeight = 72.dp // Only show tabs when collapsed
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -168,7 +169,7 @@ fun VideoEditorScreen(
             Column(
                 modifier = Modifier.fillMaxSize()
             ) {
-                // Preview Section
+                // Preview Section - Bigger!
                 PreviewSection(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -176,19 +177,19 @@ fun VideoEditorScreen(
                     uiState = uiState
                 )
 
-                // Playback Controls
-                PlaybackControls(
-                    modifier = Modifier.fillMaxWidth(),
+                // Timeline at the bottom
+                TimelineSection(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
                     uiState = uiState,
                     onEvent = viewModel::onEvent
                 )
 
-                // Timeline
-                TimelineSection(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(220.dp)
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                // Playback Controls at very bottom
+                PlaybackControls(
+                    modifier = Modifier.fillMaxWidth(),
                     uiState = uiState,
                     onEvent = viewModel::onEvent
                 )
@@ -446,20 +447,39 @@ private fun AssetPickerSheet(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .height(300.dp)
             .background(MaterialTheme.colorScheme.surface)
-            .padding(16.dp)
+            .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
-        // Tabs
+        // Drag handle indicator
+        Box(
+            modifier = Modifier
+                .width(40.dp)
+                .height(4.dp)
+                .clip(RoundedCornerShape(2.dp))
+                .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
+                .align(Alignment.CenterHorizontally)
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Icon-only Tabs
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             PickerTab.entries.forEach { tab ->
-                FilledTonalButton(
+                val isSelected = selectedTab == tab
+                IconButton(
                     onClick = { onTabSelected(tab) },
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp)
+                    modifier = Modifier
+                        .size(56.dp)
+                        .background(
+                            color = if (isSelected)
+                                MaterialTheme.colorScheme.primaryContainer
+                            else
+                                MaterialTheme.colorScheme.surfaceVariant,
+                            shape = CircleShape
+                        )
                 ) {
                     Icon(
                         imageVector = when (tab) {
@@ -467,31 +487,39 @@ private fun AssetPickerSheet(
                             PickerTab.OBJECTS -> Icons.Default.Pets
                             PickerTab.AUDIO -> Icons.Default.AudioFile
                         },
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp)
+                        contentDescription = tab.label,
+                        tint = if (isSelected)
+                            MaterialTheme.colorScheme.onPrimaryContainer
+                        else
+                            MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(28.dp)
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(tab.label)
                 }
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Content
-        when (selectedTab) {
-            PickerTab.BACKGROUND -> BackgroundPicker(
-                backgrounds = uiState.availableBackgrounds,
-                onEvent = onEvent
-            )
-            PickerTab.OBJECTS -> ObjectPicker(
-                objects = uiState.availableObjects,
-                onEvent = onEvent
-            )
-            PickerTab.AUDIO -> AudioPicker(
-                sounds = uiState.availableSounds,
-                onEvent = onEvent
-            )
+        // Content area with minimum height
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(300.dp)
+        ) {
+            when (selectedTab) {
+                PickerTab.BACKGROUND -> BackgroundPicker(
+                    backgrounds = uiState.availableBackgrounds,
+                    onEvent = onEvent
+                )
+                PickerTab.OBJECTS -> ObjectPicker(
+                    objects = uiState.availableObjects,
+                    onEvent = onEvent
+                )
+                PickerTab.AUDIO -> AudioPicker(
+                    sounds = uiState.availableSounds,
+                    onEvent = onEvent
+                )
+            }
         }
     }
 }
@@ -959,7 +987,7 @@ private fun VideoEditorScreenContent(
                 onEvent = onEvent
             )
         },
-        sheetPeekHeight = 300.dp
+        sheetPeekHeight = 72.dp // Only show tabs when collapsed
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -969,7 +997,7 @@ private fun VideoEditorScreenContent(
             Column(
                 modifier = Modifier.fillMaxSize()
             ) {
-                // Preview Section
+                // Preview Section - Bigger!
                 PreviewSection(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -977,19 +1005,19 @@ private fun VideoEditorScreenContent(
                     uiState = uiState
                 )
 
-                // Playback Controls
-                PlaybackControls(
-                    modifier = Modifier.fillMaxWidth(),
+                // Timeline at the bottom
+                TimelineSection(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
                     uiState = uiState,
                     onEvent = onEvent
                 )
 
-                // Timeline
-                TimelineSection(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(220.dp)
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                // Playback Controls at very bottom
+                PlaybackControls(
+                    modifier = Modifier.fillMaxWidth(),
                     uiState = uiState,
                     onEvent = onEvent
                 )
