@@ -3,7 +3,6 @@ package id.usecase.meetcat.presentation.screen.videoeditor
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -30,12 +29,12 @@ import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.Pets
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.VideoFile
 import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -146,6 +145,20 @@ fun VideoEditorScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
+                actions = {
+                    // Export button - only show when there's content and not exporting
+                    if (!uiState.isExporting && uiState.backgroundLayers.isNotEmpty()) {
+                        IconButton(
+                            onClick = { viewModel.onEvent(VideoEditorUiEvent.OnExportClicked) }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.VideoFile,
+                                contentDescription = "Export Video",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface
                 )
@@ -161,56 +174,35 @@ fun VideoEditorScreen(
         },
         sheetPeekHeight = 72.dp // Only show tabs when collapsed
     ) { paddingValues ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            Column(
-                modifier = Modifier.fillMaxSize()
-            ) {
-                // Preview Section - Bigger!
-                PreviewSection(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    uiState = uiState
-                )
-
-                // Timeline at the bottom
-                TimelineSection(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
-                    uiState = uiState,
-                    onEvent = viewModel::onEvent
-                )
-
-                // Playback Controls at very bottom
-                PlaybackControls(
-                    modifier = Modifier.fillMaxWidth(),
-                    uiState = uiState,
-                    onEvent = viewModel::onEvent
-                )
-            }
-
-            // Export FAB
-            AnimatedVisibility(
-                visible = !uiState.isExporting && uiState.backgroundLayers.isNotEmpty(),
+            // Preview Section - Bigger!
+            PreviewSection(
                 modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(16.dp)
-            ) {
-                ExtendedFloatingActionButton(
-                    onClick = { viewModel.onEvent(VideoEditorUiEvent.OnExportClicked) },
-                    icon = {
-                        Icon(Icons.Default.Pets, contentDescription = null)
-                    },
-                    text = { Text("🎬 Export Video") },
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                )
-            }
+                    .fillMaxWidth()
+                    .weight(1f),
+                uiState = uiState
+            )
+
+            // Timeline at the bottom
+            TimelineSection(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                uiState = uiState,
+                onEvent = viewModel::onEvent
+            )
+
+            // Playback Controls at very bottom
+            PlaybackControls(
+                modifier = Modifier.fillMaxWidth(),
+                uiState = uiState,
+                onEvent = viewModel::onEvent
+            )
         }
     }
 
@@ -974,6 +966,20 @@ private fun VideoEditorScreenContent(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
+                actions = {
+                    // Export button - only show when there's content and not exporting
+                    if (!uiState.isExporting && uiState.backgroundLayers.isNotEmpty()) {
+                        IconButton(
+                            onClick = { onEvent(VideoEditorUiEvent.OnExportClicked) }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.VideoFile,
+                                contentDescription = "Export Video",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface
                 )
@@ -989,56 +995,35 @@ private fun VideoEditorScreenContent(
         },
         sheetPeekHeight = 72.dp // Only show tabs when collapsed
     ) { paddingValues ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            Column(
-                modifier = Modifier.fillMaxSize()
-            ) {
-                // Preview Section - Bigger!
-                PreviewSection(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    uiState = uiState
-                )
-
-                // Timeline at the bottom
-                TimelineSection(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
-                    uiState = uiState,
-                    onEvent = onEvent
-                )
-
-                // Playback Controls at very bottom
-                PlaybackControls(
-                    modifier = Modifier.fillMaxWidth(),
-                    uiState = uiState,
-                    onEvent = onEvent
-                )
-            }
-
-            // Export FAB
-            AnimatedVisibility(
-                visible = !uiState.isExporting && uiState.backgroundLayers.isNotEmpty(),
+            // Preview Section - Bigger!
+            PreviewSection(
                 modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(16.dp)
-            ) {
-                ExtendedFloatingActionButton(
-                    onClick = { onEvent(VideoEditorUiEvent.OnExportClicked) },
-                    icon = {
-                        Icon(Icons.Default.Pets, contentDescription = null)
-                    },
-                    text = { Text("🎬 Export Video") },
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                )
-            }
+                    .fillMaxWidth()
+                    .weight(1f),
+                uiState = uiState
+            )
+
+            // Timeline at the bottom
+            TimelineSection(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                uiState = uiState,
+                onEvent = onEvent
+            )
+
+            // Playback Controls at very bottom
+            PlaybackControls(
+                modifier = Modifier.fillMaxWidth(),
+                uiState = uiState,
+                onEvent = onEvent
+            )
         }
     }
 
