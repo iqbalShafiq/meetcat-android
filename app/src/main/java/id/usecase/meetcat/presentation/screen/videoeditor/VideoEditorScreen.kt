@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -308,63 +310,56 @@ private fun PlaybackControls(
     uiState: VideoEditorUiState,
     onEvent: (VideoEditorUiEvent) -> Unit
 ) {
-    Column(
+    Row(
         modifier = modifier
             .background(MaterialTheme.colorScheme.surface)
             .padding(horizontal = 16.dp, vertical = 12.dp)
+            .fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        // Time slider
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = formatTime(uiState.currentPositionMs),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Slider(
-                value = uiState.currentPositionMs.toFloat(),
-                onValueChange = { onEvent(VideoEditorUiEvent.OnSeekTo(it.toLong())) },
-                valueRange = 0f..uiState.totalDurationMs.toFloat(),
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = 12.dp)
-            )
-            Text(
-                text = formatTime(uiState.totalDurationMs),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
+        Text(
+            text = formatTime(uiState.currentPositionMs),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Slider(
+            value = uiState.currentPositionMs.toFloat(),
+            onValueChange = { onEvent(VideoEditorUiEvent.OnSeekTo(it.toLong())) },
+            valueRange = 0f..uiState.totalDurationMs.toFloat(),
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 12.dp)
+        )
+        Text(
+            text = formatTime(uiState.totalDurationMs),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
 
-        // Play button
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center
-        ) {
-            IconButton(
-                onClick = { onEvent(VideoEditorUiEvent.OnPlayPauseClicked) },
-                modifier = Modifier
-                    .size(56.dp)
-                    .background(
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        shape = CircleShape
-                    )
-            ) {
-                Icon(
-                    imageVector = if (uiState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                    contentDescription = if (uiState.isPlaying) "Pause" else "Play",
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.size(32.dp)
+        Spacer(modifier = Modifier.width(8.dp))
+
+        // Play button - compact inline version
+        IconButton(
+            onClick = { onEvent(VideoEditorUiEvent.OnPlayPauseClicked) },
+            modifier = Modifier
+                .size(40.dp)
+                .background(
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    shape = CircleShape
                 )
-            }
+        ) {
+            Icon(
+                imageVector = if (uiState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                contentDescription = if (uiState.isPlaying) "Pause" else "Play",
+                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.size(24.dp)
+            )
         }
     }
 }
 
 /**
- * Timeline section with all tracks
+ * Timeline section with all tracks - scrollable
  */
 @Composable
 private fun TimelineSection(
@@ -373,7 +368,9 @@ private fun TimelineSection(
     onEvent: (VideoEditorUiEvent) -> Unit
 ) {
     Column(
-        modifier = modifier.padding(16.dp),
+        modifier = modifier
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(
