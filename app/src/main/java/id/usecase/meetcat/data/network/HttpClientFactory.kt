@@ -13,16 +13,29 @@ import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
+import java.util.concurrent.TimeUnit
 
 object HttpClientFactory {
 
     // TODO: Change this to your actual backend URL when deploying
     // For localhost testing from Android emulator, use 10.0.2.2
     // For localhost testing from physical device, use your computer's IP address
-    private const val BASE_URL = "http://192.168.13.146:3210"
+    private const val BASE_URL = "http://10.148.236.183:3210"
 
     fun create(tokenProvider: () -> String?): HttpClient {
         return HttpClient(OkHttp) {
+            // Timeout configuration
+            engine {
+                config {
+                    connectTimeout(30, TimeUnit.SECONDS)
+                    readTimeout(30, TimeUnit.SECONDS)
+                    writeTimeout(30, TimeUnit.SECONDS)
+
+                    // Retry on connection failure
+                    retryOnConnectionFailure(true)
+                }
+            }
+
             // JSON Configuration
             install(ContentNegotiation) {
                 json(Json {

@@ -118,8 +118,7 @@ private fun RegisterContent(
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                     titleContentColor = MaterialTheme.colorScheme.onSurface
-                ),
-                windowInsets = WindowInsets()
+                )
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }

@@ -11,7 +11,7 @@ import id.usecase.meetcat.ui.theme.MeetCatTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        WindowCompat.setDecorFitsSystemWindows(window, false)
+        WindowCompat.setDecorFitsSystemWindows(window, true)
         enableEdgeToEdge()
         setContent {
             MeetCatTheme {

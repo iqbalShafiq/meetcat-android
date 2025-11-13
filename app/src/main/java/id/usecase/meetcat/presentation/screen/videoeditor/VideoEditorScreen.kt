@@ -21,14 +21,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AudioFile
 import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.Pets
 import androidx.compose.material.icons.filled.PlayArrow
@@ -38,11 +37,9 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
@@ -70,14 +67,10 @@ import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import coil3.compose.AsyncImage
-import id.usecase.meetcat.presentation.component.state.LoadingView
 import id.usecase.meetcat.presentation.component.videoeditor.ExportProgressDialog
 import id.usecase.meetcat.presentation.component.videoeditor.ObjectSoundEditDialog
 import id.usecase.meetcat.presentation.component.videoeditor.TimelineItem
 import id.usecase.meetcat.presentation.component.videoeditor.TimelineTrack
-import id.usecase.meetcat.presentation.screen.videoeditor.BackgroundAsset
-import id.usecase.meetcat.presentation.screen.videoeditor.BackgroundType
-import id.usecase.meetcat.presentation.screen.videoeditor.SoundAsset
 import id.usecase.meetcat.ui.theme.MeetCatTheme
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -164,7 +157,8 @@ fun VideoEditorScreen(
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface
-                )
+                ),
+                windowInsets = WindowInsets()
             )
         },
         sheetContent = {

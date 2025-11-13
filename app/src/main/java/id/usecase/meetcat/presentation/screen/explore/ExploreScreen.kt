@@ -170,7 +170,7 @@ private fun ExploreContent(
                 )
             ) {
                 Row(
-                    modifier = Modifier.padding(bottom = 40.dp),
+                    modifier = Modifier.padding(bottom = 52.dp),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     // Video Editor FAB
