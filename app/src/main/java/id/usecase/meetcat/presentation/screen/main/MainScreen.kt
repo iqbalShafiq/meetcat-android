@@ -47,6 +47,8 @@ import id.usecase.meetcat.presentation.component.navigation.BottomNavItem
 import id.usecase.meetcat.presentation.component.navigation.MeetCatBottomNavBar
 import id.usecase.meetcat.presentation.screen.explore.ExploreScreen
 import id.usecase.meetcat.presentation.screen.explore.ExploreViewModel
+import id.usecase.meetcat.presentation.screen.maps.MapsScreen
+import id.usecase.meetcat.presentation.screen.maps.MapsViewModel
 import id.usecase.meetcat.presentation.screen.videoeditor.VideoEditorScreen
 import id.usecase.meetcat.presentation.screen.videoeditor.VideoEditorViewModel
 import id.usecase.meetcat.presentation.screen.postdetail.PostDetailScreen
@@ -89,6 +91,7 @@ fun MainScreen(
     mainViewModel: MainViewModel = koinViewModel(),
     exploreViewModel: ExploreViewModel = koinViewModel(),
     searchViewModel: SearchViewModel = koinViewModel(),
+    mapsViewModel: MapsViewModel = koinViewModel(),
     videoEditorViewModel: VideoEditorViewModel = koinViewModel(),
     profileViewModel: ProfileViewModel = koinViewModel(),
     settingsViewModel: SettingsViewModel = koinViewModel(),
@@ -106,6 +109,7 @@ fun MainScreen(
         onEvent = mainViewModel::onEvent,
         exploreViewModel = exploreViewModel,
         searchViewModel = searchViewModel,
+        mapsViewModel = mapsViewModel,
         videoEditorViewModel = videoEditorViewModel,
         profileViewModel = profileViewModel,
         settingsViewModel = settingsViewModel,
@@ -124,6 +128,7 @@ private fun MainContent(
     onEvent: (MainUiEvent) -> Unit,
     exploreViewModel: ExploreViewModel,
     searchViewModel: SearchViewModel,
+    mapsViewModel: MapsViewModel,
     videoEditorViewModel: VideoEditorViewModel,
     profileViewModel: ProfileViewModel,
     settingsViewModel: SettingsViewModel,
@@ -264,6 +269,10 @@ private fun MainContent(
                     onNavigateToEditPost = { postId ->
                         onEvent(MainUiEvent.NavigateTo("edit_post/$postId"))
                     },
+                    onNavigateToVideoEditor = {
+                        onEvent(MainUiEvent.HideBottomNav)
+                        onEvent(MainUiEvent.NavigateTo("video_editor"))
+                    },
                     isBottomNavVisible = isBottomNavVisible
                 )
             }
@@ -286,11 +295,14 @@ private fun MainContent(
             }
 
             currentRoute == BottomNavItem.NearMe.route -> {
-                VideoEditorScreen(
-                    onNavigateBack = {
-                        onEvent(MainUiEvent.NavigateBack)
+                MapsScreen(
+                    onNavigateToPost = { postId ->
+                        onEvent(MainUiEvent.NavigateTo("post_detail/$postId"))
                     },
-                    viewModel = videoEditorViewModel
+                    onNavigateToProfile = { userId ->
+                        onEvent(MainUiEvent.NavigateTo("user_profile/$userId"))
+                    },
+                    viewModel = mapsViewModel
                 )
             }
 
@@ -517,6 +529,16 @@ private fun MainContent(
                     }
                 )
             }
+
+            currentRoute == "video_editor" -> {
+                VideoEditorScreen(
+                    onNavigateBack = {
+                        onEvent(MainUiEvent.ShowBottomNav)
+                        onEvent(MainUiEvent.NavigateBack)
+                    },
+                    viewModel = videoEditorViewModel
+                )
+            }
         }
         }
 
@@ -543,6 +565,7 @@ private fun ExploreScreenWithScrollDetection(
     onNavigateToProfile: (String) -> Unit,
     onNavigateToCreatePost: () -> Unit,
     onNavigateToEditPost: (String) -> Unit,
+    onNavigateToVideoEditor: () -> Unit,
     isBottomNavVisible: Boolean,
     modifier: Modifier = Modifier
 ) {
@@ -556,6 +579,7 @@ private fun ExploreScreenWithScrollDetection(
         onNavigateToProfile = onNavigateToProfile,
         onNavigateToCreatePost = onNavigateToCreatePost,
         onNavigateToEditPost = onNavigateToEditPost,
+        onNavigateToVideoEditor = onNavigateToVideoEditor,
         isBottomNavVisible = isBottomNavVisible
     )
 }
@@ -572,6 +596,7 @@ private fun MainScreenPreview() {
             onEvent = {},
             exploreViewModel = koinViewModel(),
             searchViewModel = koinViewModel(),
+            mapsViewModel = koinViewModel(),
             videoEditorViewModel = koinViewModel(),
             profileViewModel = koinViewModel(),
             settingsViewModel = koinViewModel(),

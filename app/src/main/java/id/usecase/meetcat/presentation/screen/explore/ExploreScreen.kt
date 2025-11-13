@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -71,6 +72,7 @@ fun ExploreScreen(
     onNavigateToProfile: (String) -> Unit = {},
     onNavigateToCreatePost: () -> Unit = {},
     onNavigateToEditPost: (String) -> Unit = {},
+    onNavigateToVideoEditor: () -> Unit = {},
     isBottomNavVisible: Boolean = true
 ) {
     val feedItems = viewModel.feedItems.collectAsLazyPagingItems()
@@ -117,6 +119,7 @@ fun ExploreScreen(
         onHideBottomNav = onHideBottomNav,
         onNavigateToReply = onNavigateToReply,
         onNavigateToCreatePost = onNavigateToCreatePost,
+        onNavigateToVideoEditor = onNavigateToVideoEditor,
         currentUserId = currentUserId,
         isBottomNavVisible = isBottomNavVisible
     )
@@ -134,6 +137,7 @@ private fun ExploreContent(
     onHideBottomNav: () -> Unit = {},
     onNavigateToReply: (String) -> Unit = {},
     onNavigateToCreatePost: () -> Unit = {},
+    onNavigateToVideoEditor: () -> Unit = {},
     currentUserId: String? = null,
     isBottomNavVisible: Boolean = true
 ) {
@@ -172,16 +176,33 @@ private fun ExploreContent(
                     )
                 )
             ) {
-                FloatingActionButton(
-                    onClick = onNavigateToCreatePost,
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.padding(bottom = 80.dp) // Position above navbar
+                Column(
+                    modifier = Modifier.padding(bottom = 80.dp), // Position above navbar
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Create Post"
-                    )
+                    // Video Editor FAB
+                    FloatingActionButton(
+                        onClick = onNavigateToVideoEditor,
+                        containerColor = MaterialTheme.colorScheme.secondary,
+                        contentColor = MaterialTheme.colorScheme.onSecondary
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.VideoLibrary,
+                            contentDescription = "Video Editor"
+                        )
+                    }
+
+                    // Create Post FAB
+                    FloatingActionButton(
+                        onClick = onNavigateToCreatePost,
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Create Post"
+                        )
+                    }
                 }
             }
         }
