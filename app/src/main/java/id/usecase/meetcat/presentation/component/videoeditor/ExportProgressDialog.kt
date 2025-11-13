@@ -63,7 +63,7 @@ fun ExportProgressDialog(
 
                 // Title
                 Text(
-                    text = "🎬 Creating Your Cat Video...",
+                    text = "Creating Your Cat Video...",
                     style = MaterialTheme.typography.titleMedium,
                     textAlign = TextAlign.Center
                 )

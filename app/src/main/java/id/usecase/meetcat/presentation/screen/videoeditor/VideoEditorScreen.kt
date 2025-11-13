@@ -342,9 +342,9 @@ private fun PlaybackControls(
         IconButton(
             onClick = { onEvent(VideoEditorUiEvent.OnPlayPauseClicked) },
             modifier = Modifier
-                .size(40.dp)
+                .size(32.dp)
                 .background(
-                    color = MaterialTheme.colorScheme.primaryContainer,
+                    color = MaterialTheme.colorScheme.surface,
                     shape = CircleShape
                 )
         ) {
@@ -436,19 +436,8 @@ private fun AssetPickerSheet(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface)
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
-        // Drag handle indicator
-        Box(
-            modifier = Modifier
-                .width(40.dp)
-                .height(4.dp)
-                .clip(RoundedCornerShape(2.dp))
-                .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
-                .align(Alignment.CenterHorizontally)
-        )
-
         Spacer(modifier = Modifier.height(12.dp))
 
         // Icon-only Tabs
@@ -493,6 +482,7 @@ private fun AssetPickerSheet(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
+                .padding(top = 8.dp)
                 .height(300.dp)
         ) {
             when (selectedTab) {
@@ -533,7 +523,7 @@ private fun BackgroundPicker(
         if (backgrounds.isNotEmpty()) {
             LazyRow(
                 modifier = Modifier.weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally)
             ) {
                 items(backgrounds) { bg ->
                     AssetCard(
@@ -582,7 +572,7 @@ private fun ObjectPicker(
     } else {
         LazyRow(
             modifier = Modifier.fillMaxSize(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally)
         ) {
             items(objects) { cat ->
                 AssetCard(
