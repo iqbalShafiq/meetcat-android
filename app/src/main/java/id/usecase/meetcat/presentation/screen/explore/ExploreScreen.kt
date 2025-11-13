@@ -178,7 +178,7 @@ private fun ExploreContent(
                 )
             ) {
                 Column(
-                    modifier = Modifier.padding(bottom = 80.dp), // Position above navbar
+                    modifier = Modifier.padding(bottom = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     // Video Editor FAB
