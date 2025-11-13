@@ -11,9 +11,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -59,6 +61,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -71,6 +74,7 @@ import id.usecase.meetcat.presentation.component.videoeditor.ExportProgressDialo
 import id.usecase.meetcat.presentation.component.videoeditor.ObjectSoundEditDialog
 import id.usecase.meetcat.presentation.component.videoeditor.TimelineItem
 import id.usecase.meetcat.presentation.component.videoeditor.TimelineTrack
+import id.usecase.meetcat.presentation.component.videoeditor.VideoPreviewPlayer
 import id.usecase.meetcat.ui.theme.MeetCatTheme
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -89,10 +93,15 @@ fun VideoEditorScreen(
     viewModel: VideoEditorViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    // Calculate bottom sheet peek height to account for navigation bar
+    val navigationBarHeight = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val sheetPeekHeight = 72.dp + navigationBarHeight
+
     val scaffoldState = rememberBottomSheetScaffoldState(
         bottomSheetState = rememberStandardBottomSheetState(
             initialValue = SheetValue.PartiallyExpanded,
-            skipHiddenState = false
+            skipHiddenState = true // Prevent fully hidden state
         )
     )
     val scope = rememberCoroutineScope()
@@ -166,10 +175,15 @@ fun VideoEditorScreen(
                 selectedTab = selectedTab,
                 onTabSelected = { selectedTab = it },
                 uiState = uiState,
-                onEvent = viewModel::onEvent
+                onEvent = viewModel::onEvent,
+                onCollapse = {
+                    scope.launch {
+                        scaffoldState.bottomSheetState.partialExpand()
+                    }
+                }
             )
         },
-        sheetPeekHeight = 72.dp // Only show tabs when collapsed
+        sheetPeekHeight = sheetPeekHeight // Tabs height + navigation bar height
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -181,7 +195,8 @@ fun VideoEditorScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
-                uiState = uiState
+                uiState = uiState,
+                onEvent = viewModel::onEvent
             )
 
             // Timeline at the bottom
@@ -237,7 +252,8 @@ fun VideoEditorScreen(
 @Composable
 private fun PreviewSection(
     modifier: Modifier = Modifier,
-    uiState: VideoEditorUiState
+    uiState: VideoEditorUiState,
+    onEvent: (VideoEditorUiEvent) -> Unit
 ) {
     Box(
         modifier = modifier.background(Color.Black),
@@ -272,26 +288,21 @@ private fun PreviewSection(
                 )
             }
         } else {
-            // TODO: Show ExoPlayer preview with composed video
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-                modifier = Modifier.padding(32.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Pets,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(64.dp)
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = "Preview: ${uiState.backgroundLayers.size} bg, ${uiState.objectLayers.size} cats, ${uiState.audioTracks.size} sounds",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.8f),
-                    textAlign = TextAlign.Center
-                )
-            }
+            // Video preview with ExoPlayer
+            VideoPreviewPlayer(
+                backgroundLayers = uiState.backgroundLayers.toList(),
+                objectLayers = uiState.objectLayers.toList(),
+                availableObjects = uiState.availableObjects.associate { it.id to it.resourceUri },
+                currentPositionMs = uiState.currentPositionMs,
+                isPlaying = uiState.isPlaying,
+                onPositionChanged = { position ->
+                    onEvent(VideoEditorUiEvent.OnSeekTo(position))
+                },
+                onSeek = { position ->
+                    onEvent(VideoEditorUiEvent.OnSeekTo(position))
+                },
+                modifier = Modifier.fillMaxSize()
+            )
         }
     }
 }
@@ -449,12 +460,17 @@ private fun AssetPickerSheet(
     selectedTab: PickerTab,
     onTabSelected: (PickerTab) -> Unit,
     uiState: VideoEditorUiState,
-    onEvent: (VideoEditorUiEvent) -> Unit
+    onEvent: (VideoEditorUiEvent) -> Unit,
+    onCollapse: () -> Unit
 ) {
+    // Add navigation bar spacer to prevent content from being hidden
+    val navigationBarHeight = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .padding(horizontal = 16.dp)
+            .padding(top = 12.dp, bottom = navigationBarHeight)
     ) {
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -506,15 +522,18 @@ private fun AssetPickerSheet(
             when (selectedTab) {
                 PickerTab.BACKGROUND -> BackgroundPicker(
                     backgrounds = uiState.availableBackgrounds,
-                    onEvent = onEvent
+                    onEvent = onEvent,
+                    onCollapse = onCollapse
                 )
                 PickerTab.OBJECTS -> ObjectPicker(
                     objects = uiState.availableObjects,
-                    onEvent = onEvent
+                    onEvent = onEvent,
+                    onCollapse = onCollapse
                 )
                 PickerTab.AUDIO -> AudioPicker(
                     sounds = uiState.availableSounds,
-                    onEvent = onEvent
+                    onEvent = onEvent,
+                    onCollapse = onCollapse
                 )
             }
         }
@@ -527,13 +546,15 @@ private fun AssetPickerSheet(
 @Composable
 private fun BackgroundPicker(
     backgrounds: List<BackgroundAsset>,
-    onEvent: (VideoEditorUiEvent) -> Unit
+    onEvent: (VideoEditorUiEvent) -> Unit,
+    onCollapse: () -> Unit
 ) {
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let {
             onEvent(VideoEditorUiEvent.OnBackgroundSelected(it, 0, 5000))
+            onCollapse()
         }
     }
 
@@ -549,6 +570,7 @@ private fun BackgroundPicker(
                         label = bg.name,
                         onClick = {
                             onEvent(VideoEditorUiEvent.OnBackgroundSelected(bg.uri, 0, 5000))
+                            onCollapse()
                         }
                     )
                 }
@@ -573,7 +595,8 @@ private fun BackgroundPicker(
 @Composable
 private fun ObjectPicker(
     objects: List<CatObject>,
-    onEvent: (VideoEditorUiEvent) -> Unit
+    onEvent: (VideoEditorUiEvent) -> Unit,
+    onCollapse: () -> Unit
 ) {
     if (objects.isEmpty()) {
         Box(
@@ -598,6 +621,7 @@ private fun ObjectPicker(
                     label = cat.name,
                     onClick = {
                         onEvent(VideoEditorUiEvent.OnObjectSelected(cat.id, 0, 3000))
+                        onCollapse()
                     }
                 )
             }
@@ -611,13 +635,15 @@ private fun ObjectPicker(
 @Composable
 private fun AudioPicker(
     sounds: List<SoundAsset>,
-    onEvent: (VideoEditorUiEvent) -> Unit
+    onEvent: (VideoEditorUiEvent) -> Unit,
+    onCollapse: () -> Unit
 ) {
     val audioLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let {
             onEvent(VideoEditorUiEvent.OnAudioSelected(it, 0, 10000))
+            onCollapse()
         }
     }
 
@@ -632,6 +658,7 @@ private fun AudioPicker(
                         sound = sound,
                         onClick = {
                             onEvent(VideoEditorUiEvent.OnAudioSelected(sound.uri, 0, 10000))
+                            onCollapse()
                         }
                     )
                 }
@@ -942,10 +969,14 @@ private fun VideoEditorScreenContent(
     onEvent: (VideoEditorUiEvent) -> Unit,
     onNavigateBack: () -> Unit
 ) {
+    // Calculate bottom sheet peek height to account for navigation bar
+    val navigationBarHeight = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val sheetPeekHeight = 72.dp + navigationBarHeight
+
     val scaffoldState = rememberBottomSheetScaffoldState(
         bottomSheetState = rememberStandardBottomSheetState(
             initialValue = SheetValue.PartiallyExpanded,
-            skipHiddenState = false
+            skipHiddenState = true // Prevent fully hidden state
         )
     )
     var selectedTab by remember { mutableStateOf(PickerTab.BACKGROUND) }
@@ -996,10 +1027,11 @@ private fun VideoEditorScreenContent(
                 selectedTab = selectedTab,
                 onTabSelected = { selectedTab = it },
                 uiState = uiState,
-                onEvent = onEvent
+                onEvent = onEvent,
+                onCollapse = {} // No-op for preview
             )
         },
-        sheetPeekHeight = 72.dp // Only show tabs when collapsed
+        sheetPeekHeight = sheetPeekHeight // Tabs height + navigation bar height
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -1011,7 +1043,8 @@ private fun VideoEditorScreenContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
-                uiState = uiState
+                uiState = uiState,
+                onEvent = onEvent
             )
 
             // Timeline at the bottom
@@ -1052,7 +1085,8 @@ private fun PreviewSectionEmptyPreview() {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(300.dp),
-            uiState = VideoEditorUiState()
+            uiState = VideoEditorUiState(),
+            onEvent = {}
         )
     }
 }
@@ -1094,7 +1128,8 @@ private fun PreviewSectionWithContentPreview() {
                         name = "Background Music"
                     )
                 ).toImmutableList()
-            )
+            ),
+            onEvent = {}
         )
     }
 }
@@ -1201,7 +1236,8 @@ private fun AssetPickerSheetPreview() {
                     )
                 ).toImmutableList()
             ),
-            onEvent = {}
+            onEvent = {},
+            onCollapse = {} // No-op for preview
         )
     }
 }

@@ -85,11 +85,30 @@ class VideoEditorViewModel(
 
     // Background Handlers
     private fun handleBackgroundSelected(event: VideoEditorUiEvent.OnBackgroundSelected) {
+        val state = _uiState.value
+
+        // Calculate next position after last background
+        val lastBackgroundEndMs = state.backgroundLayers.maxOfOrNull { it.endMs } ?: 0L
+
+        // Check if we have space left in timeline
+        val remainingTimeMs = state.totalDurationMs - lastBackgroundEndMs
+        if (remainingTimeMs <= 0) {
+            // Timeline is full
+            viewModelScope.launch {
+                _uiEffect.send(VideoEditorUiEffect.ShowError("Timeline is full (max ${state.totalDurationMs / 1000}s)"))
+            }
+            return
+        }
+
+        // Use default duration or remaining time, whichever is smaller
+        val defaultDuration = 5000L // 5 seconds default
+        val actualDuration = minOf(defaultDuration, remainingTimeMs)
+
         val newBackground = BackgroundLayer(
             id = UUID.randomUUID().toString(),
             uri = event.uri,
-            startMs = event.startMs,
-            endMs = event.endMs
+            startMs = lastBackgroundEndMs,
+            endMs = lastBackgroundEndMs + actualDuration
         )
 
         _uiState.update { state ->
@@ -111,8 +130,27 @@ class VideoEditorViewModel(
 
     // Object Handlers
     private fun handleObjectSelected(event: VideoEditorUiEvent.OnObjectSelected) {
+        val state = _uiState.value
+
         // Find the cat object to get default sound
-        val catObject = _uiState.value.availableObjects.find { it.id == event.objectId }
+        val catObject = state.availableObjects.find { it.id == event.objectId }
+
+        // Calculate next position after last object
+        val lastObjectEndMs = state.objectLayers.maxOfOrNull { it.endMs } ?: 0L
+
+        // Check if we have space left in timeline
+        val remainingTimeMs = state.totalDurationMs - lastObjectEndMs
+        if (remainingTimeMs <= 0) {
+            // Timeline is full
+            viewModelScope.launch {
+                _uiEffect.send(VideoEditorUiEffect.ShowError("Timeline is full (max ${state.totalDurationMs / 1000}s)"))
+            }
+            return
+        }
+
+        // Use default duration or remaining time, whichever is smaller
+        val defaultDuration = 3000L // 3 seconds default for objects
+        val actualDuration = minOf(defaultDuration, remainingTimeMs)
 
         // Create default sound config if object has default sound
         val defaultSoundConfig = if (catObject?.defaultSoundUri != null && catObject.defaultSoundName != null) {
@@ -128,8 +166,8 @@ class VideoEditorViewModel(
         val newObject = ObjectLayer(
             id = UUID.randomUUID().toString(),
             objectId = event.objectId,
-            startMs = event.startMs,
-            endMs = event.endMs,
+            startMs = lastObjectEndMs,
+            endMs = lastObjectEndMs + actualDuration,
             soundConfig = defaultSoundConfig // Attach default sound
         )
 
@@ -194,12 +232,31 @@ class VideoEditorViewModel(
 
     // Audio Handlers
     private fun handleAudioSelected(event: VideoEditorUiEvent.OnAudioSelected) {
+        val state = _uiState.value
+
+        // Calculate next position after last audio
+        val lastAudioEndMs = state.audioTracks.maxOfOrNull { it.endMs } ?: 0L
+
+        // Check if we have space left in timeline
+        val remainingTimeMs = state.totalDurationMs - lastAudioEndMs
+        if (remainingTimeMs <= 0) {
+            // Timeline is full
+            viewModelScope.launch {
+                _uiEffect.send(VideoEditorUiEffect.ShowError("Timeline is full (max ${state.totalDurationMs / 1000}s)"))
+            }
+            return
+        }
+
+        // Use default duration or remaining time, whichever is smaller
+        val defaultDuration = 10000L // 10 seconds default for audio
+        val actualDuration = minOf(defaultDuration, remainingTimeMs)
+
         val newAudio = AudioTrack(
             id = UUID.randomUUID().toString(),
             uri = event.uri,
-            startMs = event.startMs,
-            endMs = event.endMs,
-            name = "Audio ${_uiState.value.audioTracks.size + 1}"
+            startMs = lastAudioEndMs,
+            endMs = lastAudioEndMs + actualDuration,
+            name = "Audio ${state.audioTracks.size + 1}"
         )
 
         _uiState.update { state ->
