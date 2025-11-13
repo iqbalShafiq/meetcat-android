@@ -317,6 +317,12 @@ class PostRemoteDataSource(
      * Get filename from URI
      */
     private fun getFileName(uri: Uri): String? {
+        // For file:// URIs, extract filename from path
+        if (uri.scheme == "file") {
+            return uri.lastPathSegment
+        }
+
+        // For content:// URIs, use ContentResolver
         return context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
             val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
             cursor.moveToFirst()
@@ -337,7 +343,10 @@ class PostRemoteDataSource(
         }
 
         // Fallback: determine MIME type from file extension
-        val extension = fileName?.substringAfterLast('.', "")?.lowercase() ?: ""
+        // Use fileName if available, otherwise try to extract from URI path
+        val nameToUse = fileName ?: uri.lastPathSegment
+        val extension = nameToUse?.substringAfterLast('.', "")?.lowercase() ?: ""
+
         return when (extension) {
             // Images
             "jpg", "jpeg" -> "image/jpeg"
