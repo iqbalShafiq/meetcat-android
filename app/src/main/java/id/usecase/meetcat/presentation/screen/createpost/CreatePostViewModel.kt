@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import id.usecase.meetcat.domain.model.Location
 import id.usecase.meetcat.domain.repository.PostRepository
+import id.usecase.meetcat.presentation.common.FeedStateManager
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,7 +16,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class CreatePostViewModel(
-    private val postRepository: PostRepository
+    private val postRepository: PostRepository,
+    private val feedStateManager: FeedStateManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CreatePostUiState())
@@ -117,6 +119,8 @@ class CreatePostViewModel(
                 onSuccess = { createdPost ->
                     _uiState.update { it.copy(isUploading = false, uploadProgress = 1f) }
                     _uiEffect.send(CreatePostUiEffect.ShowSuccess("Post created successfully!"))
+                    // Notify feed state manager that a new post was created
+                    feedStateManager.notifyPostCreated()
                     delay(500)
                     _uiEffect.send(CreatePostUiEffect.NavigateToPostDetail(createdPost.id))
                 },

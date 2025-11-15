@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import id.usecase.meetcat.domain.model.Post
 import id.usecase.meetcat.domain.model.User
 import id.usecase.meetcat.domain.repository.PostRepository
+import id.usecase.meetcat.presentation.common.FeedStateManager
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,7 +18,8 @@ import kotlinx.coroutines.launch
 
 class CreateReplyViewModel(
     private val postRepository: PostRepository,
-    private val postId: String
+    private val postId: String,
+    private val feedStateManager: FeedStateManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CreateReplyUiState())
@@ -106,6 +108,8 @@ class CreateReplyViewModel(
                 onSuccess = { createdReply ->
                     _uiState.update { it.copy(isPosting = false) }
                     _uiEffect.send(CreateReplyUiEffect.ShowSuccess("Reply posted!"))
+                    // Notify feed state manager that a new reply was created
+                    feedStateManager.notifyReplyCreated()
                     delay(500)
                     _uiEffect.send(CreateReplyUiEffect.NavigateToReplyDetail(createdReply.id))
                 },

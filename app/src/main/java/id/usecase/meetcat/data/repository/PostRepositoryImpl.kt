@@ -380,4 +380,32 @@ class PostRepositoryImpl(
             Result.failure(e)
         }
     }
+
+    override suspend fun getLatestPostTimestamp(): Result<Long> {
+        return try {
+            // Get first page with only 1 item to check the latest timestamp
+            val response = remoteDataSource.getExploreFeed(page = 1, pageSize = 1)
+
+            if (response.success && response.data != null) {
+                val feedItems = response.data.data.map { it.toDomain() }
+
+                if (feedItems.isNotEmpty()) {
+                    val latestTimestamp = when (val firstItem = feedItems.first()) {
+                        is FeedItem.PostItem -> firstItem.post.createdAt
+                        is FeedItem.ReplyItem -> firstItem.reply.createdAt
+                    }
+                    Result.success(latestTimestamp)
+                } else {
+                    // No posts yet, return 0
+                    Result.success(0L)
+                }
+            } else {
+                Result.failure(
+                    Exception(response.error?.message ?: "Failed to fetch latest timestamp")
+                )
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

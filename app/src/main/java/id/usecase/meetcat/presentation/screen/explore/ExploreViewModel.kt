@@ -11,14 +11,17 @@ import id.usecase.meetcat.data.network.NetworkMonitor
 import id.usecase.meetcat.domain.model.FeedItem
 import id.usecase.meetcat.domain.paging.ExplorePagingSource
 import id.usecase.meetcat.domain.usecase.auth.GetCurrentUserUseCase
+import id.usecase.meetcat.domain.usecase.post.CheckNewPostsUseCase
 import id.usecase.meetcat.domain.usecase.post.GetExploreFeedUseCase
 import id.usecase.meetcat.domain.usecase.post.LovePostUseCase
 import id.usecase.meetcat.domain.usecase.post.LoveReplyUseCase
 import id.usecase.meetcat.domain.usecase.post.UnlovePostUseCase
 import id.usecase.meetcat.domain.usecase.post.UnloveReplyUseCase
+import id.usecase.meetcat.presentation.common.FeedStateManager
 import id.usecase.meetcat.presentation.common.SnackbarController
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,6 +29,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 class ExploreViewModel(
@@ -35,6 +39,8 @@ class ExploreViewModel(
     private val loveReplyUseCase: LoveReplyUseCase,
     private val unloveReplyUseCase: UnloveReplyUseCase,
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
+    private val checkNewPostsUseCase: CheckNewPostsUseCase,
+    private val feedStateManager: FeedStateManager,
     private val networkMonitor: NetworkMonitor
 ) : ViewModel() {
 
@@ -45,9 +51,19 @@ class ExploreViewModel(
     private val _currentUserId = MutableStateFlow<String?>(null)
     val currentUserId: StateFlow<String?> = _currentUserId.asStateFlow()
 
+    // New posts chip visibility
+    private val _showNewPostsChip = MutableStateFlow(false)
+    val showNewPostsChip: StateFlow<Boolean> = _showNewPostsChip.asStateFlow()
+
+    // Track the timestamp of the latest visible post for polling comparison
+    private var currentLatestTimestamp: Long = 0L
+
     // Preserve scroll position across navigation
     var scrollIndex: Int = 0
     var scrollOffset: Int = 0
+
+    // Polling job for checking new posts
+    private var pollingJob: Job? = null
 
     // Track ongoing jobs to prevent double-tap
     private val lovePostJobs = mutableMapOf<String, Job>()
@@ -59,6 +75,8 @@ class ExploreViewModel(
 
     init {
         loadCurrentUser()
+        observeFeedStateManager()
+        startPolling()
     }
 
     private fun loadCurrentUser() {
@@ -66,6 +84,42 @@ class ExploreViewModel(
             val currentUser = getCurrentUserUseCase()
             _currentUserId.value = currentUser?.id
         }
+    }
+
+    private fun observeFeedStateManager() {
+        viewModelScope.launch {
+            feedStateManager.shouldRefreshFeed.collect { shouldRefresh ->
+                if (shouldRefresh) {
+                    _showNewPostsChip.value = true
+                }
+            }
+        }
+    }
+
+    private fun startPolling() {
+        pollingJob?.cancel()
+        pollingJob = viewModelScope.launch {
+            while (isActive) {
+                delay(POLLING_INTERVAL_MS)
+
+                // Only poll if online and we have a timestamp to compare
+                if (networkMonitor.isOnline() && currentLatestTimestamp > 0L) {
+                    checkNewPostsUseCase(currentLatestTimestamp)
+                        .onSuccess { hasNewPosts ->
+                            if (hasNewPosts) {
+                                feedStateManager.notifyNewPostsDetected()
+                            }
+                        }
+                        .onFailure {
+                            // Silently fail polling, don't interrupt user experience
+                        }
+                }
+            }
+        }
+    }
+
+    fun updateLatestTimestamp(timestamp: Long) {
+        currentLatestTimestamp = timestamp
     }
 
     // Track love toggles for optimistic UI updates
@@ -159,6 +213,16 @@ class ExploreViewModel(
                 viewModelScope.launch {
                     _uiEffect.send(ExploreUiEffect.NavigateToEditPost(event.postId))
                 }
+            }
+            is ExploreUiEvent.NewPostsChipClick -> {
+                // Hide chip and reset feed state
+                _showNewPostsChip.value = false
+                feedStateManager.resetRefreshState()
+                // Scroll to top and refresh handled in UI layer
+            }
+            is ExploreUiEvent.DismissNewPostsChip -> {
+                _showNewPostsChip.value = false
+                feedStateManager.resetRefreshState()
             }
         }
     }
@@ -293,9 +357,15 @@ class ExploreViewModel(
         }
     }
 
+    override fun onCleared() {
+        super.onCleared()
+        pollingJob?.cancel()
+    }
+
     companion object {
         private const val PAGE_SIZE = 20
         private const val PREFETCH_DISTANCE = 10 // Load more when 10 items from bottom
         private const val MAX_RETRIES = 3
+        private const val POLLING_INTERVAL_MS = 30_000L // 30 seconds
     }
 }

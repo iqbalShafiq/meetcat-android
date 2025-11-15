@@ -7,6 +7,7 @@ import id.usecase.meetcat.domain.model.MediaItem
 import id.usecase.meetcat.domain.model.Post
 import id.usecase.meetcat.domain.model.User
 import id.usecase.meetcat.domain.repository.PostRepository
+import id.usecase.meetcat.presentation.common.FeedStateManager
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,7 +19,8 @@ import kotlinx.coroutines.launch
 
 class EditPostViewModel(
     private val postRepository: PostRepository,
-    private val postId: String
+    private val postId: String,
+    private val feedStateManager: FeedStateManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(EditPostUiState())
@@ -123,6 +125,8 @@ class EditPostViewModel(
                 onSuccess = { updatedPost ->
                     _uiState.update { it.copy(isSaving = false) }
                     _uiEffect.send(EditPostUiEffect.ShowSuccess("Post updated successfully!"))
+                    // Notify feed state manager that a post was updated
+                    feedStateManager.notifyPostUpdated()
                     delay(500)
                     _uiEffect.send(EditPostUiEffect.NavigateToPostDetail(postId))
                 },
