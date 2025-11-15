@@ -202,12 +202,12 @@ private fun ExploreContent(
     ) { paddingValues ->
         val loadState = feedItems.loadState
 
-        when {
-            loadState.refresh is LoadState.Loading && feedItems.itemCount == 0 -> {
+        when (loadState.refresh) {
+            is LoadState.Loading if feedItems.itemCount == 0 -> {
                 LoadingView(modifier = Modifier.padding(paddingValues))
             }
 
-            loadState.refresh is LoadState.Error && feedItems.itemCount == 0 -> {
+            is LoadState.Error if feedItems.itemCount == 0 -> {
                 ErrorView(
                     message = (loadState.refresh as LoadState.Error).error.message
                         ?: "Failed to load feed",
@@ -216,7 +216,7 @@ private fun ExploreContent(
                 )
             }
 
-            loadState.refresh is LoadState.NotLoading && feedItems.itemCount == 0 -> {
+            is LoadState.NotLoading if feedItems.itemCount == 0 -> {
                 EmptyView(
                     message = "No posts yet\nBe the first to share a cat photo!",
                     modifier = Modifier.padding(paddingValues)
@@ -303,7 +303,7 @@ private fun FeedList(
             } else if (!isScrollingDown) {
                 // Scrolling up - show navbar
                 onShowBottomNav()
-            } else if (isScrollingDown && currentIndex > 0) {
+            } else if (currentIndex > 0) {
                 // Scrolling down and not at top - hide navbar
                 onHideBottomNav()
             }
