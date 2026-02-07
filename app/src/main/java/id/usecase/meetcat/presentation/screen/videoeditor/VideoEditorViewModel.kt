@@ -2,6 +2,7 @@ package id.usecase.meetcat.presentation.screen.videoeditor
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.util.UnstableApi
@@ -50,6 +51,9 @@ class VideoEditorViewModel(
             is VideoEditorUiEvent.OnObjectMoved -> handleObjectMoved(event)
             is VideoEditorUiEvent.OnObjectRemoved -> handleObjectRemoved(event)
             is VideoEditorUiEvent.OnObjectSoundUpdated -> handleObjectSoundUpdated(event)
+            is VideoEditorUiEvent.OnObjectPositionChanged -> handleObjectPositionChanged(event)
+            is VideoEditorUiEvent.OnObjectScaleChanged -> handleObjectScaleChanged(event)
+            is VideoEditorUiEvent.OnPreviewObjectClicked -> handlePreviewObjectClicked(event)
 
             // Audio Events
             is VideoEditorUiEvent.OnAudioSelected -> handleAudioSelected(event)
@@ -230,6 +234,48 @@ class VideoEditorViewModel(
         }
     }
 
+    private fun handleObjectPositionChanged(event: VideoEditorUiEvent.OnObjectPositionChanged) {
+        _uiState.update { state ->
+            state.copy(
+                objectLayers = state.objectLayers
+                    .map { layer ->
+                        if (layer.id == event.id) {
+                            layer.copy(x = event.x, y = event.y)
+                        } else {
+                            layer
+                        }
+                    }
+                    .toPersistentList()
+            )
+        }
+    }
+
+    private fun handleObjectScaleChanged(event: VideoEditorUiEvent.OnObjectScaleChanged) {
+        _uiState.update { state ->
+            state.copy(
+                objectLayers = state.objectLayers
+                    .map { layer ->
+                        if (layer.id == event.id) {
+                            layer.copy(scale = event.scale)
+                        } else {
+                            layer
+                        }
+                    }
+                    .toPersistentList()
+            )
+        }
+    }
+
+    private fun handlePreviewObjectClicked(event: VideoEditorUiEvent.OnPreviewObjectClicked) {
+        _uiState.update { state ->
+            state.copy(
+                selectedObjectId = if (state.selectedObjectId == event.id) null else event.id,
+                selectedBackgroundId = null,
+                selectedAudioId = null
+            )
+        }
+    }
+
     // Audio Handlers
     private fun handleAudioSelected(event: VideoEditorUiEvent.OnAudioSelected) {
         val state = _uiState.value
@@ -298,14 +344,18 @@ class VideoEditorViewModel(
     // Playback Handlers
     private fun handlePlayPause() {
         _uiState.update { state ->
-            state.copy(isPlaying = !state.isPlaying)
+            val newIsPlaying = !state.isPlaying
+            Log.d("VideoEditorViewModel", "Play/Pause clicked: $newIsPlaying")
+            state.copy(isPlaying = newIsPlaying)
         }
     }
 
     private fun handleSeekTo(event: VideoEditorUiEvent.OnSeekTo) {
         _uiState.update { state ->
             state.copy(
-                currentPositionMs = event.positionMs.coerceIn(0, state.totalDurationMs)
+                currentPositionMs = event.positionMs.coerceIn(0, state.totalDurationMs),
+                // Don't auto-pause when seeking
+                isPlaying = state.isPlaying
             )
         }
     }

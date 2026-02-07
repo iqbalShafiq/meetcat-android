@@ -26,6 +26,9 @@ sealed interface VideoEditorUiEvent {
         val objectId: String,
         val soundConfig: ObjectSoundConfig?
     ) : VideoEditorUiEvent
+    data class OnObjectPositionChanged(val id: String, val x: Float, val y: Float) : VideoEditorUiEvent
+    data class OnObjectScaleChanged(val id: String, val scale: Float) : VideoEditorUiEvent
+    data class OnPreviewObjectClicked(val id: String) : VideoEditorUiEvent
 
     // Audio Actions
     data class OnAudioSelected(val uri: Uri, val startMs: Long, val endMs: Long) : VideoEditorUiEvent

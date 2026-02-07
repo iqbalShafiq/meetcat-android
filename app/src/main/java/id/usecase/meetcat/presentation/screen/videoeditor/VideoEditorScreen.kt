@@ -295,11 +295,21 @@ private fun PreviewSection(
                 availableObjects = uiState.availableObjects.associate { it.id to it.resourceUri },
                 currentPositionMs = uiState.currentPositionMs,
                 isPlaying = uiState.isPlaying,
+                selectedObjectId = uiState.selectedObjectId,
                 onPositionChanged = { position ->
                     onEvent(VideoEditorUiEvent.OnSeekTo(position))
                 },
                 onSeek = { position ->
                     onEvent(VideoEditorUiEvent.OnSeekTo(position))
+                },
+                onObjectClick = { objectId ->
+                    onEvent(VideoEditorUiEvent.OnPreviewObjectClicked(objectId))
+                },
+                onObjectPositionChange = { objectId, x, y ->
+                    onEvent(VideoEditorUiEvent.OnObjectPositionChanged(objectId, x, y))
+                },
+                onObjectScaleChange = { objectId, scale ->
+                    onEvent(VideoEditorUiEvent.OnObjectScaleChanged(objectId, scale))
                 },
                 modifier = Modifier.fillMaxSize()
             )
