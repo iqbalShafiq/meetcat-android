@@ -117,7 +117,8 @@ class VideoEditorViewModel(
 
         _uiState.update { state ->
             state.copy(
-                backgroundLayers = (state.backgroundLayers + newBackground).toPersistentList()
+                backgroundLayers = (state.backgroundLayers + newBackground).toPersistentList(),
+                activePicker = null // Close picker after selection
             )
         }
     }
@@ -177,7 +178,8 @@ class VideoEditorViewModel(
 
         _uiState.update { state ->
             state.copy(
-                objectLayers = (state.objectLayers + newObject).toPersistentList()
+                objectLayers = (state.objectLayers + newObject).toPersistentList(),
+                activePicker = null // Close picker after selection
             )
         }
     }
@@ -307,7 +309,8 @@ class VideoEditorViewModel(
 
         _uiState.update { state ->
             state.copy(
-                audioTracks = (state.audioTracks + newAudio).toPersistentList()
+                audioTracks = (state.audioTracks + newAudio).toPersistentList(),
+                activePicker = null // Close picker after selection
             )
         }
     }
@@ -428,18 +431,21 @@ class VideoEditorViewModel(
     }
 
     private fun handleOpenBackgroundPicker() {
+        _uiState.update { it.copy(activePicker = PickerType.BACKGROUND) }
         viewModelScope.launch {
             _uiEffect.send(VideoEditorUiEffect.OpenBackgroundPicker)
         }
     }
 
     private fun handleOpenObjectPicker() {
+        _uiState.update { it.copy(activePicker = PickerType.OBJECTS) }
         viewModelScope.launch {
             _uiEffect.send(VideoEditorUiEffect.OpenObjectPicker)
         }
     }
 
     private fun handleOpenAudioPicker() {
+        _uiState.update { it.copy(activePicker = PickerType.AUDIO) }
         viewModelScope.launch {
             _uiEffect.send(VideoEditorUiEffect.OpenAudioPicker)
         }

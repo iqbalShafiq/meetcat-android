@@ -11,6 +11,15 @@ import kotlinx.collections.immutable.persistentListOf
  * Defines the state, events, and effects for the video editor
  */
 
+/**
+ * Represents which asset picker is currently active
+ */
+enum class PickerType {
+    BACKGROUND,
+    OBJECTS,
+    AUDIO
+}
+
 // UI Events (User Actions)
 sealed interface VideoEditorUiEvent {
     // Background Actions
@@ -81,7 +90,8 @@ data class VideoEditorUiState(
     val selectedObjectForSoundEdit: String? = null, // Object ID being edited
     val selectedBackgroundId: String? = null, // Selected background item on timeline
     val selectedObjectId: String? = null, // Selected object item on timeline
-    val selectedAudioId: String? = null // Selected audio item on timeline
+    val selectedAudioId: String? = null, // Selected audio item on timeline
+    val activePicker: PickerType? = null // Currently active picker (null = hidden)
 )
 
 // UI Effects (One-time events)

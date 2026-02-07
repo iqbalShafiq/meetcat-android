@@ -141,4 +141,11 @@ interface PostRepository {
         replyId: String? = null,
         text: String
     ): Result<Comment>
+
+    /**
+     * Get the timestamp of the latest post in the explore feed
+     * Used for checking if there are new posts available
+     * @return Result containing the timestamp in milliseconds (epoch time)
+     */
+    suspend fun getLatestPostTimestamp(): Result<Long>
 }

@@ -332,15 +332,16 @@ private fun CreateReplyContent(
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(200.dp)
                                     .clip(RoundedCornerShape(12.dp))
                                     .background(MaterialTheme.colorScheme.surfaceVariant)
                             ) {
                                 coil3.compose.AsyncImage(
                                     model = uiState.mediaUri,
                                     contentDescription = "Selected media",
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .align(Alignment.Center),
+                                    contentScale = androidx.compose.ui.layout.ContentScale.FillWidth,
                                     placeholder = painterResource(R.drawable.ic_placeholder_image),
                                     error = painterResource(R.drawable.ic_placeholder_image)
                                 )

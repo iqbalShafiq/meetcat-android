@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import androidx.core.content.edit
 
 class TokenStorage(context: Context) {
 
@@ -21,14 +22,14 @@ class TokenStorage(context: Context) {
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
         )
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         // Fallback to regular SharedPreferences if encryption fails
         // This can happen on devices with compromised security or during testing
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     }
 
     fun saveToken(token: String) {
-        prefs.edit().putString(KEY_TOKEN, token).apply()
+        prefs.edit { putString(KEY_TOKEN, token) }
     }
 
     fun getToken(): String? {
@@ -36,7 +37,7 @@ class TokenStorage(context: Context) {
     }
 
     fun clearToken() {
-        prefs.edit().remove(KEY_TOKEN).apply()
+        prefs.edit { remove(KEY_TOKEN) }
     }
 
     fun hasToken(): Boolean {

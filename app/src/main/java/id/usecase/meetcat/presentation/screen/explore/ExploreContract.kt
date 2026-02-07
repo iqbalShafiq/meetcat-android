@@ -24,6 +24,8 @@ sealed class ExploreUiEvent {
     data class NavigateToComments(val postId: String) : ExploreUiEvent()
     data class NavigateToReply(val postId: String) : ExploreUiEvent()
     data class NavigateToEditPost(val postId: String) : ExploreUiEvent()
+    data object NewPostsChipClick : ExploreUiEvent()
+    data object DismissNewPostsChip : ExploreUiEvent()
 }
 
 sealed class ExploreUiEffect {

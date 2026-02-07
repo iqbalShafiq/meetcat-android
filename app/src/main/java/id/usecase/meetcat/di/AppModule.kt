@@ -26,6 +26,7 @@ import id.usecase.meetcat.domain.usecase.auth.RegisterUseCase
 import id.usecase.meetcat.domain.usecase.auth.ResetPasswordUseCase
 import id.usecase.meetcat.domain.usecase.location.GetCurrentLocationUseCase
 import id.usecase.meetcat.domain.usecase.location.HasLocationPermissionUseCase
+import id.usecase.meetcat.domain.usecase.post.CheckNewPostsUseCase
 import id.usecase.meetcat.domain.usecase.post.GetExploreFeedUseCase
 import id.usecase.meetcat.domain.usecase.post.GetNearbyPostsUseCase
 import id.usecase.meetcat.domain.usecase.post.GetRandomPostsUseCase
@@ -43,6 +44,7 @@ import id.usecase.meetcat.domain.usecase.user.GetFollowingUseCase
 import id.usecase.meetcat.domain.usecase.user.GetUserLovedItemsUseCase
 import id.usecase.meetcat.domain.usecase.user.GetUserPostsUseCase
 import id.usecase.meetcat.domain.usecase.user.GetUserRepliesUseCase
+import id.usecase.meetcat.presentation.common.FeedStateManager
 import id.usecase.meetcat.presentation.screen.auth.forgotpassword.ForgotPasswordViewModel
 import id.usecase.meetcat.presentation.screen.auth.login.LoginViewModel
 import id.usecase.meetcat.presentation.screen.auth.register.RegisterViewModel
@@ -119,7 +121,8 @@ val appModule = module {
     // Content Creation ViewModels
     viewModel {
         CreatePostViewModel(
-            postRepository = get()
+            postRepository = get(),
+            feedStateManager = get()
         )
     }
     viewModelOf(::MediaPickerViewModel)
@@ -170,13 +173,15 @@ val appModule = module {
     viewModel { (postId: String) ->
         CreateReplyViewModel(
             postRepository = get(),
-            postId = postId
+            postId = postId,
+            feedStateManager = get()
         )
     }
     viewModel { (postId: String) ->
         EditPostViewModel(
             postRepository = get(),
-            postId = postId
+            postId = postId,
+            feedStateManager = get()
         )
     }
 }
@@ -198,6 +203,7 @@ val domainModule = module {
     factoryOf(::UnlovePostUseCase)
     factoryOf(::LoveReplyUseCase)
     factoryOf(::UnloveReplyUseCase)
+    factoryOf(::CheckNewPostsUseCase)
 
     // Search use cases
     factoryOf(::GetSearchHistoryUseCase)
@@ -223,6 +229,9 @@ val dataModule = module {
 
     // Network Monitor
     single { NetworkMonitor(androidContext()) }
+
+    // Feed State Manager (Singleton)
+    single { FeedStateManager() }
 
     // HTTP Client with token provider
     single {

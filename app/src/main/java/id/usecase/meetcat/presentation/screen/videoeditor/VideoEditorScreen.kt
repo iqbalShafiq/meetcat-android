@@ -61,7 +61,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -100,8 +99,8 @@ fun VideoEditorScreen(
 
     val scaffoldState = rememberBottomSheetScaffoldState(
         bottomSheetState = rememberStandardBottomSheetState(
-            initialValue = SheetValue.PartiallyExpanded,
-            skipHiddenState = true // Prevent fully hidden state
+            initialValue = SheetValue.Hidden,
+            skipHiddenState = false // Allow fully hidden state
         )
     )
     val scope = rememberCoroutineScope()
@@ -117,17 +116,17 @@ fun VideoEditorScreen(
                 is VideoEditorUiEffect.OpenAudioPicker -> {
                     scope.launch { scaffoldState.bottomSheetState.expand() }
                 }
+
                 is VideoEditorUiEffect.ShowError -> {
                     // TODO: Show error snackbar
                 }
+
                 is VideoEditorUiEffect.ExportSuccess -> {
                     showExportSuccess = true
                 }
             }
         }
     }
-
-    var selectedTab by remember { mutableStateOf(PickerTab.BACKGROUND) }
 
     BottomSheetScaffold(
         scaffoldState = scaffoldState,
@@ -172,18 +171,16 @@ fun VideoEditorScreen(
         },
         sheetContent = {
             AssetPickerSheet(
-                selectedTab = selectedTab,
-                onTabSelected = { selectedTab = it },
                 uiState = uiState,
                 onEvent = viewModel::onEvent,
                 onCollapse = {
                     scope.launch {
-                        scaffoldState.bottomSheetState.partialExpand()
+                        scaffoldState.bottomSheetState.hide()
                     }
                 }
             )
         },
-        sheetPeekHeight = sheetPeekHeight // Tabs height + navigation bar height
+        sheetPeekHeight = 0.dp // No peek - sheet only visible when expanded
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -209,12 +206,24 @@ fun VideoEditorScreen(
                 onEvent = viewModel::onEvent
             )
 
-            // Playback Controls at very bottom
+            // Playback Controls
             PlaybackControls(
                 modifier = Modifier.fillMaxWidth(),
                 uiState = uiState,
                 onEvent = viewModel::onEvent
             )
+
+            // Spacer to push menu to center
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Asset Menu Bar - between playback and nav bar, centered
+            AssetMenuBar(
+                modifier = Modifier.fillMaxWidth(),
+                onEvent = viewModel::onEvent
+            )
+
+            // Spacer to push menu to center
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 
@@ -236,10 +245,20 @@ fun VideoEditorScreen(
                 currentSoundConfig = obj.soundConfig,
                 availableSounds = uiState.availableSounds.toList(),
                 onDismiss = {
-                    viewModel.onEvent(VideoEditorUiEvent.OnObjectSoundUpdated(objectId, obj.soundConfig))
+                    viewModel.onEvent(
+                        VideoEditorUiEvent.OnObjectSoundUpdated(
+                            objectId,
+                            obj.soundConfig
+                        )
+                    )
                 },
                 onSave = { soundConfig ->
-                    viewModel.onEvent(VideoEditorUiEvent.OnObjectSoundUpdated(objectId, soundConfig))
+                    viewModel.onEvent(
+                        VideoEditorUiEvent.OnObjectSoundUpdated(
+                            objectId,
+                            soundConfig
+                        )
+                    )
                 }
             )
         }
@@ -367,7 +386,7 @@ private fun PlaybackControls(
             Icon(
                 imageVector = if (uiState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                 contentDescription = if (uiState.isPlaying) "Pause" else "Play",
-                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                tint = MaterialTheme.colorScheme.onSecondaryContainer,
                 modifier = Modifier.size(24.dp)
             )
         }
@@ -385,6 +404,7 @@ private fun TimelineSection(
 ) {
     Column(
         modifier = modifier
+            .background(MaterialTheme.colorScheme.surfaceContainer)
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -397,7 +417,7 @@ private fun TimelineSection(
 
         // Background track
         TimelineTrack(
-            label = "🎨 Backgrounds",
+            label = "Backgrounds",
             items = uiState.backgroundLayers.map {
                 TimelineItem(it.id, it.startMs, it.endMs)
             },
@@ -415,7 +435,7 @@ private fun TimelineSection(
 
         // Objects track (with sound indicators)
         TimelineTrack(
-            label = "🐱 Cat Objects (tap to select, drag edges to resize)",
+            label = "Cat Objects (tap to select, drag edges to resize)",
             items = uiState.objectLayers.map {
                 TimelineItem(
                     id = it.id,
@@ -444,7 +464,7 @@ private fun TimelineSection(
 
         // Audio track
         TimelineTrack(
-            label = "🎵 Sounds",
+            label = "Sounds",
             items = uiState.audioTracks.map {
                 TimelineItem(it.id, it.startMs, it.endMs)
             },
@@ -463,12 +483,10 @@ private fun TimelineSection(
 }
 
 /**
- * Asset picker bottom sheet
+ * Asset picker bottom sheet - shows appropriate picker based on activePicker state
  */
 @Composable
 private fun AssetPickerSheet(
-    selectedTab: PickerTab,
-    onTabSelected: (PickerTab) -> Unit,
     uiState: VideoEditorUiState,
     onEvent: (VideoEditorUiEvent) -> Unit,
     onCollapse: () -> Unit
@@ -480,71 +498,34 @@ private fun AssetPickerSheet(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
-            .padding(top = 12.dp, bottom = navigationBarHeight)
+            .padding(top = 16.dp, bottom = navigationBarHeight)
     ) {
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Icon-only Tabs
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            PickerTab.entries.forEach { tab ->
-                val isSelected = selectedTab == tab
-                IconButton(
-                    onClick = { onTabSelected(tab) },
-                    modifier = Modifier
-                        .size(56.dp)
-                        .background(
-                            color = if (isSelected)
-                                MaterialTheme.colorScheme.primaryContainer
-                            else
-                                MaterialTheme.colorScheme.surfaceVariant,
-                            shape = CircleShape
-                        )
-                ) {
-                    Icon(
-                        imageVector = when (tab) {
-                            PickerTab.BACKGROUND -> Icons.Default.Image
-                            PickerTab.OBJECTS -> Icons.Default.Pets
-                            PickerTab.AUDIO -> Icons.Default.AudioFile
-                        },
-                        contentDescription = tab.label,
-                        tint = if (isSelected)
-                            MaterialTheme.colorScheme.onPrimaryContainer
-                        else
-                            MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(28.dp)
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Content area with minimum height
+        // Content area based on active picker
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 8.dp)
-                .height(300.dp)
+                .height(350.dp)
         ) {
-            when (selectedTab) {
-                PickerTab.BACKGROUND -> BackgroundPicker(
+            when (uiState.activePicker) {
+                PickerType.BACKGROUND -> BackgroundPicker(
                     backgrounds = uiState.availableBackgrounds,
                     onEvent = onEvent,
                     onCollapse = onCollapse
                 )
-                PickerTab.OBJECTS -> ObjectPicker(
+
+                PickerType.OBJECTS -> ObjectPicker(
                     objects = uiState.availableObjects,
                     onEvent = onEvent,
                     onCollapse = onCollapse
                 )
-                PickerTab.AUDIO -> AudioPicker(
+
+                PickerType.AUDIO -> AudioPicker(
                     sounds = uiState.availableSounds,
                     onEvent = onEvent,
                     onCollapse = onCollapse
                 )
+
+                null -> {} // Should not happen as sheet is hidden when null
             }
         }
     }
@@ -763,6 +744,69 @@ private fun SoundItem(
 }
 
 /**
+ * Asset Menu Bar - horizontal scrollable menu for adding assets
+ */
+@Composable
+private fun AssetMenuBar(
+    modifier: Modifier = Modifier,
+    onEvent: (VideoEditorUiEvent) -> Unit
+) {
+    LazyRow(
+        modifier = modifier
+            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(24.dp)
+    ) {
+        item {
+            AssetMenuItem(
+                icon = Icons.Default.Image,
+                onClick = { onEvent(VideoEditorUiEvent.OnOpenBackgroundPicker) }
+            )
+        }
+        item {
+            AssetMenuItem(
+                icon = Icons.Default.Pets,
+                onClick = { onEvent(VideoEditorUiEvent.OnOpenObjectPicker) }
+            )
+        }
+        item {
+            AssetMenuItem(
+                icon = Icons.Default.AudioFile,
+                onClick = { onEvent(VideoEditorUiEvent.OnOpenAudioPicker) }
+            )
+        }
+    }
+}
+
+/**
+ * Individual menu item for asset menu bar
+ */
+@Composable
+private fun AssetMenuItem(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .size(48.dp)
+            .background(
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                shape = RoundedCornerShape(16.dp)
+            )
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSecondaryContainer,
+            modifier = Modifier.size(24.dp)
+        )
+    }
+}
+
+/**
  * Format milliseconds to MM:SS
  */
 private fun formatTime(ms: Long): String {
@@ -826,13 +870,13 @@ private fun VideoEditorScreenWithContentPreview() {
                 backgroundLayers = listOf(
                     BackgroundLayer(
                         id = "bg1",
-                        uri = Uri.parse("file:///android_asset/backgrounds/bg1.jpg"),
+                        uri = "file:///android_asset/backgrounds/bg1.jpg".toUri(),
                         startMs = 0,
                         endMs = 10000
                     ),
                     BackgroundLayer(
                         id = "bg2",
-                        uri = Uri.parse("file:///android_asset/backgrounds/bg2.jpg"),
+                        uri = "file:///android_asset/backgrounds/bg2.jpg".toUri(),
                         startMs = 10000,
                         endMs = 20000
                     )
@@ -844,7 +888,7 @@ private fun VideoEditorScreenWithContentPreview() {
                         startMs = 2000,
                         endMs = 8000,
                         soundConfig = ObjectSoundConfig(
-                            soundUri = Uri.parse("file:///android_asset/sounds/meow.mp3"),
+                            soundUri = "file:///android_asset/sounds/meow.mp3".toUri(),
                             soundName = "Meow",
                             offsetMs = 0,
                             durationMs = null,
@@ -861,7 +905,7 @@ private fun VideoEditorScreenWithContentPreview() {
                 audioTracks = listOf(
                     AudioTrack(
                         id = "audio1",
-                        uri = Uri.parse("file:///android_asset/sounds/background.mp3"),
+                        uri = "file:///android_asset/sounds/background.mp3".toUri(),
                         startMs = 0,
                         endMs = 20000,
                         name = "Background Music"
@@ -874,7 +918,7 @@ private fun VideoEditorScreenWithContentPreview() {
                         thumbnailUri = "file:///android_asset/cats/cat1.gif",
                         resourceUri = "file:///android_asset/cats/cat1.gif",
                         type = CatObjectType.GIF,
-                        defaultSoundUri = Uri.parse("file:///android_asset/sounds/meow.mp3"),
+                        defaultSoundUri = "file:///android_asset/sounds/meow.mp3".toUri(),
                         defaultSoundName = "Meow"
                     ),
                     CatObject(
@@ -889,15 +933,15 @@ private fun VideoEditorScreenWithContentPreview() {
                     BackgroundAsset(
                         id = "bg1",
                         name = "Beach",
-                        uri = Uri.parse("file:///android_asset/backgrounds/bg1.jpg"),
-                        thumbnailUri = Uri.parse("file:///android_asset/backgrounds/bg1.jpg"),
+                        uri = "file:///android_asset/backgrounds/bg1.jpg".toUri(),
+                        thumbnailUri = "file:///android_asset/backgrounds/bg1.jpg".toUri(),
                         type = BackgroundType.IMAGE
                     ),
                     BackgroundAsset(
                         id = "bg2",
                         name = "Garden",
-                        uri = Uri.parse("file:///android_asset/backgrounds/bg2.jpg"),
-                        thumbnailUri = Uri.parse("file:///android_asset/backgrounds/bg2.jpg"),
+                        uri = "file:///android_asset/backgrounds/bg2.jpg".toUri(),
+                        thumbnailUri = "file:///android_asset/backgrounds/bg2.jpg".toUri(),
                         type = BackgroundType.IMAGE
                     )
                 ).toImmutableList(),
@@ -905,13 +949,13 @@ private fun VideoEditorScreenWithContentPreview() {
                     SoundAsset(
                         id = "sound1",
                         name = "Meow Sound",
-                        uri = Uri.parse("file:///android_asset/sounds/meow.mp3"),
+                        uri = "file:///android_asset/sounds/meow.mp3".toUri(),
                         duration = 3000L
                     ),
                     SoundAsset(
                         id = "sound2",
                         name = "Purr Sound",
-                        uri = Uri.parse("file:///android_asset/sounds/purr.mp3"),
+                        uri = "file:///android_asset/sounds/purr.mp3".toUri(),
                         duration = 5000L
                     )
                 ).toImmutableList(),
@@ -940,7 +984,7 @@ private fun VideoEditorScreenExportingPreview() {
                 backgroundLayers = listOf(
                     BackgroundLayer(
                         id = "bg1",
-                        uri = Uri.parse("file:///android_asset/backgrounds/bg1.jpg"),
+                        uri = "file:///android_asset/backgrounds/bg1.jpg".toUri(),
                         startMs = 0,
                         endMs = 10000
                     )
@@ -979,17 +1023,12 @@ private fun VideoEditorScreenContent(
     onEvent: (VideoEditorUiEvent) -> Unit,
     onNavigateBack: () -> Unit
 ) {
-    // Calculate bottom sheet peek height to account for navigation bar
-    val navigationBarHeight = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    val sheetPeekHeight = 72.dp + navigationBarHeight
-
     val scaffoldState = rememberBottomSheetScaffoldState(
         bottomSheetState = rememberStandardBottomSheetState(
-            initialValue = SheetValue.PartiallyExpanded,
-            skipHiddenState = true // Prevent fully hidden state
+            initialValue = SheetValue.Hidden,
+            skipHiddenState = false // Allow fully hidden state
         )
     )
-    var selectedTab by remember { mutableStateOf(PickerTab.BACKGROUND) }
 
     BottomSheetScaffold(
         scaffoldState = scaffoldState,
@@ -1034,14 +1073,12 @@ private fun VideoEditorScreenContent(
         },
         sheetContent = {
             AssetPickerSheet(
-                selectedTab = selectedTab,
-                onTabSelected = { selectedTab = it },
                 uiState = uiState,
                 onEvent = onEvent,
                 onCollapse = {} // No-op for preview
             )
         },
-        sheetPeekHeight = sheetPeekHeight // Tabs height + navigation bar height
+        sheetPeekHeight = 0.dp // No peek - sheet only visible when expanded
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -1067,12 +1104,21 @@ private fun VideoEditorScreenContent(
                 onEvent = onEvent
             )
 
-            // Playback Controls at very bottom
+            // Playback Controls
             PlaybackControls(
                 modifier = Modifier.fillMaxWidth(),
                 uiState = uiState,
                 onEvent = onEvent
             )
+
+            // Asset Menu Bar - between playback and nav bar, centered
+            AssetMenuBar(
+                modifier = Modifier.fillMaxWidth(),
+                onEvent = onEvent
+            )
+
+            // Spacer to push menu to center
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 
@@ -1116,7 +1162,7 @@ private fun PreviewSectionWithContentPreview() {
                 backgroundLayers = listOf(
                     BackgroundLayer(
                         id = "bg1",
-                        uri = Uri.parse("file:///android_asset/backgrounds/bg1.jpg"),
+                        uri = "file:///android_asset/backgrounds/bg1.jpg".toUri(),
                         startMs = 0,
                         endMs = 10000
                     )
@@ -1132,7 +1178,7 @@ private fun PreviewSectionWithContentPreview() {
                 audioTracks = listOf(
                     AudioTrack(
                         id = "audio1",
-                        uri = Uri.parse("file:///android_asset/sounds/bg.mp3"),
+                        uri = "file:///android_asset/sounds/bg.mp3".toUri(),
                         startMs = 0,
                         endMs = 10000,
                         name = "Background Music"
@@ -1160,13 +1206,13 @@ private fun TimelineSectionPreview() {
                 backgroundLayers = listOf(
                     BackgroundLayer(
                         id = "bg1",
-                        uri = Uri.parse("file:///android_asset/backgrounds/bg1.jpg"),
+                        uri = "file:///android_asset/backgrounds/bg1.jpg".toUri(),
                         startMs = 0,
                         endMs = 10000
                     ),
                     BackgroundLayer(
                         id = "bg2",
-                        uri = Uri.parse("file:///android_asset/backgrounds/bg2.jpg"),
+                        uri = "file:///android_asset/backgrounds/bg2.jpg".toUri(),
                         startMs = 10000,
                         endMs = 20000
                     )
@@ -1178,7 +1224,7 @@ private fun TimelineSectionPreview() {
                         startMs = 2000,
                         endMs = 8000,
                         soundConfig = ObjectSoundConfig(
-                            soundUri = Uri.parse("file:///android_asset/sounds/meow.mp3"),
+                            soundUri = "file:///android_asset/sounds/meow.mp3".toUri(),
                             soundName = "Meow",
                             offsetMs = 0,
                             durationMs = null,
@@ -1195,7 +1241,7 @@ private fun TimelineSectionPreview() {
                 audioTracks = listOf(
                     AudioTrack(
                         id = "audio1",
-                        uri = Uri.parse("file:///android_asset/sounds/bg.mp3"),
+                        uri = "file:///android_asset/sounds/bg.mp3".toUri(),
                         startMs = 0,
                         endMs = 20000,
                         name = "Background Music"
@@ -1217,9 +1263,8 @@ private fun TimelineSectionPreview() {
 private fun AssetPickerSheetPreview() {
     MeetCatTheme {
         AssetPickerSheet(
-            selectedTab = PickerTab.OBJECTS,
-            onTabSelected = {},
             uiState = VideoEditorUiState(
+                activePicker = PickerType.OBJECTS,
                 availableObjects = listOf(
                     CatObject(
                         id = "cat1",
@@ -1227,7 +1272,7 @@ private fun AssetPickerSheetPreview() {
                         thumbnailUri = "file:///android_asset/cats/cat1.gif",
                         resourceUri = "file:///android_asset/cats/cat1.gif",
                         type = CatObjectType.GIF,
-                        defaultSoundUri = Uri.parse("file:///android_asset/sounds/meow.mp3"),
+                        defaultSoundUri = "file:///android_asset/sounds/meow.mp3".toUri(),
                         defaultSoundName = "Meow"
                     ),
                     CatObject(

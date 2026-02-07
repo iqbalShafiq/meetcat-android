@@ -20,7 +20,7 @@ object HttpClientFactory {
     // TODO: Change this to your actual backend URL when deploying
     // For localhost testing from Android emulator, use 10.0.2.2
     // For localhost testing from physical device, use your computer's IP address
-    private const val BASE_URL = "http://10.148.236.183:3210"
+    private const val BASE_URL = "http://192.168.13.146:3210"
 
     fun create(tokenProvider: () -> String?): HttpClient {
         return HttpClient(OkHttp) {
